@@ -1,5 +1,4 @@
 # Project structure
-
 There are four folders to code in:
 
 - /src/devvit This is a Devvit app. NEVER write React code in here. Use `devvit_search` to understand how Devvit works. Never use web apis in here. This is a sandboxed environment. Import Devvit hooks from public-api like this: `import { Devvit, useWebView } from '@devvit/public-api';`. Devvit apps are shown to the user in the Reddit feed. Devvit apps rely on context to pass down helpful apis including (redis, reddit, media, and more).
