@@ -1,10 +1,34 @@
-## Devvit Bolt Starter Experimental
+## 🎮 Wheedle - The Ultimate Reddit Persuasion Game
 
-An experimental starter that explores a new way to build applications on Reddit's developer platform.
+Welcome to Wheedle, a retro-style Reddit game where your words are worth their weight in gold! 🪙
 
-## Video Tutorial
+### 🎯 Game Concept
 
-[![Video Tutorial](docs-img/video-preview.png)](https://www.youtube.com/watch?v=uI85NRCoQNU)
+In Wheedle, players enter a high-stakes battle of wit and persuasion. Here's how it works:
+
+1. 💰 **Buy-in**: Players start by contributing their Reddit coins to the prize pool
+2. 🎭 **The Challenge**: Convince our retro-styled AI judge that you're the most deserving of the total prize
+3. 🤖 **AI Judge**: Our impartial AI evaluates each player's case based on creativity, humor, and persuasiveness
+4. 🏆 **Winner Takes All**: The most convincing player walks away with everyone's coins!
+
+### 🌟 Features
+
+- Retro-style UI reminiscent of classic text adventures
+- Real-time interaction with our quirky AI judge
+- Secure coin handling through Reddit's platform
+- Fair and transparent judging system
+- Multiple players can join each game session
+
+### 🎲 How to Play
+
+1. Find an active game post in the subreddit
+2. Comment with `!join` to enter (requires coin buy-in)
+3. Once the game starts, make your case to the AI judge
+4. The AI will interact with players and eventually crown a winner
+
+### 🛠️ Development Setup
+
+This game is built using Reddit's Devvit platform. To set up the development environment:
 
 ## Getting Started
 
@@ -12,15 +36,6 @@ This template is made specifically to work with **Bolt.new**.
 Click the button below to open this template directly in Bolt:
 
 <a href="https://bolt.new/github.com/reddit/devvit-bolt-starter-experimental"><img src="docs-img/open-in-bolt-2x.png" heigh="36px" width="199px" alt="Open in Bolt"></a>
-
-As soon as the project is checked out you will get the following errors.
-**This is expected**!
-
-```
-❌  Authentication: Please run `npm run login` to authenticate with Reddit
-❌  App initialization: Please run `npm run devvit:init` to setup your app remotely
-❌  Playtest subreddit: Please update YOUR_SUBREDDIT_NAME in the dev:devvit script in package.json
-```
 
 ### Step 1: Login
 
@@ -45,22 +60,22 @@ This will get your app set up with Devvit. You will be prompted to follow a link
 
 ### Step 3: Playtest subreddit
 
-For this step, you will need to go to Reddit and create an empty subreddit for you to test your app.
-
-You can do this by following going to [Reddit](https://www.reddit.com) and clicking the **"Create a Community"** button in the left-side navigation. Once you create your community, paste the name of the subreddit (for example if you community is reddit.com/r/my_test_subreddit, you will paste `my_test_subreddit`) into the `package.json` file, replacing the string `YOUR_SUBREDDIT_NAME`.
-
-After that, if you run `npm run dev` again, all checks should pass and you should be able to test your application on Reddit.
-
-### Step 4: Testing your app
-
-Once the initial configuration is done, you can test your application by navigating to your test subreddit, clicking the three dots icon on the top-right and creating a new post. The command will be called `[Bolt Word Guesser] New Post`. Once you create a new post you can go back and forth with Bolt by prompting your way to making your app and testing it on Reddit.
-
-Now vibe code away!
+Create a test subreddit on Reddit by clicking the **"Create a Community"** button in the left-side navigation. Once created, update the subreddit name in `package.json`, replacing `YOUR_SUBREDDIT_NAME` with your new subreddit's name.
 
 ### Known limitations
 
-- **Only test on your subreddit:** Your app's backend requests will not work on Bolt's preview window. You need to continue to test your app running in your subreddit, where your backend code will work.
+- **Only test on your subreddit:** Your app's backend requests will not work on Bolt's preview window. Test your app in your subreddit where backend code will work.
+- **Use Reddit's backend:** Devvit provides a free scalable backend with Redis database for key-value storage.
+- **This is experimental:** For support, [join our Discord](https://discord.com/invite/Cd43ExtEFS) and ask questions in **#devvit-vibe-coding**
 
-- **Use Reddit's backend:** Devvit provides a free of charge scalable backend. Bolt will be able to help you use Reddit's Redis database for key-value storage. You are not going to be able to use other tools such as Supabase for your backend.
+### 🔒 Security Note
 
-- **This is experimental:** While the Devvit team is working to make it as easy as possible to use Bolt for authoring Reddit apps, this is all still in an experimental phase. If you run into issues, please [join our Discord](https://discord.com/invite/Cd43ExtEFS) and ask your questions in **#devvit-vibe-coding**
+All coin transactions are handled securely through Reddit's platform. The game uses Reddit's built-in coin system to ensure fair play and secure transactions.
+
+### 🤝 Contributing
+
+Feel free to contribute to this project! Whether it's improving the AI judge, enhancing the retro UI, or adding new features, all contributions are welcome.
+
+### 📜 License
+
+BSD-3-Clause
