@@ -23,14 +23,19 @@
   "dependencies": {
     "@devvit/client": "0.11.16",
     "@devvit/public-api": "0.11.16",
-    "@devvit/server": "0.11.16",
     "@devvit/redis": "0.11.16",
+    "@devvit/server": "0.11.16",
     "@tweenjs/tween.js": "18.6.4",
+    "@types/styled-components": "^5.1.34",
+    "bootstrap": "^5.3.6",
     "clsx": "2.1.1",
     "devvit": "0.11.16",
     "express": "5.1.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
+    "react-pixelify": "^0.2.2",
+    "react-router-dom": "^7.6.2",
+    "styled-components": "^6.1.18",
     "tailwind-merge": "3.3.0"
   },
   "devDependencies": {

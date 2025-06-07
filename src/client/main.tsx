@@ -1,5 +1,5 @@
 import './index.css';
-import './game.css';
+import './HomePage.css';
 
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';

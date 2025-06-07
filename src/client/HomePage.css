@@ -1,0 +1,206 @@
+.homepage {
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Blurred background */
+.homepage::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 750px;
+  height: 750px;
+  background-image: url('../../assets/landing_backdrop.png');
+  background-size: 100% 100%;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: blur(2px);
+  z-index: -1;
+}
+
+.homepage-content {
+  position: relative;
+  width: 750px;
+  height: 750px;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.logo-container {
+  position: absolute;
+  width: 500px;
+  left: 75px; /* (750px - 500px) / 2 to center within homepage-content */
+  top: 100px;
+}
+
+.wheedle-logo {
+  width: 600px;
+  height: 300px;
+  background-image: url('../../assets/wheedle_logo.png');
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+}
+
+.buttons-container {
+  position: absolute;
+  width: 525px; /* Total width to accommodate buttons + gap */
+  left: 112.5px; /* (750px - 525px) / 2 to center within homepage-content */
+  top: 390px;
+}
+
+.room-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 25px;
+  margin-bottom: 10px;
+}
+
+.room-button {
+  width: 275px;
+  height: 125px;
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.public-room-button {
+  background-image: url('../../assets/buttons/public_room.png');
+}
+
+.private-room-button {
+  background-image: url('../../assets/buttons/private_room.png');
+}
+
+.rules-button {
+  width: 275px;
+  height: 125px;
+  background-image: url('../../assets/buttons/rules_button.png');
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  cursor: pointer;
+  transition: transform 0.2s;
+  display: block;
+  margin: 0 auto;
+}
+
+.leaderboard-button {
+  position: absolute;
+  left: 40px;
+  bottom: 40px;
+  width: 50px;
+  height: 50px;
+  background-image: url('../../assets/buttons/leaderboard_icon.png');
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.sound-button {
+  position: absolute;
+  right: 40px;
+  bottom: 40px;
+  width: 50px;
+  height: 50px;
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.sound-on {
+  background-image: url('../../assets/buttons/sound_on.png');
+}
+
+.sound-off {
+  background-image: url('../../assets/buttons/sound_off.png');
+}
+
+.room-button:hover, .rules-button:hover, .leaderboard-button:hover, .sound-button:hover {
+  transform: scale(1.05);
+}
+
+.rules-button-container {
+  display: flex;
+  justify-content: center;
+}
+
+/* Responsive design for mobile devices */
+@media screen and (max-width: 768px) {
+  .homepage::before {
+    width: 100vmin;
+    height: 100vmin;
+    background-size: 100% 100%;
+  }
+
+  .homepage-content {
+    width: 100vmin;
+    height: 100vmin;
+    max-width: 750px;
+    max-height: 750px;
+  }
+
+  .logo-container {
+    width: 80vmin; /* Adjusted for new 600px width */
+    left: 10vmin; /* (100vmin - 80vmin) / 2 */
+    top: 13.3vmin;
+  }
+
+  .wheedle-logo {
+    width: 80vmin;
+    height: 40vmin; /* Adjusted for new 300px height */
+  }
+
+  .buttons-container {
+    width: 70vmin;
+    left: 15vmin;
+    top: 52vmin; /* Adjusted for new 390px top position */
+  }
+
+  .room-buttons {
+    gap: 3.3vmin;
+    margin-bottom: 1.3vmin; /* Adjusted for new 10px margin */
+  }
+
+  .room-button {
+    width: 36.7vmin; /* Adjusted for new 275px width */
+    height: 16.7vmin; /* Adjusted for new 125px height */
+  }
+
+  .rules-button {
+    width: 36.7vmin; /* Adjusted for new 275px width */
+    height: 16.7vmin; /* Adjusted for new 125px height */
+  }
+
+  .leaderboard-button {
+    left: 5.3vmin;
+    bottom: 5.3vmin;
+    width: 6.7vmin;
+    height: 6.7vmin;
+  }
+
+  .sound-button {
+    right: 5.3vmin;
+    bottom: 5.3vmin;
+    width: 6.7vmin;
+    height: 6.7vmin;
+  }
+}

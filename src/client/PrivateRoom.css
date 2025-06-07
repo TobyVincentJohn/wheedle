@@ -1,0 +1,27 @@
+.private-room {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  color: #ffffff;
+  text-align: center;
+}
+
+.back-button {
+  margin-top: 20px;
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+  background: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  transition: transform 0.2s;
+}
+
+.back-button:hover {
+  transform: scale(1.05);
+} 

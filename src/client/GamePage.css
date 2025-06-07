@@ -1,0 +1,189 @@
+.game-page {
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Blurred background */
+.game-page::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 750px;
+  height: 750px;
+  background-image: url('../../assets/casino_backdrop.png');
+  background-size: 100% 100%;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: blur(2px);
+  z-index: 0;
+}
+
+.game-content {
+  position: relative;
+  width: 750px;
+  height: 750px;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.dealer {
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  left: -150px; /* (750px - 200px) / 2 to center within game-content */
+  top: 182px; /* (750px - 200px) / 2 to center within game-content */
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+}
+
+.dealer-text-bubble {
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  left: 118px;
+  top: -156px;
+  background-image: url('../../assets/dealer_text.png');
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  z-index: 1;
+}
+
+.text-bubble {
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  left: 250px; /* Positioned relative to game-content */
+  top: 220px; /* Fixed the typo in top position */
+  background-image: url('../../assets/player_text.png');
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.text-input {
+  width: 80%;
+  max-width: 320px;
+  height: 350px;
+  background: rgba(255, 255, 255, 0);
+  padding: 10px 15px;
+  font-size: 30px;
+  color: #333;
+  outline: none;
+  position: relative;
+  bottom: 15px;
+  resize: none;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-y: auto;
+  vertical-align: top;
+  font-family: 'VT323', monospace;
+}
+
+.text-input::placeholder {
+  color: #888;
+  font-style: italic;
+  font-family: 'VT323', monospace;
+  opacity: 0.8;
+}
+
+.dealer-1 {
+  background-image: url('../../assets/dealers/dealer1.png');
+}
+
+.dealer-2 {
+  background-image: url('../../assets/dealers/dealer2.png');
+}
+
+.dealer-3 {
+  background-image: url('../../assets/dealers/dealer3.png');
+}
+
+.dealer-4 {
+  background-image: url('../../assets/dealers/dealer4.png');
+}
+
+.dealer-5 {
+  background-image: url('../../assets/dealers/dealer5.png');
+}
+
+.dealer-6 {
+  background-image: url('../../assets/dealers/dealer6.png');
+}
+
+.dealer-7 {
+  background-image: url('../../assets/dealers/dealer7.png');
+}
+
+.dealer-8 {
+  background-image: url('../../assets/dealers/dealer8.png');
+}
+
+@font-face {
+  font-family: 'VT323';
+  src: url('../../assets/fonts/VT323-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+/* Responsive design for mobile devices */
+@media screen and (max-width: 768px) {
+  .game-page::before {
+    width: 100vmin;
+    height: 100vmin;
+    background-size: 100% 100%;
+  }
+
+  .game-content {
+    width: 100vmin;
+    height: 100vmin;
+    max-width: 750px;
+    max-height: 750px;
+  }
+
+  .dealer {
+    width: 80vmin;
+    height: 80vmin;
+    left: -20vmin;
+    top: 26vmin;
+  }
+
+  .dealer-text-bubble {
+    width: 80vmin;
+    height: 80vmin;
+    left: 16vmin;
+    top: -19.2vmin;
+  }
+
+  .text-bubble {
+    width: 66.7vmin;
+    height: 66.7vmin;
+    left: 33.3vmin;
+    top: 29.3vmin;
+    padding: 2.7vmin;
+  }
+
+  .text-input {
+    width: 80%;
+    height: 46.7vmin;
+    font-size: 4vmin;
+    padding: 1.3vmin 5vmin;
+    bottom: 2.7vmin;
+  }
+} 
