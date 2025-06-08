@@ -1,41 +1,41 @@
 import React from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import './WaitingRoom.css';
 
 const WaitingRoom: React.FC = () => {
   const navigate = useNavigate();
-  const location = useLocation();
-  const roomType = location.state?.roomType || 'Unknown';
+
+  const handleQuit = () => {
+    navigate('/');
+  };
+
+  const handleStart = () => {
+    navigate('/game');
+  };
 
   return (
     <div className="waiting-room">
       <div className="waiting-content">
-        <h1>Waiting Room</h1>
-        <p>Waiting for other players to join the {roomType} room...</p>
-        
-        <div className="loading-animation">
-          <div className="dot"></div>
-          <div className="dot"></div>
-          <div className="dot"></div>
+        <div className="waiting-logo" />
+        <div className="waiting-timer">
+          <div className="waiting-timer-text">GAME STARTS IN</div>
+          <div className="waiting-timer-count">00:49</div>
         </div>
-
-        <div className="player-count">
-          <p>Players in room: 1/4</p>
+        <div className="waiting-name-tags-container">
+          <div className="waiting-name-tag">u/morpheusbtw</div>
+          <div className="waiting-name-tag">u/akshayanataraj</div>
+          <div className="waiting-name-tag">u/tobyvincent</div>
+          <div className="waiting-name-tag">waiting...</div>
+          <div className="waiting-name-tag">waiting...</div>
+          <div className="waiting-name-tag">waiting...</div>
         </div>
-
-        <div className="button-container">
-          <button 
-            onClick={() => navigate('/game')} 
-            className="start-button"
-          >
-            Start Game
-          </button>
-          <button 
-            onClick={() => navigate('/')} 
-            className="leave-button"
-          >
-            Leave Room
-          </button>
+        <div className="waiting-bottom-container">
+          <button className="waiting-quit-button" onClick={handleQuit} />
+          <div className="waiting-room-code">
+            <div className="waiting-room-code-text">ROOM CODE</div>
+            <div className="waiting-room-code-value">XCJVA</div>
+          </div>
+          <button className="waiting-start-button" onClick={handleStart} />
         </div>
       </div>
     </div>
