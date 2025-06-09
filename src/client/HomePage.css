@@ -67,7 +67,7 @@
 .room-button {
   width: 275px;
   height: 125px;
-  background-size: contain;
+  background-size: 100% 100%;
   background-position: center;
   background-repeat: no-repeat;
   image-rendering: pixelated;
@@ -87,7 +87,7 @@
   width: 275px;
   height: 125px;
   background-image: url('../../assets/buttons/rules_button.png');
-  background-size: contain;
+  background-size: 100% 100%;
   background-position: center;
   background-repeat: no-repeat;
   image-rendering: pixelated;
@@ -181,13 +181,15 @@
   }
 
   .room-button {
-    width: 36.7vmin; /* Adjusted for new 275px width */
-    height: 16.7vmin; /* Adjusted for new 125px height */
+    width: 36.7vmin;
+    height: 16.7vmin;
+    background-size: 100% 100%;
   }
 
   .rules-button {
-    width: 36.7vmin; /* Adjusted for new 275px width */
-    height: 16.7vmin; /* Adjusted for new 125px height */
+    width: 36.7vmin;
+    height: 16.7vmin;
+    background-size: 100% 100%;
   }
 
   .leaderboard-button {

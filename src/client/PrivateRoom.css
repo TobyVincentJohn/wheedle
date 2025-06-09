@@ -1,13 +1,185 @@
 .private-room {
   width: 100vw;
   height: 100vh;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Blurred background */
+.private-room::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 750px;
+  height: 750px;
+  background-image: url('../../assets/waiting_room/waiting_room.png');
+  background-size: 100% 100%;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: blur(2px);
+  z-index: 0;
+}
+
+.private-room-content {
+  position: relative;
+  width: 750px;
+  height: 750px;
+  overflow: hidden;
+  z-index: 1;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+}
+
+.join-section {
+  margin-top: 185px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.join-text {
+  color: #FFD700;
+  font-family: 'VT323', monospace;
+  font-size: 28px;
+  margin-bottom: -20px;
+}
+
+.room-code-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  position: relative;
+}
+
+.room-code-input {
+  width: 500px;
+  height: 120px;
+  background-image: url('../../assets/waiting_room/name_tag.png');
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: #ffffff;
+  font-family: 'VT323', monospace;
+  font-size: 40px;
+  border: none;
+  outline: none;
+  padding: 0;
+  margin: 0;
+  background-color: transparent;
   text-align: center;
+}
+
+.divider {
+  width: 500px;
+  border-top: 10px dashed #ffffff;
+  margin: 40px 0;
+  opacity: 0.7;
+}
+
+
+.create-room-button {
+  width: 400px;
+  height: 120px;
+  background-image: url('../../assets/session_page/create_room.png');
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  cursor: pointer;
+  transition: transform 0.2s;
+  border: none;
+  background-color: transparent;
+}
+
+.create-room-button:hover {
+  transform: scale(1.05);
+}
+
+.next-button {
+  width: 40px;
+  height: 40px;
+  background-image: url('../../assets/session_page/next_button.png');
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  cursor: pointer;
+  transition: transform 0.2s;
+  border: none;
+  background-color: transparent;
+  position: absolute;
+  right: calc(50% - 180px); /* Moved much closer to the name tag */
+  padding: 0;
+  margin: 0;
+}
+
+.next-button:hover {
+  transform: scale(1.05);
+}
+
+/* Responsive design for mobile devices */
+@media screen and (max-width: 768px) {
+  .private-room::before {
+    width: 100vmin;
+    height: 100vmin;
+    background-size: 100% 100%;
+  }
+
+  .private-room-content {
+    width: 100vmin;
+    height: 100vmin;
+    max-width: 750px;
+    max-height: 750px;
+  }
+
+  .join-section {
+    margin-top: 24.7vmin; /* 185px / 750px * 100 */
+  }
+
+  .join-text {
+    font-size: 3.7vmin;
+    margin-bottom: -2.7vmin; /* -20px / 750px * 100 */
+  }
+
+  .room-code-container {
+    width: 100%;
+  }
+
+  .room-code-input {
+    width: 66.7vmin; /* 500px / 750px * 100 */
+    height: 16vmin; /* 120px / 750px * 100 */
+    font-size: 5.3vmin;
+  }
+
+  .next-button {
+    width: 5.3vmin;
+    height: 5.3vmin;
+    right: calc(50% - 24vmin); /* Adjusted to match desktop proportion (180/750 * 100) */
+  }
+
+  .divider {
+    width: 66.7vmin; /* 500px / 750px * 100 */
+    border-top: 1.33vmin dashed #ffffff; /* 10px / 750px * 100 */
+    margin: 5.3vmin 0;
+    opacity: 0.7;
+  }
+
+  .create-room-button {
+    width: 53.3vmin; /* 400px / 750px * 100 */
+    height: 16vmin; /* 120px / 750px * 100 */
+  }
 }
 
 .back-button {

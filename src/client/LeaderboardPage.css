@@ -1,0 +1,110 @@
+.leaderboard {
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Black background */
+.leaderboard::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 750px;
+  height: 750px;
+  background-color: #000000;
+  z-index: 0;
+}
+
+.leaderboard-content {
+  position: relative;
+  width: 750px;
+  height: 750px;
+  overflow: hidden;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.leaderboard-title {
+  color: #FFD700;
+  font-family: 'VT323', monospace;
+  font-size: 52px;
+  margin-top: 50px;
+  text-align: center;
+}
+
+.leaderboard-headers {
+  display: flex;
+  width: 600px;
+  justify-content: space-between;
+  padding: 0 30px;
+  margin-bottom: 20px;
+}
+
+.header {
+  color: #FFD700;
+  font-family: 'VT323', monospace;
+  font-size: 32px;
+  text-align: center;
+}
+
+.rank-header {
+  width: 100px;
+}
+
+.name-header {
+  width: 300px;
+}
+
+.bankroll-header {
+  width: 150px;
+}
+
+/* Responsive design for mobile devices */
+@media screen and (max-width: 768px) {
+  .leaderboard::before {
+    width: 100vmin;
+    height: 100vmin;
+  }
+
+  .leaderboard-content {
+    width: 100vmin;
+    height: 100vmin;
+    max-width: 750px;
+    max-height: 750px;
+  }
+
+  .leaderboard-title {
+    font-size: 6.93vmin;
+    margin-top: 6.67vmin;
+  }
+
+  .leaderboard-headers {
+    width: 80vmin;
+    padding: 0 4vmin;
+    margin-bottom: 2.7vmin;
+  }
+
+  .header {
+    font-size: 4.3vmin;
+  }
+
+  .rank-header {
+    width: 13.3vmin;
+  }
+
+  .name-header {
+    width: 40vmin;
+  }
+
+  .bankroll-header {
+    width: 20vmin;
+  }
+} 

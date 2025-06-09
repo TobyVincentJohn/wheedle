@@ -55,7 +55,7 @@ const HomePage: React.FC = () => {
         </div>
         <div 
           className="leaderboard-button"
-          onClick={() => handleButtonClick(() => {})}
+          onClick={() => handleButtonClick(() => navigate('/leaderboard'))}
           onMouseEnter={() => isSoundOn && playHoverSound()}
         ></div>
         <div 
