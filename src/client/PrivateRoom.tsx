@@ -37,7 +37,7 @@ const PrivateRoom: React.FC = () => {
               maxLength={5}
               placeholder="XXXXX"
             />
-            <button 
+        <button 
               className="next-button"
               onClick={handleJoinRoom}
               disabled={roomCode.length !== 5}
