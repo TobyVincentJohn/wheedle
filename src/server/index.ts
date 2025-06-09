@@ -4,6 +4,8 @@ import { CheckResponse, InitResponse, LetterState } from '../shared/types/game';
 import { postConfigGet, postConfigNew, postConfigMaybeGet } from './core/post';
 import { allWords } from './core/words';
 import { getRedis } from '@devvit/redis';
+import { userGet, userSet, userUpdate, userDelete, getActiveUsers } from './core/user';
+import { UserDetails } from '../shared/types/user';
 
 const app = express();
 
@@ -146,6 +148,124 @@ router.post<{ postId: string }, CheckResponse, { guess: string }>(
     });
   }
 );
+
+// User Management Endpoints
+router.post('/api/users', async (req, res) => {
+  const { userId, reddit } = getContext();
+  const redis = getRedis();
+  
+  if (!userId) {
+    res.status(401).json({ status: 'error', message: 'Must be logged in' });
+    return;
+  }
+
+  try {
+    const redditUser = await reddit.getCurrentUser();
+    if (!redditUser) {
+      throw new Error('Could not fetch Reddit user');
+    }
+
+    const userDetails: UserDetails = {
+      userId,
+      username: redditUser.username,
+      lastActive: Date.now(),
+      currentRoom: req.body.currentRoom,
+      score: req.body.score || 0
+    };
+
+    await userSet({ redis, userDetails });
+    res.json({ status: 'success', data: userDetails });
+  } catch (error) {
+    console.error('Error creating user:', error);
+    res.status(500).json({ 
+      status: 'error', 
+      message: error instanceof Error ? error.message : 'Unknown error creating user'
+    });
+  }
+});
+
+router.get('/api/users/current', async (_req, res) => {
+  const { userId } = getContext();
+  const redis = getRedis();
+  
+  if (!userId) {
+    res.status(401).json({ status: 'error', message: 'Must be logged in' });
+    return;
+  }
+
+  try {
+    const user = await userGet({ redis, userId });
+    if (!user) {
+      res.status(404).json({ status: 'error', message: 'User not found' });
+      return;
+    }
+    res.json({ status: 'success', data: user });
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    res.status(500).json({ 
+      status: 'error', 
+      message: error instanceof Error ? error.message : 'Unknown error fetching user'
+    });
+  }
+});
+
+router.patch('/api/users/current', async (req, res) => {
+  const { userId } = getContext();
+  const redis = getRedis();
+  
+  if (!userId) {
+    res.status(401).json({ status: 'error', message: 'Must be logged in' });
+    return;
+  }
+
+  try {
+    await userUpdate({ redis, userId, updates: req.body });
+    const updatedUser = await userGet({ redis, userId });
+    res.json({ status: 'success', data: updatedUser });
+  } catch (error) {
+    console.error('Error updating user:', error);
+    res.status(500).json({ 
+      status: 'error', 
+      message: error instanceof Error ? error.message : 'Unknown error updating user'
+    });
+  }
+});
+
+router.delete('/api/users/current', async (_req, res) => {
+  const { userId } = getContext();
+  const redis = getRedis();
+  
+  if (!userId) {
+    res.status(401).json({ status: 'error', message: 'Must be logged in' });
+    return;
+  }
+
+  try {
+    await userDelete({ redis, userId });
+    res.json({ status: 'success' });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    res.status(500).json({ 
+      status: 'error', 
+      message: error instanceof Error ? error.message : 'Unknown error deleting user'
+    });
+  }
+});
+
+router.get('/api/users/active', async (_req, res) => {
+  const redis = getRedis();
+  
+  try {
+    const activeUsers = await getActiveUsers({ redis });
+    res.json({ status: 'success', data: activeUsers });
+  } catch (error) {
+    console.error('Error fetching active users:', error);
+    res.status(500).json({ 
+      status: 'error', 
+      message: error instanceof Error ? error.message : 'Unknown error fetching active users'
+    });
+  }
+});
 
 // Use router middleware
 app.use(router);

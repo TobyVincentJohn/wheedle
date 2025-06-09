@@ -126,6 +126,37 @@
   transition: transform 0.2s;
 }
 
+.user-greeting {
+  position: absolute;
+  left: 50%;
+  bottom: 20px;
+  transform: translateX(-50%);
+  font-family: 'VT323', monospace;
+  font-size: 24px;
+  color: #FFD700;
+  text-align: center;
+  text-shadow: 2px 2px 0px rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logout-button {
+  background: none;
+  border: 2px solid #FFD700;
+  color: #FFD700;
+  font-family: 'VT323', monospace;
+  font-size: 18px;
+  padding: 4px 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.logout-button:hover {
+  background: #FFD700;
+  color: black;
+}
+
 .sound-on {
   background-image: url('../../assets/buttons/sound_on.png');
 }
@@ -204,5 +235,10 @@
     bottom: 5.3vmin;
     width: 6.7vmin;
     height: 6.7vmin;
+  }
+
+  .user-greeting {
+    bottom: 2.7vmin;
+    font-size: 3.2vmin;
   }
 }

@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { playHoverSound, playClickSound, toggleSound, disableSound } from './utils/sound';
+import { useUser } from './hooks/useUser';
 import './HomePage.css';
 
 const HomePage: React.FC = () => {
   const navigate = useNavigate();
   const [isSoundOn, setIsSoundOn] = useState(false);
+  const { user, logout } = useUser();
+  
 
   // Initialize with sound disabled
   useEffect(() => {
@@ -63,6 +66,14 @@ const HomePage: React.FC = () => {
           onClick={handleSoundToggle}
           onMouseEnter={() => isSoundOn && playHoverSound()}
         ></div>
+        {user && (
+          <div className="user-greeting">
+            Hi u/{user.username}
+            <button className="logout-button" onClick={logout}>
+              Reset User
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
