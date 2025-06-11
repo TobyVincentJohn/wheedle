@@ -9,6 +9,7 @@ export interface GameSession {
   maxPlayers: number;
   gameStartedAt?: number;
   countdownStartedAt?: number; // When the 10-second countdown began
+  dealerId?: number; // Dealer image ID for consistency across all players
 }
 
 export interface SessionPlayer {

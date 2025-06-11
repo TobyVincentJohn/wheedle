@@ -22,6 +22,7 @@ const GamePage: React.FC = () => {
   const [notifications, setNotifications] = useState<PlayerLeftNotification[]>([]);
   const [showAllPlayersLeftModal, setShowAllPlayersLeftModal] = useState(false);
   const [previousPlayerCount, setPreviousPlayerCount] = useState<number>(0);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
     // Get session from location state or current session
@@ -30,68 +31,94 @@ const GamePage: React.FC = () => {
     if (sessionFromState) {
       setSession(sessionFromState);
       setPreviousPlayerCount(sessionFromState.players.length);
+      
+      // Set dealer ID from session or generate one
+      if (sessionFromState.dealerId) {
+        setDealerId(sessionFromState.dealerId);
+      } else {
+        const randomDealer = Math.floor(Math.random() * 8) + 1;
+        setDealerId(randomDealer);
+      }
+      setIsInitialized(true);
     } else if (currentSession) {
       setSession(currentSession);
       setPreviousPlayerCount(currentSession.players.length);
+      
+      // Set dealer ID from session or generate one
+      if (currentSession.dealerId) {
+        setDealerId(currentSession.dealerId);
+      } else {
+        const randomDealer = Math.floor(Math.random() * 8) + 1;
+        setDealerId(randomDealer);
+      }
+      setIsInitialized(true);
     } else {
       // No session found, redirect to home
       navigate('/');
       return;
     }
-
-    // Generate random dealer
-    const randomDealer = Math.floor(Math.random() * 8) + 1;
-    setDealerId(randomDealer);
   }, [location.state, currentSession, navigate]);
 
-  // Refresh session data periodically to detect player changes
+  // Background polling for session changes without UI refresh
   useEffect(() => {
-    if (!session) return;
+    if (!session || !isInitialized) return;
 
+    let lastKnownSession = session;
+    
     const interval = setInterval(async () => {
-      await refreshSession();
+      try {
+        // Fetch session data directly without triggering UI refresh
+        const response = await fetch('/api/sessions/current');
+        const data = await response.json();
+        
+        if (data.status === 'success' && data.data) {
+          const updatedSession = data.data as GameSession;
+          
+          // Only update if there are actual changes
+          if (JSON.stringify(updatedSession) !== JSON.stringify(lastKnownSession)) {
+            // Check for player changes
+            const newPlayerCount = updatedSession.players.length;
+            
+            if (newPlayerCount < lastKnownSession.players.length) {
+              // Find which players left
+              const currentPlayerIds = new Set(updatedSession.players.map(p => p.userId));
+              const leftPlayers = lastKnownSession.players.filter(p => !currentPlayerIds.has(p.userId));
+              
+              // Add notifications for players who left
+              leftPlayers.forEach(player => {
+                const notification: PlayerLeftNotification = {
+                  id: `${player.userId}-${Date.now()}`,
+                  username: player.username,
+                  timestamp: Date.now(),
+                };
+                
+                setNotifications(prev => [...prev, notification]);
+                
+                // Remove notification after 4 seconds
+                setTimeout(() => {
+                  setNotifications(prev => prev.filter(n => n.id !== notification.id));
+                }, 4000);
+              });
+            }
+            
+            // Check if only one player remains
+            if (newPlayerCount === 1 && user && updatedSession.players.some(p => p.userId === user.userId)) {
+              setShowAllPlayersLeftModal(true);
+            }
+            
+            // Update session state
+            setSession(updatedSession);
+            setPreviousPlayerCount(newPlayerCount);
+            lastKnownSession = updatedSession;
+          }
+        }
+      } catch (error) {
+        console.error('Error polling session:', error);
+      }
     }, 1000); // Check every second for real-time updates
 
     return () => clearInterval(interval);
-  }, [session, refreshSession]);
-
-  // Monitor session changes and detect when players leave
-  useEffect(() => {
-    if (currentSession && currentSession.sessionId === session?.sessionId) {
-      const newPlayerCount = currentSession.players.length;
-      
-      // Check if players left
-      if (newPlayerCount < previousPlayerCount && session) {
-        // Find which players left
-        const currentPlayerIds = new Set(currentSession.players.map(p => p.userId));
-        const leftPlayers = session.players.filter(p => !currentPlayerIds.has(p.userId));
-        
-        // Add notifications for players who left
-        leftPlayers.forEach(player => {
-          const notification: PlayerLeftNotification = {
-            id: `${player.userId}-${Date.now()}`,
-            username: player.username,
-            timestamp: Date.now(),
-          };
-          
-          setNotifications(prev => [...prev, notification]);
-          
-          // Remove notification after 4 seconds
-          setTimeout(() => {
-            setNotifications(prev => prev.filter(n => n.id !== notification.id));
-          }, 4000);
-        });
-      }
-      
-      // Check if only one player remains (including current user)
-      if (newPlayerCount === 1 && user && currentSession.players.some(p => p.userId === user.userId)) {
-        setShowAllPlayersLeftModal(true);
-      }
-      
-      setSession(currentSession);
-      setPreviousPlayerCount(newPlayerCount);
-    }
-  }, [currentSession, session, previousPlayerCount, user]);
+  }, [session, isInitialized, user]);
 
   // Handle browser back button or page refresh
   useEffect(() => {

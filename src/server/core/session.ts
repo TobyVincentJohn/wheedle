@@ -270,6 +270,11 @@ export const sessionStartGame = async ({
 
   session.status = 'in-game';
   session.gameStartedAt = Date.now();
+  
+  // Assign a random dealer for this session if not already set
+  if (!session.dealerId) {
+    session.dealerId = Math.floor(Math.random() * 8) + 1;
+  }
 
   // Update session
   await redis.set(getSessionKey(sessionId), JSON.stringify(session));
