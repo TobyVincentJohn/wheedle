@@ -170,7 +170,17 @@ const GamePage: React.FC = () => {
 
   const handleAllPlayersLeftModalClose = () => {
     setShowAllPlayersLeftModal(false);
-    navigate('/');
+    // Actually leave the session to properly terminate it
+    if (session) {
+      leaveSession(session.sessionId).then(() => {
+        navigate('/');
+      }).catch((error) => {
+        console.error('Failed to leave session:', error);
+        navigate('/'); // Navigate anyway
+      });
+    } else {
+      navigate('/');
+    }
   };
 
   if (!session) {
