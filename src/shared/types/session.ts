@@ -4,10 +4,11 @@ export interface GameSession {
   hostUserId: string;
   hostUsername: string;
   players: SessionPlayer[];
-  status: 'waiting' | 'in-game' | 'completed';
+  status: 'waiting' | 'countdown' | 'in-game' | 'completed';
   createdAt: number;
   maxPlayers: number;
   gameStartedAt?: number;
+  countdownStartedAt?: number; // When the 10-second countdown began
 }
 
 export interface SessionPlayer {
@@ -46,4 +47,10 @@ export interface GetPublicSessionsResponse {
 export interface LeaveSessionResponse {
   status: 'success' | 'error';
   message?: string;
+}
+
+export interface StartCountdownResponse {
+  status: 'success' | 'error';
+  message?: string;
+  data?: GameSession;
 }

@@ -11,6 +11,7 @@ import {
   sessionGet, 
   sessionJoin, 
   sessionLeave, 
+  sessionStartCountdown,
   sessionStartGame, 
   getPublicSessions,
   getUserCurrentSession 
@@ -19,7 +20,8 @@ import {
   CreateSessionResponse, 
   JoinSessionResponse, 
   GetPublicSessionsResponse,
-  LeaveSessionResponse 
+  LeaveSessionResponse,
+  StartCountdownResponse 
 } from '../shared/types/session';
 
 const app = express();
@@ -382,6 +384,28 @@ router.post('/api/sessions/:sessionId/leave', async (req, res): Promise<void> =>
       status: 'error', 
       message: error instanceof Error ? error.message : 'Unknown error leaving session'
     } as LeaveSessionResponse);
+  }
+});
+
+router.post('/api/sessions/:sessionId/start-countdown', async (req, res): Promise<void> => {
+  const { sessionId } = req.params;
+  const { userId } = getContext();
+  const redis = getRedis();
+  
+  if (!userId) {
+    res.status(401).json({ status: 'error', message: 'Must be logged in' } as StartCountdownResponse);
+    return;
+  }
+
+  try {
+    const session = await sessionStartCountdown({ redis, sessionId });
+    res.json({ status: 'success', data: session } as StartCountdownResponse);
+  } catch (error) {
+    console.error('Error starting countdown:', error);
+    res.status(500).json({ 
+      status: 'error', 
+      message: error instanceof Error ? error.message : 'Unknown error starting countdown'
+    } as StartCountdownResponse);
   }
 });
 

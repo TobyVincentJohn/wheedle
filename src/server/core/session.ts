@@ -128,6 +128,12 @@ export const sessionJoin = async ({
 
   session.players.push(newPlayer);
 
+  // If session is now full (6 players), automatically start countdown
+  if (session.players.length === session.maxPlayers) {
+    session.status = 'countdown';
+    session.countdownStartedAt = Date.now();
+  }
+
   // Update session
   await redis.set(getSessionKey(sessionId), JSON.stringify(session));
   
@@ -202,7 +208,7 @@ export const sessionDelete = async ({
   }
 };
 
-export const sessionStartGame = async ({
+export const sessionStartCountdown = async ({
   redis,
   sessionId,
 }: {
@@ -216,6 +222,35 @@ export const sessionStartGame = async ({
 
   if (session.status !== 'waiting') {
     throw new Error('Session is not in waiting state');
+  }
+
+  if (session.players.length < 2) {
+    throw new Error('Need at least 2 players to start');
+  }
+
+  session.status = 'countdown';
+  session.countdownStartedAt = Date.now();
+
+  // Update session
+  await redis.set(getSessionKey(sessionId), JSON.stringify(session));
+
+  return session;
+};
+
+export const sessionStartGame = async ({
+  redis,
+  sessionId,
+}: {
+  redis: RedisClient;
+  sessionId: string;
+}): Promise<GameSession> => {
+  const session = await sessionGet({ redis, sessionId });
+  if (!session) {
+    throw new Error('Session not found');
+  }
+
+  if (session.status !== 'countdown') {
+    throw new Error('Session is not in countdown state');
   }
 
   session.status = 'in-game';
@@ -250,6 +285,7 @@ export const getPublicSessions = async ({
 
   for (const sessionId of sessionIds) {
     const session = await sessionGet({ redis, sessionId });
+    // Only show sessions that are waiting (not in countdown or in-game)
     if (session && session.status === 'waiting') {
       sessions.push(session);
     }

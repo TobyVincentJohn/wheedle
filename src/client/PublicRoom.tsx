@@ -32,8 +32,8 @@ const PublicRoom: React.FC = () => {
   useEffect(() => {
     fetchPublicSessions();
     
-    // Refresh sessions every 5 seconds
-    const interval = setInterval(fetchPublicSessions, 5000);
+    // Refresh sessions every 3 seconds
+    const interval = setInterval(fetchPublicSessions, 3000);
     return () => clearInterval(interval);
   }, []);
 

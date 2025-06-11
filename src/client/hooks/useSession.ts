@@ -85,6 +85,25 @@ export const useSession = () => {
     }
   }, []);
 
+  const startCountdown = useCallback(async (sessionId: string) => {
+    try {
+      const response = await fetch(`/api/sessions/${sessionId}/start-countdown`, {
+        method: 'POST',
+      });
+      const data = await response.json();
+      
+      if (data.status === 'success') {
+        setCurrentSession(data.data);
+        return data.data;
+      } else {
+        throw new Error(data.message || 'Failed to start countdown');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to start countdown');
+      throw err;
+    }
+  }, []);
+
   const startGame = useCallback(async (sessionId: string) => {
     try {
       const response = await fetch(`/api/sessions/${sessionId}/start`, {
@@ -115,6 +134,7 @@ export const useSession = () => {
     createSession,
     joinSession,
     leaveSession,
+    startCountdown,
     startGame,
     refreshSession: fetchCurrentSession,
   };

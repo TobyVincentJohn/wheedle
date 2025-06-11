@@ -7,10 +7,11 @@ import './WaitingRoom.css';
 const WaitingRoom: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { leaveSession, startGame, currentSession, refreshSession } = useSession();
+  const { leaveSession, startCountdown, currentSession, refreshSession } = useSession();
   const [session, setSession] = useState<GameSession | null>(null);
   const [isHost, setIsHost] = useState(false);
-  const [countdown, setCountdown] = useState(60);
+  const [countdown, setCountdown] = useState(0);
+  const [isCountingDown, setIsCountingDown] = useState(false);
 
   useEffect(() => {
     // Get session from location state or current session
@@ -37,7 +38,7 @@ const WaitingRoom: React.FC = () => {
 
     const interval = setInterval(async () => {
       await refreshSession();
-    }, 2000);
+    }, 1000); // Check every second for real-time updates
 
     return () => clearInterval(interval);
   }, [session, refreshSession]);
@@ -47,20 +48,42 @@ const WaitingRoom: React.FC = () => {
     if (currentSession && currentSession.sessionId === session?.sessionId) {
       setSession(currentSession);
       
-      // If game has started, navigate to game page
-      if (currentSession.status === 'in-game') {
+      // Check if countdown has started
+      if (currentSession.status === 'countdown' && currentSession.countdownStartedAt) {
+        const elapsed = Math.floor((Date.now() - currentSession.countdownStartedAt) / 1000);
+        const remaining = Math.max(0, 10 - elapsed);
+        
+        if (remaining > 0) {
+          setCountdown(remaining);
+          setIsCountingDown(true);
+        } else {
+          // Countdown finished, start the game
+          setIsCountingDown(false);
+          navigate('/game', { state: { session: currentSession } });
+        }
+      } else if (currentSession.status === 'in-game') {
+        // Game has started, navigate to game page
         navigate('/game', { state: { session: currentSession } });
+      } else {
+        setIsCountingDown(false);
+        setCountdown(0);
       }
     }
   }, [currentSession, session, navigate]);
 
   // Countdown timer
   useEffect(() => {
-    if (countdown > 0) {
-      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+    if (isCountingDown && countdown > 0) {
+      const timer = setTimeout(() => {
+        setCountdown(countdown - 1);
+      }, 1000);
       return () => clearTimeout(timer);
+    } else if (isCountingDown && countdown === 0) {
+      // Countdown finished, navigate to game
+      setIsCountingDown(false);
+      navigate('/game', { state: { session } });
     }
-  }, [countdown]);
+  }, [countdown, isCountingDown, session, navigate]);
 
   const handleQuit = async () => {
     if (session) {
@@ -77,12 +100,12 @@ const WaitingRoom: React.FC = () => {
   };
 
   const handleStart = async () => {
-    if (session && isHost) {
+    if (session && isHost && session.players.length >= 2) {
       try {
-        await startGame(session.sessionId);
-        // Navigation will happen automatically when session status changes
+        await startCountdown(session.sessionId);
+        // The countdown will start automatically when the session updates
       } catch (error) {
-        console.error('Failed to start game:', error);
+        console.error('Failed to start countdown:', error);
       }
     }
   };
@@ -109,14 +132,25 @@ const WaitingRoom: React.FC = () => {
     return player ? `u/${player.username}` : 'waiting...';
   });
 
+  const canStart = isHost && session.players.length >= 2 && session.status === 'waiting';
+  const showWaitingForPlayers = isHost && session.players.length < 2;
+
   return (
     <div className="waiting-room">
       <div className="waiting-content">
         <div className="waiting-logo" />
-        <div className="waiting-timer">
-          <div className="waiting-timer-text">GAME STARTS IN</div>
-          <div className="waiting-timer-count">{formatTime(countdown)}</div>
-        </div>
+        
+        {isCountingDown ? (
+          <div className="waiting-timer">
+            <div className="waiting-timer-text">GAME STARTS IN</div>
+            <div className="waiting-timer-count">{formatTime(countdown)}</div>
+          </div>
+        ) : (
+          <div className="waiting-timer">
+            <div className="waiting-timer-text">WAITING FOR PLAYERS</div>
+          </div>
+        )}
+        
         <div className="waiting-name-tags-container">
           {playerSlots.map((playerName, index) => (
             <div key={index} className="waiting-name-tag">
@@ -124,21 +158,29 @@ const WaitingRoom: React.FC = () => {
             </div>
           ))}
         </div>
+        
         <div className="waiting-bottom-container">
           <button className="waiting-quit-button" onClick={handleQuit} />
           <div className="waiting-room-code">
             <div className="waiting-room-code-text">ROOM CODE</div>
             <div className="waiting-room-code-value">{session.sessionCode}</div>
           </div>
-          {isHost ? (
+          {showWaitingForPlayers ? (
+            <div className="waiting-for-host">
+              <div className="waiting-for-host-text">WAITING FOR PLAYERS</div>
+            </div>
+          ) : canStart ? (
             <button 
               className="waiting-start-button" 
               onClick={handleStart}
-              disabled={session.players.length < 2}
             />
-          ) : (
+          ) : !isHost ? (
             <div className="waiting-for-host">
               <div className="waiting-for-host-text">WAITING FOR HOST</div>
+            </div>
+          ) : (
+            <div className="waiting-for-host">
+              <div className="waiting-for-host-text">STARTING...</div>
             </div>
           )}
         </div>
