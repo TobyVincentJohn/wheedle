@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { GameSession } from '../shared/types/session';
 import { useSession } from './hooks/useSession';
+import { useUser } from './hooks/useUser';
 import './WaitingRoom.css';
 
 const WaitingRoom: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { leaveSession, startCountdown, currentSession, refreshSession } = useSession();
+  const { user } = useUser();
   const [session, setSession] = useState<GameSession | null>(null);
   const [isHost, setIsHost] = useState(false);
   const [countdown, setCountdown] = useState(0);
@@ -23,8 +25,6 @@ const WaitingRoom: React.FC = () => {
       setIsHost(hostFromState || false);
     } else if (currentSession) {
       setSession(currentSession);
-      // Check if current user is host
-      setIsHost(currentSession.players.some(p => p.isHost && p.userId === currentSession.hostUserId));
     } else {
       // No session found, redirect to home
       navigate('/');
@@ -47,6 +47,12 @@ const WaitingRoom: React.FC = () => {
   useEffect(() => {
     if (currentSession && currentSession.sessionId === session?.sessionId) {
       setSession(currentSession);
+      
+      // Check if current user is host
+      if (user) {
+        const currentUserPlayer = currentSession.players.find(p => p.userId === user.userId);
+        setIsHost(currentUserPlayer?.isHost || false);
+      }
       
       // Check if countdown has started
       if (currentSession.status === 'countdown' && currentSession.countdownStartedAt) {
