@@ -112,6 +112,8 @@
   image-rendering: pixelated;
   cursor: pointer;
   transition: transform 0.2s;
+  border: none;
+  background-color: transparent;
 }
 
 .waiting-quit-button {
@@ -120,6 +122,11 @@
 
 .waiting-start-button {
   background-image: url('../../assets/waiting_room/start_button.png');
+}
+
+.waiting-start-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .waiting-room-code {
@@ -140,8 +147,38 @@
   font-size: 50px;
 }
 
-.waiting-quit-button:hover, .waiting-start-button:hover {
+.waiting-for-host {
+  width: 250px;
+  height: 75px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.waiting-for-host-text {
+  color: #FFD700;
+  font-family: 'VT323', monospace;
+  font-size: 18px;
+  text-align: center;
+}
+
+.loading-message {
+  color: #FFD700;
+  font-family: 'VT323', monospace;
+  font-size: 24px;
+  text-align: center;
+  margin-top: 200px;
+}
+
+.waiting-quit-button:hover, .waiting-start-button:hover:not(:disabled) {
   transform: scale(1.05);
+}
+
+@font-face {
+  font-family: 'VT323';
+  src: url('../../assets/fonts/VT323-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
 }
 
 /* Responsive design for mobile devices */
@@ -171,16 +208,16 @@
   }
 
   .waiting-timer-text {
-    font-size: 2.9vmin; /* 22px / 750px * 100 */
+    font-size: 2.9vmin;
     margin-bottom: -2vmin;
   }
 
   .waiting-timer-count {
-    font-size: 6vmin; /* 45px / 750px * 100 */
+    font-size: 6vmin;
   }
 
   .waiting-name-tags-container {
-    margin-top: -6vmin; /* -45px / 750px * 100 */
+    margin-top: -6vmin;
     width: 80vmin;
     padding: 1.3vmin;
     justify-content: center;
@@ -194,13 +231,22 @@
   }
 
   .waiting-bottom-container {
-    bottom: 10vmin; /* 70px / 750px * 100 */
+    bottom: 10vmin;
     width: 95%;
   }
 
   .waiting-quit-button, .waiting-start-button {
     width: 33.3vmin;
     height: 10vmin;
+  }
+
+  .waiting-for-host {
+    width: 33.3vmin;
+    height: 10vmin;
+  }
+
+  .waiting-for-host-text {
+    font-size: 2.4vmin;
   }
 
   .waiting-room-code {
@@ -213,7 +259,11 @@
   }
 
   .waiting-room-code-value {
-    font-size: 6.7vmin; /* 50px / 750px * 100 */
+    font-size: 6.7vmin;
+  }
+
+  .loading-message {
+    font-size: 3.2vmin;
+    margin-top: 26.7vmin;
   }
 }
-

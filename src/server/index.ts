@@ -6,6 +6,21 @@ import { allWords } from './core/words';
 import { getRedis } from '@devvit/redis';
 import { userGet, userSet, userUpdate, userDelete, getActiveUsers } from './core/user';
 import { UserDetails } from '../shared/types/user';
+import { 
+  sessionCreate, 
+  sessionGet, 
+  sessionJoin, 
+  sessionLeave, 
+  sessionStartGame, 
+  getPublicSessions,
+  getUserCurrentSession 
+} from './core/session';
+import { 
+  CreateSessionResponse, 
+  JoinSessionResponse, 
+  GetPublicSessionsResponse,
+  LeaveSessionResponse 
+} from '../shared/types/session';
 
 const app = express();
 
@@ -263,6 +278,152 @@ router.get('/api/users/active', async (_req, res) => {
     res.status(500).json({ 
       status: 'error', 
       message: error instanceof Error ? error.message : 'Unknown error fetching active users'
+    });
+  }
+});
+
+// Session Management Endpoints
+router.post('/api/sessions', async (req, res): Promise<void> => {
+  const { userId, reddit } = getContext();
+  const redis = getRedis();
+  
+  if (!userId) {
+    res.status(401).json({ status: 'error', message: 'Must be logged in' } as CreateSessionResponse);
+    return;
+  }
+
+  try {
+    const redditUser = await reddit.getCurrentUser();
+    if (!redditUser) {
+      throw new Error('Could not fetch Reddit user');
+    }
+
+    const session = await sessionCreate({
+      redis,
+      hostUserId: userId,
+      hostUsername: redditUser.username,
+      maxPlayers: req.body.maxPlayers || 6,
+    });
+
+    res.json({ status: 'success', data: session } as CreateSessionResponse);
+  } catch (error) {
+    console.error('Error creating session:', error);
+    res.status(500).json({ 
+      status: 'error', 
+      message: error instanceof Error ? error.message : 'Unknown error creating session'
+    } as CreateSessionResponse);
+  }
+});
+
+router.get('/api/sessions/public', async (_req, res): Promise<void> => {
+  const redis = getRedis();
+  
+  try {
+    const sessions = await getPublicSessions({ redis });
+    res.json({ status: 'success', data: sessions } as GetPublicSessionsResponse);
+  } catch (error) {
+    console.error('Error fetching public sessions:', error);
+    res.status(500).json({ 
+      status: 'error', 
+      message: error instanceof Error ? error.message : 'Unknown error fetching sessions'
+    } as GetPublicSessionsResponse);
+  }
+});
+
+router.post('/api/sessions/:sessionId/join', async (req, res): Promise<void> => {
+  const { sessionId } = req.params;
+  const { userId, reddit } = getContext();
+  const redis = getRedis();
+  
+  if (!userId) {
+    res.status(401).json({ status: 'error', message: 'Must be logged in' } as JoinSessionResponse);
+    return;
+  }
+
+  try {
+    const redditUser = await reddit.getCurrentUser();
+    if (!redditUser) {
+      throw new Error('Could not fetch Reddit user');
+    }
+
+    const session = await sessionJoin({
+      redis,
+      sessionId,
+      userId,
+      username: redditUser.username,
+    });
+
+    res.json({ status: 'success', data: session } as JoinSessionResponse);
+  } catch (error) {
+    console.error('Error joining session:', error);
+    res.status(500).json({ 
+      status: 'error', 
+      message: error instanceof Error ? error.message : 'Unknown error joining session'
+    } as JoinSessionResponse);
+  }
+});
+
+router.post('/api/sessions/:sessionId/leave', async (req, res): Promise<void> => {
+  const { sessionId } = req.params;
+  const { userId } = getContext();
+  const redis = getRedis();
+  
+  if (!userId) {
+    res.status(401).json({ status: 'error', message: 'Must be logged in' } as LeaveSessionResponse);
+    return;
+  }
+
+  try {
+    await sessionLeave({ redis, sessionId, userId });
+    res.json({ status: 'success' } as LeaveSessionResponse);
+  } catch (error) {
+    console.error('Error leaving session:', error);
+    res.status(500).json({ 
+      status: 'error', 
+      message: error instanceof Error ? error.message : 'Unknown error leaving session'
+    } as LeaveSessionResponse);
+  }
+});
+
+router.post('/api/sessions/:sessionId/start', async (req, res): Promise<void> => {
+  const { sessionId } = req.params;
+  const { userId } = getContext();
+  const redis = getRedis();
+  
+  if (!userId) {
+    res.status(401).json({ status: 'error', message: 'Must be logged in' });
+    return;
+  }
+
+  try {
+    const session = await sessionStartGame({ redis, sessionId });
+    res.json({ status: 'success', data: session });
+  } catch (error) {
+    console.error('Error starting game:', error);
+    res.status(500).json({ 
+      status: 'error', 
+      message: error instanceof Error ? error.message : 'Unknown error starting game'
+    });
+  }
+});
+
+router.get('/api/sessions/current', async (_req, res): Promise<void> => {
+  const { userId } = getContext();
+  const redis = getRedis();
+  
+  if (!userId) {
+    res.status(401).json({ status: 'error', message: 'Must be logged in' });
+    return;
+  }
+
+  try {
+    const session = await getUserCurrentSession({ redis, userId });
+    res.json({ status: 'success', data: session });
+  } catch (error) {
+    console.error('Error fetching current session:', error);
+    res.status(500).json({ 
+      status: 'error', 
+      message: error instanceof Error ? error.message : 'Unknown error fetching current session'
     });
   }
 });
