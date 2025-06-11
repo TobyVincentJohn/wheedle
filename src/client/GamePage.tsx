@@ -35,9 +35,6 @@ const GamePage: React.FC = () => {
       // Set dealer ID from session or generate one
       if (sessionFromState.dealerId) {
         setDealerId(sessionFromState.dealerId);
-      } else {
-        const randomDealer = Math.floor(Math.random() * 8) + 1;
-        setDealerId(randomDealer);
       }
       setIsInitialized(true);
     } else if (currentSession) {
@@ -47,9 +44,6 @@ const GamePage: React.FC = () => {
       // Set dealer ID from session or generate one
       if (currentSession.dealerId) {
         setDealerId(currentSession.dealerId);
-      } else {
-        const randomDealer = Math.floor(Math.random() * 8) + 1;
-        setDealerId(randomDealer);
       }
       setIsInitialized(true);
     } else {
@@ -108,14 +102,18 @@ const GamePage: React.FC = () => {
             
             // Update session state
             setSession(updatedSession);
+            
+            // Update dealer ID if it's set in the session
+            if (updatedSession.dealerId && updatedSession.dealerId !== dealerId) {
+              setDealerId(updatedSession.dealerId);
+            }
+            
             setPreviousPlayerCount(newPlayerCount);
             lastKnownSession = updatedSession;
           }
         } else if (data.status === 'success' && !data.data) {
           // Session no longer exists, show modal and redirect
-          if (user) {
-            setShowAllPlayersLeftModal(true);
-          }
+          setShowAllPlayersLeftModal(true);
         }
       } catch (error) {
         console.error('Error polling session:', error);

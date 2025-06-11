@@ -176,20 +176,9 @@ export const sessionLeave = async ({
     // Update session
     await redis.set(getSessionKey(sessionId), JSON.stringify(session));
   } else if (session.players.length === 1) {
-    // If only one player remains, end the session after a short delay
-    // This gives time for the remaining player to see the notification
-    setTimeout(async () => {
-      const updatedSession = await sessionGet({ redis, sessionId });
-      if (updatedSession && updatedSession.players.length === 1) {
-        // Remove the last player's session mapping
-        await redis.del(USER_SESSION_KEY(updatedSession.players[0].userId));
-        // Delete the session
-        await sessionDelete({ redis, sessionId });
-      }
-    }, 5000); // 5 second delay
-    
-    // Update session for now
-    await redis.set(getSessionKey(sessionId), JSON.stringify(session));
+    // If only one player remains, immediately delete the session
+    // The last player will be redirected when they detect the session is gone
+    await sessionDelete({ redis, sessionId });
   } else {
     // Update session
     await redis.set(getSessionKey(sessionId), JSON.stringify(session));
