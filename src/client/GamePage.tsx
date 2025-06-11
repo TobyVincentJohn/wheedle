@@ -102,7 +102,7 @@ const GamePage: React.FC = () => {
             }
             
             // Check if only one player remains
-            if (newPlayerCount === 1 && user && updatedSession.players.some(p => p.userId === user.userId)) {
+            if (newPlayerCount <= 1 && user && updatedSession.players.some(p => p.userId === user.userId)) {
               setShowAllPlayersLeftModal(true);
             }
             
@@ -110,6 +110,11 @@ const GamePage: React.FC = () => {
             setSession(updatedSession);
             setPreviousPlayerCount(newPlayerCount);
             lastKnownSession = updatedSession;
+          }
+        } else if (data.status === 'success' && !data.data) {
+          // Session no longer exists, show modal and redirect
+          if (user) {
+            setShowAllPlayersLeftModal(true);
           }
         }
       } catch (error) {

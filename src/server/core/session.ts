@@ -245,6 +245,11 @@ export const sessionStartCountdown = async ({
 
   session.status = 'countdown';
   session.countdownStartedAt = Date.now();
+  
+  // Assign a random dealer for this session when countdown starts
+  if (!session.dealerId) {
+    session.dealerId = Math.floor(Math.random() * 8) + 1;
+  }
 
   // Update session
   await redis.set(getSessionKey(sessionId), JSON.stringify(session));
