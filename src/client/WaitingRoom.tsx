@@ -133,7 +133,7 @@ const WaitingRoom: React.FC = () => {
   });
 
   const canStart = isHost && session.players.length >= 2 && session.status === 'waiting';
-  const showWaitingForPlayers = isHost && session.players.length < 2;
+  const showWaitingForPlayers = isHost && session.players.length < 2 && session.status === 'waiting';
 
   return (
     <div className="waiting-room">
@@ -174,13 +174,17 @@ const WaitingRoom: React.FC = () => {
               className="waiting-start-button" 
               onClick={handleStart}
             />
-          ) : !isHost ? (
+          ) : !isHost && session.status === 'waiting' ? (
             <div className="waiting-for-host">
               <div className="waiting-for-host-text">WAITING FOR HOST</div>
             </div>
+          ) : session.status === 'countdown' ? (
+            <div className="waiting-for-host">
+              <div className="waiting-for-host-text">GAME STARTING...</div>
+            </div>
           ) : (
             <div className="waiting-for-host">
-              <div className="waiting-for-host-text">STARTING...</div>
+              <div className="waiting-for-host-text">LOADING...</div>
             </div>
           )}
         </div>
