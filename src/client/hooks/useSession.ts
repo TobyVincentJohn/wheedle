@@ -25,9 +25,6 @@ export const useSession = () => {
     }
   }, []);
 
-  const createSession = useCallback(async (maxPlayers?: number) => {
-  }
-  )
   const createSession = useCallback(async (maxPlayers?: number, isPrivate?: boolean) => {
     try {
       const response = await fetch('/api/sessions', {
