@@ -306,6 +306,7 @@ router.post('/api/sessions', async (req, res): Promise<void> => {
       hostUserId: userId,
       hostUsername: redditUser.username,
       maxPlayers: req.body.maxPlayers || 6,
+      isPrivate: req.body.isPrivate || false,
     });
 
     res.json({ status: 'success', data: session } as CreateSessionResponse);
