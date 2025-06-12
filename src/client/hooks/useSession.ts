@@ -32,7 +32,7 @@ export const useSession = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ maxPlayers, isPrivate }),
+        body: JSON.stringify({ maxPlayers, isPrivate: isPrivate || false }),
       });
       const data = await response.json();
       

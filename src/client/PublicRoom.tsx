@@ -53,7 +53,7 @@ const PublicRoom: React.FC = () => {
 
   const handleCreateSession = async () => {
     try {
-      const session = await createSession(6); // Max 6 players
+      const session = await createSession(6, false); // Max 6 players, public session
       navigate('/waiting-room', { 
         state: { 
           roomType: 'public', 
