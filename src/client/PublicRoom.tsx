@@ -110,9 +110,13 @@ const PublicRoom: React.FC = () => {
       if (data.status === 'success' && data.data && !data.data.isPrivate) {
         setSearchedSession(data.data);
       } else {
+        if (data.data && data.data.isPrivate) {
+          setError('This is a private session. Use Private Room to join.');
+        } else {
+          setError('Public session not found');
+        }
         setSearchedSession(null);
-        setError('Public session not found');
-        setTimeout(() => setError(null), 3000);
+        setTimeout(() => setError(null), 4000);
       }
     } catch (err) {
       setError('Failed to search for session');

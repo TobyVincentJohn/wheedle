@@ -64,8 +64,8 @@ export const sessionCreate = async ({
   // Store session
   await redis.set(getSessionKey(sessionId), JSON.stringify(session));
   
-  // Add to public sessions list only if not private
-  if (!isPrivate) {
+  // Only add to public sessions list if explicitly public
+  if (!session.isPrivate) {
     const publicSessionsList = await redis.get(PUBLIC_SESSIONS_LIST_KEY);
     const publicSessions = publicSessionsList ? JSON.parse(publicSessionsList) as string[] : [];
     publicSessions.push(sessionId);
