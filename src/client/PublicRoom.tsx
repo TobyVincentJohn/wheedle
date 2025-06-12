@@ -104,8 +104,26 @@ const PublicRoom: React.FC = () => {
     if (searchCode.length !== 5) return;
     
     try {
+      console.log(`Searching for public session with code: ${searchCode}`);
+      
       const response = await fetch(`/api/sessions/by-code/${searchCode}/public`);
+      
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers.get('content-type'));
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        console.error('Non-JSON response:', text);
+        throw new Error('Server returned non-JSON response');
+      }
+      
       const data = await response.json();
+      console.log('API response:', data);
       
       if (data.status === 'success' && data.data) {
         setSearchedSession(data.data);
@@ -116,7 +134,12 @@ const PublicRoom: React.FC = () => {
         setTimeout(() => setError(null), 4000);
       }
     } catch (err) {
-      setError('Failed to search for session');
+      console.error('Failed to search for session:', err);
+      if (err instanceof Error && err.message.includes('non-JSON')) {
+        setError('Server error. Please try again later.');
+      } else {
+        setError('Failed to search for session');
+      }
       setSearchedSession(null);
       setTimeout(() => setError(null), 3000);
     }

@@ -458,6 +458,8 @@ router.get('/api/sessions/by-code/:sessionCode/:type', async (req, res): Promise
   const { sessionCode, type } = req.params;
   const redis = getRedis();
   
+  console.log(`Searching for session with code: ${sessionCode}, type: ${type}`);
+  
   if (type !== 'public' && type !== 'private') {
     res.status(400).json({ 
       status: 'error', 
@@ -478,8 +480,10 @@ router.get('/api/sessions/by-code/:sessionCode/:type', async (req, res): Promise
         status: 'error', 
         message: result.error 
       });
+      return;
     } else {
       res.json({ status: 'success', data: result.session });
+      return;
     }
   } catch (error) {
     console.error('Error fetching session by code:', error);
@@ -487,6 +491,7 @@ router.get('/api/sessions/by-code/:sessionCode/:type', async (req, res): Promise
       status: 'error', 
       message: error instanceof Error ? error.message : 'Unknown error fetching session'
     });
+    return;
   }
 });
 

@@ -45,9 +45,27 @@ const PrivateRoom: React.FC = () => {
       setIsJoining(true);
       setError(null);
       
+      console.log(`Searching for private session with code: ${roomCode}`);
+      
       // First, search for the session by code
       const response = await fetch(`/api/sessions/by-code/${roomCode}/private`);
+      
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers.get('content-type'));
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        console.error('Non-JSON response:', text);
+        throw new Error('Server returned non-JSON response');
+      }
+      
       const data = await response.json();
+      console.log('API response:', data);
       
       if (data.status === 'success' && data.data) {
         // Join the found private session
@@ -64,7 +82,11 @@ const PrivateRoom: React.FC = () => {
       }
     } catch (err) {
       console.error('Failed to join private session:', err);
-      setError('Failed to join room. Please check the code and try again.');
+      if (err instanceof Error && err.message.includes('non-JSON')) {
+        setError('Server error. Please try again later.');
+      } else {
+        setError('Failed to join room. Please check the code and try again.');
+      }
       setIsJoining(false);
     }
   };
