@@ -46,26 +46,20 @@ const PrivateRoom: React.FC = () => {
       setError(null);
       
       // First, search for the session by code
-      const response = await fetch(`/api/sessions/by-code/${roomCode}`);
+      const response = await fetch(`/api/sessions/by-code/${roomCode}/private`);
       const data = await response.json();
       
       if (data.status === 'success' && data.data) {
-        // Check if the found session is private
-        if (data.data.isPrivate) {
-          // Join the found private session
-          const session = await joinSession(data.data.sessionId);
-          navigate('/waiting-room', { 
-            state: { 
-              roomType: 'private', 
-              session 
-            } 
-          });
-        } else {
-          setError('This code belongs to a public session. Use Public Room to join.');
-          setIsJoining(false);
-        }
+        // Join the found private session
+        const session = await joinSession(data.data.sessionId);
+        navigate('/waiting-room', { 
+          state: { 
+            roomType: 'private', 
+            session 
+          } 
+        });
       } else {
-        setError('Private room not found or not available');
+        setError(data.message || 'Private room not found or not available');
         setIsJoining(false);
       }
     } catch (err) {

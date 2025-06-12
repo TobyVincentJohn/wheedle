@@ -14,9 +14,9 @@ import {
   sessionStartCountdown,
   sessionStartGame, 
   getPublicSessions,
-  getUserCurrentSession,
-  sessionGetByCode
+  getUserCurrentSession
 } from './core/session';
+import { findSessionByCode } from './core/roomCodeSearch';
 import { 
   CreateSessionResponse, 
   JoinSessionResponse, 
@@ -454,13 +454,33 @@ router.get('/api/sessions/current', async (_req, res): Promise<void> => {
   }
 });
 
-router.get('/api/sessions/by-code/:sessionCode', async (req, res): Promise<void> => {
-  const { sessionCode } = req.params;
+router.get('/api/sessions/by-code/:sessionCode/:type', async (req, res): Promise<void> => {
+  const { sessionCode, type } = req.params;
   const redis = getRedis();
   
+  if (type !== 'public' && type !== 'private') {
+    res.status(400).json({ 
+      status: 'error', 
+      message: 'Invalid session type. Must be "public" or "private"' 
+    });
+    return;
+  }
+  
   try {
-    const session = await sessionGetByCode({ redis, sessionCode: sessionCode.toUpperCase() });
-    res.json({ status: 'success', data: session });
+    const result = await findSessionByCode({ 
+      redis, 
+      sessionCode: sessionCode.toUpperCase(),
+      requestedType: type as 'public' | 'private'
+    });
+    
+    if (result.error) {
+      res.status(404).json({ 
+        status: 'error', 
+        message: result.error 
+      });
+    } else {
+      res.json({ status: 'success', data: result.session });
+    }
   } catch (error) {
     console.error('Error fetching session by code:', error);
     res.status(500).json({ 

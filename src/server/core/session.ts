@@ -1,5 +1,6 @@
 import { RedisClient } from '@devvit/redis';
 import { GameSession, SessionPlayer } from '../../shared/types/session';
+import { registerRoomCode, unregisterRoomCode } from './roomCodeSearch';
 
 const getSessionKey = (sessionId: string) => `session:${sessionId}` as const;
 const PUBLIC_SESSIONS_LIST_KEY = 'public_sessions_list' as const;
@@ -64,6 +65,14 @@ export const sessionCreate = async ({
 
   // Store session
   await redis.set(getSessionKey(sessionId), JSON.stringify(session));
+  
+  // Register room code
+  await registerRoomCode({
+    redis,
+    sessionCode,
+    sessionId,
+    isPrivate,
+  });
   
   // Add to appropriate sessions list based on type
   if (isPrivate) {
@@ -205,6 +214,9 @@ export const sessionDelete = async ({
 }): Promise<void> => {
   const session = await sessionGet({ redis, sessionId });
   if (session) {
+    // Unregister room code
+    await unregisterRoomCode({ redis, sessionCode: session.sessionCode });
+    
     // Remove all user session mappings
     for (const player of session.players) {
       await redis.del(USER_SESSION_KEY(player.userId));
@@ -359,29 +371,6 @@ export const getPrivateSessions = async ({
   }
 
   return sessions;
-};
-
-export const sessionGetByCode = async ({
-  redis,
-  sessionCode,
-}: {
-  redis: RedisClient;
-  sessionCode: string;
-}): Promise<GameSession | null> => {
-  // Search all sessions (both public and private)
-  // This is less efficient but necessary for private sessions
-  const allKeys = await redis.keys('session:*');
-  for (const key of allKeys) {
-    const sessionData = await redis.get(key);
-    if (sessionData) {
-      const session = JSON.parse(sessionData) as GameSession;
-      if (session.sessionCode === sessionCode && session.status === 'waiting') {
-        return session;
-      }
-    }
-  }
-
-  return null;
 };
 
 export const getUserCurrentSession = async ({

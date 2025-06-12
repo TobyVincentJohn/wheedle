@@ -104,22 +104,20 @@ const PublicRoom: React.FC = () => {
     if (searchCode.length !== 5) return;
     
     try {
-      const response = await fetch(`/api/sessions/by-code/${searchCode}`);
+      const response = await fetch(`/api/sessions/by-code/${searchCode}/public`);
       const data = await response.json();
       
-      if (data.status === 'success' && data.data && !data.data.isPrivate) {
+      if (data.status === 'success' && data.data) {
         setSearchedSession(data.data);
+        setError(null);
       } else {
-        if (data.data && data.data.isPrivate) {
-          setError('This code belongs to a private session. Use Private Room to join.');
-        } else {
-          setError('Public session not found');
-        }
+        setError(data.message || 'Public session not found');
         setSearchedSession(null);
         setTimeout(() => setError(null), 4000);
       }
     } catch (err) {
       setError('Failed to search for session');
+      setSearchedSession(null);
       setTimeout(() => setError(null), 3000);
     }
   };
