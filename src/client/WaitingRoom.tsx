@@ -177,14 +177,14 @@ const WaitingRoom: React.FC = () => {
           <div className="waiting-room-code">
             <div className="waiting-room-code-text">ROOM CODE</div>
             <div className="waiting-room-code-value">{session.sessionCode}</div>
-            {session.prizePool > 0 && (
+            {(session.prizePool || 0) > 0 && (
               <div style={{ 
                 color: '#4CAF50', 
                 fontFamily: 'VT323, monospace', 
                 fontSize: '18px', 
                 marginTop: '10px' 
               }}>
-                Prize Pool: ${session.prizePool}
+                Prize Pool: ${session.prizePool || 0}
               </div>
             )}
           </div>

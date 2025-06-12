@@ -113,4 +113,4 @@ export const getActiveUsers = async ({
   }
 
   return users;
-}; 
+};

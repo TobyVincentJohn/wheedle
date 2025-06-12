@@ -57,6 +57,8 @@ export const useSession = () => {
       
       if (data.status === 'success') {
         setCurrentSession(data.data);
+        // Refresh user data to get updated money
+        window.location.reload();
         return data.data;
       } else {
         throw new Error(data.message || 'Failed to join session');

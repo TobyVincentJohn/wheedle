@@ -49,6 +49,8 @@ export const sessionCreate = async ({
     username: hostUsername,
     joinedAt: Date.now(),
     isHost: true,
+    moneyCommitted: 0,
+    hasPlacedMinimumBet: false,
   };
 
   const session: GameSession = {
@@ -61,6 +63,9 @@ export const sessionCreate = async ({
     createdAt: Date.now(),
     maxPlayers,
     isPrivate,
+    prizePool: 0,
+    entryFee: 100,
+    minimumBet: 10,
   };
 
   // Store session
@@ -144,6 +149,8 @@ export const sessionJoin = async ({
     username,
     joinedAt: Date.now(),
     isHost: false,
+    moneyCommitted: 0,
+    hasPlacedMinimumBet: false,
   };
 
   session.players.push(newPlayer);

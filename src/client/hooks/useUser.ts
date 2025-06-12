@@ -27,11 +27,6 @@ export const useUser = () => {
         const createData = await createResponse.json();
         if (createData.status === 'success') {
           setUser(createData.data);
-          // Ensure money field exists for new users
-          if (createData.data.money === undefined) {
-            createData.data.money = 1000;
-            setUser(createData.data);
-          }
         } else {
           setError('Failed to create user');
         }

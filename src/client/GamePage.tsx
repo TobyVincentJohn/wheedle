@@ -211,7 +211,7 @@ const GamePage: React.FC = () => {
           <div className="session-info">
             <span>Room: {session.sessionCode}</span>
             <span>Players: {session.players.length}</span>
-            <span>Prize Pool: ${session.prizePool}</span>
+            <span>Prize Pool: ${session.prizePool || 0}</span>
             {user && <span>Your Money: ${user.money || 0}</span>}
           </div>
           <button className="leave-game-btn" onClick={handleLeaveGame}>
