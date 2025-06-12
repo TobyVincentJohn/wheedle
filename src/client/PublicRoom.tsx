@@ -111,7 +111,7 @@ const PublicRoom: React.FC = () => {
         setSearchedSession(data.data);
       } else {
         if (data.data && data.data.isPrivate) {
-          setError('This is a private session. Use Private Room to join.');
+          setError('This code belongs to a private session. Use Private Room to join.');
         } else {
           setError('Public session not found');
         }
