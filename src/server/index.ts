@@ -350,49 +350,14 @@ router.post('/api/sessions/:sessionId/join', async (req, res): Promise<void> => 
       throw new Error('Could not fetch Reddit user');
     }
 
-    // Get user's current money first
-    const userKey = `user:${userId}`;
-    const userData = await redis.get(userKey);
-    if (!userData) {
-      throw new Error('User not found');
-    }
-    
-    const user = JSON.parse(userData);
-    if (user.money < 100) {
-      res.status(400).json({ 
-        status: 'error', 
-        message: 'Insufficient funds. You need at least $100 to join a game.' 
-      } as JoinSessionResponse);
-      return;
-    }
-    
-    // Join the session first
     const session = await sessionJoin({
       redis,
       sessionId,
       userId,
       username: redditUser.username,
     });
-    
-    // Deduct entry fee from user's money
-    user.money -= 100;
-    user.moneyInHand = 100;
-    await redis.set(userKey, JSON.stringify(user));
-    
-    // Update player's committed money in session
-    const playerIndex = session.players.findIndex(p => p.userId === userId);
-    if (playerIndex !== -1) {
-      session.players[playerIndex].moneyCommitted = 100;
-    }
-    
-    // Update session
-    await redis.set(`session:${sessionId}`, JSON.stringify(session));
 
-    res.json({ 
-      status: 'success', 
-      data: session,
-      userMoney: user.money 
-    } as JoinSessionResponse);
+    res.json({ status: 'success', data: session } as JoinSessionResponse);
   } catch (error) {
     console.error('Error joining session:', error);
     res.status(500).json({ 

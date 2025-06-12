@@ -41,6 +41,17 @@ export const sessionCreate = async ({
     throw new Error('User is already in a session');
   }
 
+  // Check user's money before creating session
+  const userKey = `user:${hostUserId}`;
+  const userData = await redis.get(userKey);
+  if (!userData) {
+    throw new Error('User not found');
+  }
+  
+  const user = JSON.parse(userData);
+  if (user.money < 100) {
+    throw new Error('Insufficient funds. You need at least $100 to create a game.');
+  }
   const sessionId = generateSessionId();
   const sessionCode = generateSessionCode();
 
@@ -49,7 +60,7 @@ export const sessionCreate = async ({
     username: hostUsername,
     joinedAt: Date.now(),
     isHost: true,
-    moneyCommitted: 0,
+    moneyCommitted: 100,
     hasPlacedMinimumBet: false,
   };
 
@@ -126,6 +137,17 @@ export const sessionJoin = async ({
     throw new Error('User is already in a session');
   }
 
+  // Check user's money before joining
+  const userKey = `user:${userId}`;
+  const userData = await redis.get(userKey);
+  if (!userData) {
+    throw new Error('User not found');
+  }
+  
+  const user = JSON.parse(userData);
+  if (user.money < 100) {
+    throw new Error('Insufficient funds. You need at least $100 to join a game.');
+  }
   const session = await sessionGet({ redis, sessionId });
   if (!session) {
     throw new Error('Session not found');
@@ -143,13 +165,17 @@ export const sessionJoin = async ({
   if (session.players.some(player => player.userId === userId)) {
     throw new Error('User is already in this session');
   }
+  // Deduct entry fee from user's money
+  user.money -= 100;
+  user.moneyInHand = 100;
+  await redis.set(userKey, JSON.stringify(user));
 
   const newPlayer: SessionPlayer = {
     userId,
     username,
     joinedAt: Date.now(),
     isHost: false,
-    moneyCommitted: 0,
+    moneyCommitted: 100,
     hasPlacedMinimumBet: false,
   };
 
