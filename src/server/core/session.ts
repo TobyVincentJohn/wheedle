@@ -25,11 +25,13 @@ export const sessionCreate = async ({
   hostUserId,
   hostUsername,
   maxPlayers = 6,
+  isPrivate = false,
 }: {
   redis: RedisClient;
   hostUserId: string;
   hostUsername: string;
   maxPlayers?: number;
+  isPrivate?: boolean;
 }): Promise<GameSession> => {
   // Check if user is already in a session
   const existingSessionId = await redis.get(USER_SESSION_KEY(hostUserId));
@@ -56,16 +58,19 @@ export const sessionCreate = async ({
     status: 'waiting',
     createdAt: Date.now(),
     maxPlayers,
+    isPrivate,
   };
 
   // Store session
   await redis.set(getSessionKey(sessionId), JSON.stringify(session));
   
-  // Add to public sessions list
-  const publicSessionsList = await redis.get(PUBLIC_SESSIONS_LIST_KEY);
-  const publicSessions = publicSessionsList ? JSON.parse(publicSessionsList) as string[] : [];
-  publicSessions.push(sessionId);
-  await redis.set(PUBLIC_SESSIONS_LIST_KEY, JSON.stringify(publicSessions));
+  // Add to public sessions list only if not private
+  if (!isPrivate) {
+    const publicSessionsList = await redis.get(PUBLIC_SESSIONS_LIST_KEY);
+    const publicSessions = publicSessionsList ? JSON.parse(publicSessionsList) as string[] : [];
+    publicSessions.push(sessionId);
+    await redis.set(PUBLIC_SESSIONS_LIST_KEY, JSON.stringify(publicSessions));
+  }
 
   // Map user to session
   await redis.set(USER_SESSION_KEY(hostUserId), sessionId);
@@ -315,18 +320,28 @@ export const sessionGetByCode = async ({
   redis: RedisClient;
   sessionCode: string;
 }): Promise<GameSession | null> => {
-  // Get all public sessions and find the one with matching code
+  // First check public sessions
   const publicSessionsList = await redis.get(PUBLIC_SESSIONS_LIST_KEY);
-  if (!publicSessionsList) {
-    return null;
-  }
-
-  const sessionIds = JSON.parse(publicSessionsList) as string[];
+  const publicSessionIds = publicSessionsList ? JSON.parse(publicSessionsList) as string[] : [];
   
-  for (const sessionId of sessionIds) {
+  // Check public sessions first
+  for (const sessionId of publicSessionIds) {
     const session = await sessionGet({ redis, sessionId });
     if (session && session.sessionCode === sessionCode && session.status === 'waiting') {
       return session;
+    }
+  }
+
+  // If not found in public sessions, search all sessions (including private)
+  // This is less efficient but necessary for private sessions
+  const allKeys = await redis.keys('session:*');
+  for (const key of allKeys) {
+    const sessionData = await redis.get(key);
+    if (sessionData) {
+      const session = JSON.parse(sessionData) as GameSession;
+      if (session.sessionCode === sessionCode && session.status === 'waiting') {
+        return session;
+      }
     }
   }
 

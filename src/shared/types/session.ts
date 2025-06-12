@@ -10,6 +10,7 @@ export interface GameSession {
   gameStartedAt?: number;
   countdownStartedAt?: number; // When the 10-second countdown began
   dealerId?: number; // Dealer image ID for consistency across all players
+  isPrivate?: boolean; // Whether this is a private session
 }
 
 export interface SessionPlayer {
