@@ -107,11 +107,11 @@ const PublicRoom: React.FC = () => {
       const response = await fetch(`/api/sessions/by-code/${searchCode}`);
       const data = await response.json();
       
-      if (data.status === 'success' && data.data) {
+      if (data.status === 'success' && data.data && !data.data.isPrivate) {
         setSearchedSession(data.data);
       } else {
         setSearchedSession(null);
-        setError('Session not found or not available');
+        setError('Public session not found');
         setTimeout(() => setError(null), 3000);
       }
     } catch (err) {

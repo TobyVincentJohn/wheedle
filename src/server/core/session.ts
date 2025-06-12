@@ -320,19 +320,7 @@ export const sessionGetByCode = async ({
   redis: RedisClient;
   sessionCode: string;
 }): Promise<GameSession | null> => {
-  // First check public sessions
-  const publicSessionsList = await redis.get(PUBLIC_SESSIONS_LIST_KEY);
-  const publicSessionIds = publicSessionsList ? JSON.parse(publicSessionsList) as string[] : [];
-  
-  // Check public sessions first
-  for (const sessionId of publicSessionIds) {
-    const session = await sessionGet({ redis, sessionId });
-    if (session && session.sessionCode === sessionCode && session.status === 'waiting') {
-      return session;
-    }
-  }
-
-  // If not found in public sessions, search all sessions (including private)
+  // Search all sessions (both public and private)
   // This is less efficient but necessary for private sessions
   const allKeys = await redis.keys('session:*');
   for (const key of allKeys) {
