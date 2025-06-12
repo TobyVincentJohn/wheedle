@@ -166,7 +166,14 @@ const WaitingRoom: React.FC = () => {
         </div>
         
         <div className="waiting-bottom-container">
-          <button className="waiting-quit-button" onClick={handleQuit} />
+          {!isCountingDown && (
+            <button className="waiting-quit-button" onClick={handleQuit} />
+          )}
+          {isCountingDown && (
+            <div className="waiting-for-host">
+              <div className="waiting-for-host-text">GAME STARTING...</div>
+            </div>
+          )}
           <div className="waiting-room-code">
             <div className="waiting-room-code-text">ROOM CODE</div>
             <div className="waiting-room-code-value">{session.sessionCode}</div>

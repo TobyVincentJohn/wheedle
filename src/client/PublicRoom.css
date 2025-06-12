@@ -37,6 +37,88 @@
   padding: 20px;
 }
 
+.room-code-search {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.room-code-search-label {
+  color: #FFD700;
+  font-family: 'VT323', monospace;
+  font-size: 16px;
+  text-align: center;
+}
+
+.room-code-search-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.room-code-search-input {
+  width: 120px;
+  height: 40px;
+  background: rgba(0, 0, 0, 0.8);
+  border: 2px solid #FFD700;
+  border-radius: 4px;
+  color: #ffffff;
+  font-family: 'VT323', monospace;
+  font-size: 18px;
+  text-align: center;
+  outline: none;
+  padding: 0 8px;
+}
+
+.room-code-search-input::placeholder {
+  color: #888;
+  opacity: 0.8;
+}
+
+.room-code-search-input:focus {
+  border-color: #ffffff;
+}
+
+.room-code-search-btn {
+  width: 40px;
+  height: 40px;
+  background: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-family: 'VT323', monospace;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.room-code-search-btn:hover:not(:disabled) {
+  background: #45a049;
+  transform: scale(1.05);
+}
+
+.room-code-search-btn:disabled {
+  background: #666;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.searched-session {
+  border: 3px solid #4CAF50 !important;
+  background: rgba(76, 175, 80, 0.1) !important;
+}
+
+.searched-session .session-host {
+  color: #4CAF50 !important;
+}
+
 .sessions-header {
   display: flex;
   justify-content: space-between;
@@ -197,6 +279,35 @@
     max-width: 750px;
     max-height: 750px;
     padding: 2.7vmin;
+  }
+
+  .room-code-search {
+    position: relative;
+    top: 0;
+    right: 0;
+    order: -1;
+    margin-bottom: 2vmin;
+  }
+
+  .room-code-search-label {
+    font-size: 2.1vmin;
+  }
+
+  .room-code-search-container {
+    gap: 1.1vmin;
+  }
+
+  .room-code-search-input {
+    width: 16vmin;
+    height: 5.3vmin;
+    font-size: 2.4vmin;
+    padding: 0 1.1vmin;
+  }
+
+  .room-code-search-btn {
+    width: 5.3vmin;
+    height: 5.3vmin;
+    font-size: 2.1vmin;
   }
 
   .sessions-header {

@@ -7,6 +7,8 @@ import './PublicRoom.css';
 const PublicRoom: React.FC = () => {
   const navigate = useNavigate();
   const [publicSessions, setPublicSessions] = useState<GameSession[]>([]);
+  const [searchCode, setSearchCode] = useState('');
+  const [searchedSession, setSearchedSession] = useState<GameSession | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { createSession, joinSession, currentSession } = useSession();
@@ -88,9 +90,67 @@ const PublicRoom: React.FC = () => {
     return `${minutes} minutes ago`;
   };
 
+  const handleSearchCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.toUpperCase();
+    if (value.length <= 5) {
+      setSearchCode(value);
+      if (value.length === 0) {
+        setSearchedSession(null);
+      }
+    }
+  };
+
+  const handleSearchSession = async () => {
+    if (searchCode.length !== 5) return;
+    
+    try {
+      const response = await fetch(`/api/sessions/by-code/${searchCode}`);
+      const data = await response.json();
+      
+      if (data.status === 'success' && data.data) {
+        setSearchedSession(data.data);
+      } else {
+        setSearchedSession(null);
+        setError('Session not found or not available');
+        setTimeout(() => setError(null), 3000);
+      }
+    } catch (err) {
+      setError('Failed to search for session');
+      setTimeout(() => setError(null), 3000);
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearchSession();
+    }
+  };
+
   return (
     <div className="public-room">
       <div className="public-room-content">
+        <div className="room-code-search">
+          <div className="room-code-search-label">ENTER CODE</div>
+          <div className="room-code-search-container">
+            <input
+              type="text"
+              className="room-code-search-input"
+              value={searchCode}
+              onChange={handleSearchCodeChange}
+              onKeyPress={handleKeyPress}
+              maxLength={5}
+              placeholder="XXXXX"
+            />
+            <button 
+              className="room-code-search-btn"
+              onClick={handleSearchSession}
+              disabled={searchCode.length !== 5}
+            >
+              🔍
+            </button>
+          </div>
+        </div>
+        
         {loading ? (
           <div className="loading-message">Loading sessions...</div>
         ) : error ? (
@@ -104,7 +164,7 @@ const PublicRoom: React.FC = () => {
               </button>
             </div>
             
-            {publicSessions.length === 0 ? (
+            {publicSessions.length === 0 && !searchedSession ? (
               <div className="no-sessions">
                 <p>No public sessions available</p>
                 <button className="create-first-session-btn" onClick={handleCreateSession}>
@@ -113,6 +173,31 @@ const PublicRoom: React.FC = () => {
               </div>
             ) : (
               <div className="sessions-list">
+                {searchedSession && (
+                  <div key={searchedSession.sessionId} className="session-tile searched-session">
+                    <div className="session-info">
+                      <div className="session-host">
+                        Host: u/{searchedSession.hostUsername} (Found!)
+                      </div>
+                      <div className="session-players">
+                        {searchedSession.players.length}/{searchedSession.maxPlayers} players
+                      </div>
+                      <div className="session-time">
+                        Created {formatTimeAgo(searchedSession.createdAt)}
+                      </div>
+                      <div className="session-code">
+                        Code: {searchedSession.sessionCode}
+                      </div>
+                    </div>
+                    <button 
+                      className="join-session-btn"
+                      onClick={() => handleJoinSession(searchedSession.sessionId)}
+                      disabled={searchedSession.players.length >= searchedSession.maxPlayers}
+                    >
+                      {searchedSession.players.length >= searchedSession.maxPlayers ? 'Full' : 'Join'}
+                    </button>
+                  </div>
+                )}
                 {publicSessions.map((session) => (
                   <div key={session.sessionId} className="session-tile">
                     <div className="session-info">

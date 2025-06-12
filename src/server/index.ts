@@ -14,7 +14,8 @@ import {
   sessionStartCountdown,
   sessionStartGame, 
   getPublicSessions,
-  getUserCurrentSession 
+  getUserCurrentSession,
+  sessionGetByCode
 } from './core/session';
 import { 
   CreateSessionResponse, 
@@ -448,6 +449,22 @@ router.get('/api/sessions/current', async (_req, res): Promise<void> => {
     res.status(500).json({ 
       status: 'error', 
       message: error instanceof Error ? error.message : 'Unknown error fetching current session'
+    });
+  }
+});
+
+router.get('/api/sessions/by-code/:sessionCode', async (req, res): Promise<void> => {
+  const { sessionCode } = req.params;
+  const redis = getRedis();
+  
+  try {
+    const session = await sessionGetByCode({ redis, sessionCode: sessionCode.toUpperCase() });
+    res.json({ status: 'success', data: session });
+  } catch (error) {
+    console.error('Error fetching session by code:', error);
+    res.status(500).json({ 
+      status: 'error', 
+      message: error instanceof Error ? error.message : 'Unknown error fetching session'
     });
   }
 });

@@ -235,7 +235,7 @@ export const sessionStartCountdown = async ({
   session.status = 'countdown';
   session.countdownStartedAt = Date.now();
   
-  // Assign a random dealer for this session when countdown starts
+  // Assign a random dealer for this session when countdown starts (1-8)
   if (!session.dealerId) {
     session.dealerId = Math.floor(Math.random() * 8) + 1;
   }
@@ -306,6 +306,31 @@ export const getPublicSessions = async ({
   }
 
   return sessions;
+};
+
+export const sessionGetByCode = async ({
+  redis,
+  sessionCode,
+}: {
+  redis: RedisClient;
+  sessionCode: string;
+}): Promise<GameSession | null> => {
+  // Get all public sessions and find the one with matching code
+  const publicSessionsList = await redis.get(PUBLIC_SESSIONS_LIST_KEY);
+  if (!publicSessionsList) {
+    return null;
+  }
+
+  const sessionIds = JSON.parse(publicSessionsList) as string[];
+  
+  for (const sessionId of sessionIds) {
+    const session = await sessionGet({ redis, sessionId });
+    if (session && session.sessionCode === sessionCode && session.status === 'waiting') {
+      return session;
+    }
+  }
+
+  return null;
 };
 
 export const getUserCurrentSession = async ({
