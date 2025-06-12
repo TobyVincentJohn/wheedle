@@ -1,25 +1,71 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSession } from './hooks/useSession';
 import './PrivateRoom.css';
 
 const PrivateRoom: React.FC = () => {
   const [roomCode, setRoomCode] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [isJoining, setIsJoining] = useState(false);
   const navigate = useNavigate();
+  const { createSession, joinSession } = useSession();
 
   const handleRoomCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.toUpperCase();
     if (value.length <= 5) {
       setRoomCode(value);
+      if (error) setError(null); // Clear error when user types
     }
   };
 
-  const handleCreateRoom = () => {
-    navigate('/waiting-room', { state: { roomType: 'private', isHost: true } });
+  const handleCreateRoom = async () => {
+    if (isJoining) return;
+    
+    try {
+      setIsJoining(true);
+      const session = await createSession(6, true); // Max 6 players, private session
+      navigate('/waiting-room', { 
+        state: { 
+          roomType: 'private', 
+          session,
+          isHost: true 
+        } 
+      });
+    } catch (err) {
+      console.error('Failed to create private session:', err);
+      setError('Failed to create room. Please try again.');
+      setIsJoining(false);
+    }
   };
 
-  const handleJoinRoom = () => {
-    if (roomCode.length === 5) {
-      navigate('/waiting-room', { state: { roomType: 'private', roomCode } });
+  const handleJoinRoom = async () => {
+    if (roomCode.length !== 5 || isJoining) return;
+    
+    try {
+      setIsJoining(true);
+      setError(null);
+      
+      // First, search for the session by code
+      const response = await fetch(`/api/sessions/by-code/${roomCode}`);
+      const data = await response.json();
+      
+      if (data.status === 'success' && data.data) {
+        // Join the found session
+        const session = await joinSession(data.data.sessionId);
+        navigate('/waiting-room', { 
+          state: { 
+            roomType: 'private', 
+            session 
+          } 
+        });
+      } else {
+        setError('Room not found or not available');
+        setIsJoining(false);
+      }
+    } catch (err) {
+      console.error('Failed to join private session:', err);
+      setError('Failed to join room. Please check the code and try again.');
+      setIsJoining(false);
     }
   };
 
@@ -75,4 +121,4 @@ const PrivateRoom: React.FC = () => {
   );
 };
 
-export default PrivateRoom; 
+export default PrivateRoom;
