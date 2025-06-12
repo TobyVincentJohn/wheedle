@@ -163,6 +163,90 @@ export const sessionJoin = async ({
   return session;
 };
 
+// New function to handle money transactions when joining a game
+export const sessionJoinWithMoney = async ({
+  redis,
+  sessionId,
+  userId,
+  username,
+}: {
+  redis: RedisClient;
+  sessionId: string;
+  userId: string;
+  username: string;
+}): Promise<{ session: GameSession; userMoney: number }> => {
+  // Get user's current money
+  const userKey = `user:${userId}`;
+  const userData = await redis.get(userKey);
+  if (!userData) {
+    throw new Error('User not found');
+  }
+  
+  const user = JSON.parse(userData);
+  if (user.money < 100) {
+    throw new Error('Insufficient funds. You need at least $100 to join a game.');
+  }
+  
+  // Join the session first
+  const session = await sessionJoin({ redis, sessionId, userId, username });
+  
+  // Deduct entry fee from user's money
+  user.money -= 100;
+  user.moneyInHand = 100;
+  await redis.set(userKey, JSON.stringify(user));
+  
+  // Update player's committed money in session
+  const playerIndex = session.players.findIndex(p => p.userId === userId);
+  if (playerIndex !== -1) {
+    session.players[playerIndex].moneyCommitted = 100;
+  }
+  
+  // Update session
+  await redis.set(`session:${sessionId}`, JSON.stringify(session));
+  
+  return { session, userMoney: user.money };
+};
+
+// New function to handle money when placing minimum bet
+export const sessionPlaceMinimumBet = async ({
+  redis,
+  sessionId,
+  userId,
+}: {
+  redis: RedisClient;
+  sessionId: string;
+  userId: string;
+}): Promise<GameSession> => {
+  const session = await sessionGet({ redis, sessionId });
+  if (!session) {
+    throw new Error('Session not found');
+  }
+  
+  const playerIndex = session.players.findIndex(p => p.userId === userId);
+  if (playerIndex === -1) {
+    throw new Error('Player not found in session');
+  }
+  
+  const player = session.players[playerIndex];
+  if (player.hasPlacedMinimumBet) {
+    throw new Error('Minimum bet already placed');
+  }
+  
+  if (player.moneyCommitted < session.minimumBet) {
+    throw new Error('Insufficient money committed to place minimum bet');
+  }
+  
+  // Place minimum bet
+  player.hasPlacedMinimumBet = true;
+  session.prizePool += session.minimumBet;
+  
+  // Update session
+  await redis.set(`session:${sessionId}`, JSON.stringify(session));
+  
+  return session;
+};
+
+// Modified leave function to handle money returns
 export const sessionLeave = async ({
   redis,
   sessionId,
@@ -171,10 +255,35 @@ export const sessionLeave = async ({
   redis: RedisClient;
   sessionId: string;
   userId: string;
-}): Promise<void> => {
+}): Promise<{ moneyReturned: number }> => {
   const session = await sessionGet({ redis, sessionId });
   if (!session) {
-    return; // Session doesn't exist, nothing to do
+    return { moneyReturned: 0 }; // Session doesn't exist, nothing to do
+  }
+
+  // Find the leaving player
+  const leavingPlayer = session.players.find(player => player.userId === userId);
+  let moneyToReturn = 0;
+  
+  if (leavingPlayer) {
+    // Calculate money to return
+    if (leavingPlayer.hasPlacedMinimumBet) {
+      // Player placed minimum bet, return committed money minus the bet
+      moneyToReturn = leavingPlayer.moneyCommitted - session.minimumBet;
+    } else {
+      // Player hasn't placed minimum bet yet, return full committed money
+      moneyToReturn = leavingPlayer.moneyCommitted;
+    }
+    
+    // Return money to user
+    const userKey = `user:${userId}`;
+    const userData = await redis.get(userKey);
+    if (userData) {
+      const user = JSON.parse(userData);
+      user.money += moneyToReturn;
+      user.moneyInHand = 0;
+      await redis.set(userKey, JSON.stringify(user));
+    }
   }
 
   // Remove player from session
@@ -186,6 +295,21 @@ export const sessionLeave = async ({
   if (session.players.length === 0) {
     // Delete empty session
     await sessionDelete({ redis, sessionId });
+  } else if (session.players.length === 1) {
+    // Last player remaining - they get the entire prize pool
+    const lastPlayer = session.players[0];
+    const userKey = `user:${lastPlayer.userId}`;
+    const userData = await redis.get(userKey);
+    if (userData) {
+      const user = JSON.parse(userData);
+      // Return their committed money plus the entire prize pool
+      user.money += lastPlayer.moneyCommitted + session.prizePool;
+      user.moneyInHand = 0;
+      await redis.set(userKey, JSON.stringify(user));
+    }
+    
+    // Delete the session since only one player remains
+    await sessionDelete({ redis, sessionId });
   } else if (session.hostUserId === userId) {
     // Transfer host to another player
     const newHost = session.players[0];
@@ -195,14 +319,12 @@ export const sessionLeave = async ({
     
     // Update session
     await redis.set(getSessionKey(sessionId), JSON.stringify(session));
-  } else if (session.players.length === 1) {
-    // If only one player remains, immediately delete the session
-    // The last player will be redirected when they detect the session is gone
-    await sessionDelete({ redis, sessionId });
   } else {
     // Update session
     await redis.set(getSessionKey(sessionId), JSON.stringify(session));
   }
+  
+  return { moneyReturned: moneyToReturn };
 };
 
 export const sessionDelete = async ({
@@ -266,6 +388,14 @@ export const sessionStartCountdown = async ({
 
   session.status = 'countdown';
   session.countdownStartedAt = Date.now();
+  
+  // All players must place minimum bet when countdown starts
+  for (const player of session.players) {
+    if (!player.hasPlacedMinimumBet) {
+      player.hasPlacedMinimumBet = true;
+      session.prizePool += session.minimumBet;
+    }
+  }
   
   // Assign a random dealer for this session when countdown starts (1-8)
   if (!session.dealerId) {

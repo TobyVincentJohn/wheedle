@@ -378,8 +378,11 @@ router.post('/api/sessions/:sessionId/leave', async (req, res): Promise<void> =>
   }
 
   try {
-    await sessionLeave({ redis, sessionId, userId });
-    res.json({ status: 'success' } as LeaveSessionResponse);
+    const result = await sessionLeave({ redis, sessionId, userId });
+    res.json({ 
+      status: 'success',
+      moneyReturned: result.moneyReturned 
+    } as LeaveSessionResponse);
   } catch (error) {
     console.error('Error leaving session:', error);
     res.status(500).json({ 

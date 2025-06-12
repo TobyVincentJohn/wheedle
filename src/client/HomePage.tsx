@@ -68,7 +68,7 @@ const HomePage: React.FC = () => {
         ></div>
         {user && (
           <div className="user-greeting">
-            Hi u/{user.username}
+            Hi u/{user.username} | ${user.money || 1000}
             <button className="logout-button" onClick={logout}>
               Reset User
             </button>

@@ -11,6 +11,9 @@ export interface GameSession {
   countdownStartedAt?: number; // When the 10-second countdown began
   dealerId?: number; // Dealer image ID for consistency across all players
   isPrivate?: boolean; // Whether this is a private session
+  prizePool: number; // Total money in the prize pool
+  entryFee: number; // Entry fee per player (default 100)
+  minimumBet: number; // Minimum bet per round (default 10)
 }
 
 export interface SessionPlayer {
@@ -18,6 +21,8 @@ export interface SessionPlayer {
   username: string;
   joinedAt: number;
   isHost: boolean;
+  moneyCommitted: number; // Money this player has committed to the session
+  hasPlacedMinimumBet: boolean; // Whether player has placed the minimum bet
 }
 
 export interface CreateSessionRequest {
@@ -38,6 +43,7 @@ export interface JoinSessionResponse {
   status: 'success' | 'error';
   message?: string;
   data?: GameSession;
+  userMoney?: number;
 }
 
 export interface GetPublicSessionsResponse {
@@ -49,6 +55,7 @@ export interface GetPublicSessionsResponse {
 export interface LeaveSessionResponse {
   status: 'success' | 'error';
   message?: string;
+  moneyReturned?: number;
 }
 
 export interface StartCountdownResponse {

@@ -22,6 +22,11 @@ export const userSet = async ({
   redis: RedisClient;
   userDetails: UserDetails;
 }): Promise<void> => {
+  // Ensure money field exists for existing users
+  if (userDetails.money === undefined) {
+    userDetails.money = 1000;
+  }
+  
   // Store user details
   await redis.set(getUserKey(userDetails.userId), JSON.stringify(userDetails));
   

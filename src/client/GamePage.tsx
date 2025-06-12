@@ -157,7 +157,18 @@ const GamePage: React.FC = () => {
   const handleLeaveGame = async () => {
     if (session) {
       try {
-        await leaveSession(session.sessionId);
+        const response = await fetch(`/api/sessions/${session.sessionId}/leave`, {
+          method: 'POST',
+        });
+        const data = await response.json();
+        
+        if (data.status === 'success' && data.moneyReturned !== undefined) {
+          // Show money returned message if any
+          if (data.moneyReturned > 0) {
+            console.log(`Money returned: $${data.moneyReturned}`);
+          }
+        }
+        
         navigate('/');
       } catch (error) {
         console.error('Failed to leave session:', error);
@@ -200,6 +211,8 @@ const GamePage: React.FC = () => {
           <div className="session-info">
             <span>Room: {session.sessionCode}</span>
             <span>Players: {session.players.length}</span>
+            <span>Prize Pool: ${session.prizePool}</span>
+            {user && <span>Your Money: ${user.money || 0}</span>}
           </div>
           <button className="leave-game-btn" onClick={handleLeaveGame}>
             Leave Game
