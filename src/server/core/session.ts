@@ -3,6 +3,7 @@ import { GameSession, SessionPlayer } from '../../shared/types/session';
 
 const getSessionKey = (sessionId: string) => `session:${sessionId}` as const;
 const PUBLIC_SESSIONS_LIST_KEY = 'public_sessions_list' as const;
+const PRIVATE_SESSIONS_LIST_KEY = 'private_sessions_list' as const;
 const USER_SESSION_KEY = (userId: string) => `user_session:${userId}` as const;
 
 // Generate a random 5-character session code
@@ -64,8 +65,13 @@ export const sessionCreate = async ({
   // Store session
   await redis.set(getSessionKey(sessionId), JSON.stringify(session));
   
-  // Only add to public sessions list if explicitly public
-  if (!session.isPrivate) {
+  // Add to appropriate sessions list based on type
+  if (isPrivate) {
+    const privateSessionsList = await redis.get(PRIVATE_SESSIONS_LIST_KEY);
+    const privateSessions = privateSessionsList ? JSON.parse(privateSessionsList) as string[] : [];
+    privateSessions.push(sessionId);
+    await redis.set(PRIVATE_SESSIONS_LIST_KEY, JSON.stringify(privateSessions));
+  } else {
     const publicSessionsList = await redis.get(PUBLIC_SESSIONS_LIST_KEY);
     const publicSessions = publicSessionsList ? JSON.parse(publicSessionsList) as string[] : [];
     publicSessions.push(sessionId);
@@ -203,18 +209,27 @@ export const sessionDelete = async ({
     for (const player of session.players) {
       await redis.del(USER_SESSION_KEY(player.userId));
     }
+
+    // Remove from appropriate sessions list based on type
+    if (session.isPrivate) {
+      const privateSessionsList = await redis.get(PRIVATE_SESSIONS_LIST_KEY);
+      if (privateSessionsList) {
+        const privateSessions = JSON.parse(privateSessionsList) as string[];
+        const updatedSessions = privateSessions.filter(id => id !== sessionId);
+        await redis.set(PRIVATE_SESSIONS_LIST_KEY, JSON.stringify(updatedSessions));
+      }
+    } else {
+      const publicSessionsList = await redis.get(PUBLIC_SESSIONS_LIST_KEY);
+      if (publicSessionsList) {
+        const publicSessions = JSON.parse(publicSessionsList) as string[];
+        const updatedSessions = publicSessions.filter(id => id !== sessionId);
+        await redis.set(PUBLIC_SESSIONS_LIST_KEY, JSON.stringify(updatedSessions));
+      }
+    }
   }
 
   // Delete session
   await redis.del(getSessionKey(sessionId));
-
-  // Remove from public sessions list
-  const publicSessionsList = await redis.get(PUBLIC_SESSIONS_LIST_KEY);
-  if (publicSessionsList) {
-    const publicSessions = JSON.parse(publicSessionsList) as string[];
-    const updatedSessions = publicSessions.filter(id => id !== sessionId);
-    await redis.set(PUBLIC_SESSIONS_LIST_KEY, JSON.stringify(updatedSessions));
-  }
 };
 
 export const sessionStartCountdown = async ({
@@ -278,12 +293,21 @@ export const sessionStartGame = async ({
   // Update session
   await redis.set(getSessionKey(sessionId), JSON.stringify(session));
 
-  // Remove from public sessions list (so new players can't join)
-  const publicSessionsList = await redis.get(PUBLIC_SESSIONS_LIST_KEY);
-  if (publicSessionsList) {
-    const publicSessions = JSON.parse(publicSessionsList) as string[];
-    const updatedSessions = publicSessions.filter(id => id !== sessionId);
-    await redis.set(PUBLIC_SESSIONS_LIST_KEY, JSON.stringify(updatedSessions));
+  // Remove from appropriate sessions list (so new players can't join)
+  if (session.isPrivate) {
+    const privateSessionsList = await redis.get(PRIVATE_SESSIONS_LIST_KEY);
+    if (privateSessionsList) {
+      const privateSessions = JSON.parse(privateSessionsList) as string[];
+      const updatedSessions = privateSessions.filter(id => id !== sessionId);
+      await redis.set(PRIVATE_SESSIONS_LIST_KEY, JSON.stringify(updatedSessions));
+    }
+  } else {
+    const publicSessionsList = await redis.get(PUBLIC_SESSIONS_LIST_KEY);
+    if (publicSessionsList) {
+      const publicSessions = JSON.parse(publicSessionsList) as string[];
+      const updatedSessions = publicSessions.filter(id => id !== sessionId);
+      await redis.set(PUBLIC_SESSIONS_LIST_KEY, JSON.stringify(updatedSessions));
+    }
   }
 
   return session;
@@ -304,8 +328,32 @@ export const getPublicSessions = async ({
 
   for (const sessionId of sessionIds) {
     const session = await sessionGet({ redis, sessionId });
-    // Only show sessions that are waiting (not in countdown or in-game)
-    if (session && session.status === 'waiting') {
+    // Only show sessions that are waiting and explicitly NOT private
+    if (session && session.status === 'waiting' && !session.isPrivate) {
+      sessions.push(session);
+    }
+  }
+
+  return sessions;
+};
+
+export const getPrivateSessions = async ({
+  redis,
+}: {
+  redis: RedisClient;
+}): Promise<GameSession[]> => {
+  const privateSessionsList = await redis.get(PRIVATE_SESSIONS_LIST_KEY);
+  if (!privateSessionsList) {
+    return [];
+  }
+
+  const sessionIds = JSON.parse(privateSessionsList) as string[];
+  const sessions: GameSession[] = [];
+
+  for (const sessionId of sessionIds) {
+    const session = await sessionGet({ redis, sessionId });
+    // Only show sessions that are waiting and explicitly private
+    if (session && session.status === 'waiting' && session.isPrivate) {
       sessions.push(session);
     }
   }
