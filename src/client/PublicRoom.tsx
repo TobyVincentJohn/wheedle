@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GameSession } from '../shared/types/session';
 import { useSession } from './hooks/useSession';
+import { useUser } from './hooks/useUser';
 import './PublicRoom.css';
 
 const PublicRoom: React.FC = () => {
@@ -12,6 +13,7 @@ const PublicRoom: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { createSession, joinSession, currentSession } = useSession();
+  const { refreshUser } = useUser();
 
   const fetchPublicSessions = async () => {
     try {
@@ -54,6 +56,7 @@ const PublicRoom: React.FC = () => {
   const handleCreateSession = async () => {
     try {
       const session = await createSession(6, false); // Max 6 players, public session
+      await refreshUser(); // Refresh user data after creating session
       navigate('/waiting-room', { 
         state: { 
           roomType: 'public', 
@@ -69,6 +72,7 @@ const PublicRoom: React.FC = () => {
   const handleJoinSession = async (sessionId: string) => {
     try {
       const session = await joinSession(sessionId);
+      await refreshUser(); // Refresh user data after joining session
       navigate('/waiting-room', { 
         state: { 
           roomType: 'public', 

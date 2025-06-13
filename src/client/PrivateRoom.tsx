@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSession } from './hooks/useSession';
+import { useUser } from './hooks/useUser';
 import './PrivateRoom.css';
 
 const PrivateRoom: React.FC = () => {
@@ -9,6 +10,7 @@ const PrivateRoom: React.FC = () => {
   const [isJoining, setIsJoining] = useState(false);
   const navigate = useNavigate();
   const { createSession, joinSession } = useSession();
+  const { refreshUser } = useUser();
 
   const handleRoomCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.toUpperCase();
@@ -24,6 +26,7 @@ const PrivateRoom: React.FC = () => {
     try {
       setIsJoining(true);
       const session = await createSession(6, true); // Max 6 players, private session
+      await refreshUser(); // Refresh user data after creating session
       navigate('/waiting-room', { 
         state: { 
           roomType: 'private', 
@@ -70,6 +73,7 @@ const PrivateRoom: React.FC = () => {
       if (data.status === 'success' && data.data) {
         // Join the found private session
         const session = await joinSession(data.data.sessionId);
+        await refreshUser(); // Refresh user data after joining session
         navigate('/waiting-room', { 
           state: { 
             roomType: 'private', 

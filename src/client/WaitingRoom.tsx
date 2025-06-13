@@ -9,7 +9,7 @@ const WaitingRoom: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { leaveSession, startCountdown, currentSession, refreshSession } = useSession();
-  const { user } = useUser();
+  const { user, refreshUser } = useUser();
   const [session, setSession] = useState<GameSession | null>(null);
   const [isHost, setIsHost] = useState(false);
   const [countdown, setCountdown] = useState(0);
@@ -23,8 +23,11 @@ const WaitingRoom: React.FC = () => {
     if (sessionFromState) {
       setSession(sessionFromState);
       setIsHost(hostFromState || false);
+      // Refresh user data when entering waiting room
+      refreshUser();
     } else if (currentSession) {
       setSession(currentSession);
+      refreshUser();
     } else {
       // No session found, redirect to home
       navigate('/');

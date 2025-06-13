@@ -38,6 +38,18 @@ export const useUser = () => {
     }
   }, []);
 
+  const refreshUser = useCallback(async () => {
+    try {
+      const response = await fetch('/api/users/current');
+      const data = await response.json();
+      
+      if (data.status === 'success') {
+        setUser(data.data);
+      }
+    } catch (err) {
+      console.error('Failed to refresh user:', err);
+    }
+  }, []);
   const logout = useCallback(async () => {
     try {
       await fetch('/api/users/current', { method: 'DELETE' });
@@ -53,5 +65,5 @@ export const useUser = () => {
     fetchUser();
   }, [fetchUser]);
 
-  return { user, loading, error, logout };
+  return { user, loading, error, logout, refreshUser };
 }; 
