@@ -52,6 +52,12 @@ export const sessionCreate = async ({
   if (user.money < 100) {
     throw new Error('Insufficient funds. You need at least $100 to create a game.');
   }
+  
+  // Deduct entry fee from user's total money and set money in hand
+  user.money -= 100;
+  user.moneyInHand = 100;
+  await redis.set(userKey, JSON.stringify(user));
+  
   const sessionId = generateSessionId();
   const sessionCode = generateSessionCode();
 
@@ -165,7 +171,7 @@ export const sessionJoin = async ({
   if (session.players.some(player => player.userId === userId)) {
     throw new Error('User is already in this session');
   }
-  // Deduct entry fee from user's money
+  // Deduct entry fee from user's total money and set money in hand
   user.money -= 100;
   user.moneyInHand = 100;
   await redis.set(userKey, JSON.stringify(user));
@@ -185,6 +191,23 @@ export const sessionJoin = async ({
   if (session.players.length === session.maxPlayers) {
     session.status = 'countdown';
     session.countdownStartedAt = Date.now();
+    
+    // All players place minimum bet when countdown starts automatically
+    for (const player of session.players) {
+      if (!player.hasPlacedMinimumBet) {
+        player.hasPlacedMinimumBet = true;
+        session.prizePool += session.minimumBet;
+        
+        // Update user's money in hand
+        const playerUserKey = `user:${player.userId}`;
+        const playerUserData = await redis.get(playerUserKey);
+        if (playerUserData) {
+          const playerUser = JSON.parse(playerUserData);
+          playerUser.moneyInHand = 90; // 100 - 10 minimum bet
+          await redis.set(playerUserKey, JSON.stringify(playerUser));
+        }
+      }
+    }
   }
 
   // Update session
@@ -296,23 +319,19 @@ export const sessionLeave = async ({
 
   // Find the leaving player
   const leavingPlayer = session.players.find(player => player.userId === userId);
+  
+  // Get user's current money in hand
+  const userKey = `user:${userId}`;
+  const userData = await redis.get(userKey);
   let moneyToReturn = 0;
   
   if (leavingPlayer) {
-    // Calculate money to return
-    if (leavingPlayer.hasPlacedMinimumBet) {
-      // Player placed minimum bet, return committed money minus the bet
-      moneyToReturn = leavingPlayer.moneyCommitted - session.minimumBet;
-    } else {
-      // Player hasn't placed minimum bet yet, return full committed money
-      moneyToReturn = leavingPlayer.moneyCommitted;
-    }
-    
-    // Return money to user
-    const userKey = `user:${userId}`;
-    const userData = await redis.get(userKey);
     if (userData) {
       const user = JSON.parse(userData);
+      // Return whatever money they have in hand
+      moneyToReturn = user.moneyInHand || 0;
+      
+      // Return money to user's total balance
       user.money += moneyToReturn;
       user.moneyInHand = 0;
       await redis.set(userKey, JSON.stringify(user));
@@ -335,8 +354,9 @@ export const sessionLeave = async ({
     const userData = await redis.get(userKey);
     if (userData) {
       const user = JSON.parse(userData);
-      // Return their committed money plus the entire prize pool
-      user.money += lastPlayer.moneyCommitted + session.prizePool;
+      // Return their money in hand plus the entire prize pool
+      const totalWinnings = (user.moneyInHand || 0) + session.prizePool;
+      user.money += totalWinnings;
       user.moneyInHand = 0;
       await redis.set(userKey, JSON.stringify(user));
     }
@@ -427,6 +447,15 @@ export const sessionStartCountdown = async ({
     if (!player.hasPlacedMinimumBet) {
       player.hasPlacedMinimumBet = true;
       session.prizePool += session.minimumBet;
+      
+      // Update user's money in hand
+      const userKey = `user:${player.userId}`;
+      const userData = await redis.get(userKey);
+      if (userData) {
+        const user = JSON.parse(userData);
+        user.moneyInHand = 90; // 100 - 10 minimum bet
+        await redis.set(userKey, JSON.stringify(user));
+      }
     }
   }
   
