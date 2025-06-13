@@ -317,7 +317,14 @@ export const sessionLeave = async ({
   if (!userData) {
     throw new Error('User data not found');
   }
-  const user = JSON.parse(userData);
+
+  interface UserData {
+    money: number;
+    moneyInHand: number;
+    username: string;
+  }
+
+  const user = JSON.parse(userData) as UserData;
   
   // Return whatever money they have in hand
   moneyToReturn = user.moneyInHand || 0;
@@ -326,8 +333,10 @@ export const sessionLeave = async ({
   user.money += moneyToReturn;
   user.moneyInHand = 0;
 
-  // Remove player from session
-  session.players = session.players.filter(player => player.userId !== userId);
+  // Remove player from session and get the removed player if any
+  const oldPlayers = [...session.players];
+  session.players = oldPlayers.filter(player => player.userId !== userId);
+  const removedPlayer = oldPlayers.find(player => player.userId === userId);
 
   // If game hasn't started, add player to previousPlayers
   if (session.status === 'waiting') {
@@ -336,7 +345,7 @@ export const sessionLeave = async ({
       username: user.username,
       joinedAt: Date.now(),
       isHost: false,
-      wasHost: false,
+      wasHost: removedPlayer?.isHost || false,
       moneyCommitted: 100,
       hasPlacedMinimumBet: false
     };
@@ -369,7 +378,7 @@ export const sessionLeave = async ({
       const lastPlayerKey = `user:${lastPlayer.userId}`;
       const lastPlayerData = await redis.get(lastPlayerKey);
       if (lastPlayerData) {
-        const lastPlayerUser = JSON.parse(lastPlayerData);
+        const lastPlayerUser = JSON.parse(lastPlayerData) as UserData;
         // Add their money in hand plus the entire prize pool to total balance
         lastPlayerUser.money += (lastPlayerUser.moneyInHand || 0) + session.prizePool;
         lastPlayerUser.moneyInHand = 0;

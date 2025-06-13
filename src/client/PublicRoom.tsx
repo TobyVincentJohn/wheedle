@@ -158,6 +158,12 @@ const PublicRoom: React.FC = () => {
   return (
     <div className="public-room">
       <div className="public-room-content">
+        <button 
+          className="back-button" 
+          onClick={() => navigate('/')}
+        >
+          Back to Home
+        </button>
         <div className="room-code-search">
           <div className="room-code-search-label">ENTER CODE</div>
           <div className="room-code-search-container">

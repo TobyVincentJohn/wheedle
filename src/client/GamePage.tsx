@@ -17,7 +17,6 @@ const GamePage: React.FC = () => {
   const { leaveSession, currentSession, refreshSession } = useSession();
   const { user } = useUser();
   const [dealerId, setDealerId] = useState<number>(1);
-  const [userInput, setUserInput] = useState<string>('');
   const [session, setSession] = useState<GameSession | null>(null);
   const [notifications, setNotifications] = useState<PlayerLeftNotification[]>([]);
   const [showAllPlayersLeftModal, setShowAllPlayersLeftModal] = useState(false);
@@ -150,10 +149,6 @@ const GamePage: React.FC = () => {
     };
   }, [session, leaveSession, navigate]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setUserInput(e.target.value);
-  };
-
   const handleLeaveGame = async () => {
     if (session) {
       try {
@@ -194,6 +189,10 @@ const GamePage: React.FC = () => {
     }
   };
 
+  const handleResponseClick = () => {
+    navigate('/response', { state: { session } });
+  };
+
   if (!session) {
     return (
       <div className="game-page">
@@ -213,9 +212,14 @@ const GamePage: React.FC = () => {
             <span>Prize Pool: ${session.prizePool || 0}</span>
             {user && <span>Money in Hand: ${user.moneyInHand || 0}</span>}
           </div>
-          <button className="leave-game-btn" onClick={handleLeaveGame}>
-            Leave Game
-          </button>
+          <div className="header-buttons">
+            <button className="response-btn" onClick={handleResponseClick}>
+              Respond
+            </button>
+            <button className="leave-game-btn" onClick={handleLeaveGame}>
+              Leave Game
+            </button>
+          </div>
         </div>
         
         <div className="game-notifications">
@@ -226,14 +230,6 @@ const GamePage: React.FC = () => {
           ))}
         </div>
         
-        <div className="text-bubble">
-          <textarea
-            value={userInput}
-            onChange={handleInputChange}
-            className="text-input"
-            placeholder="Type your reasons..."
-          />
-        </div>
         <div className="dealer-text-bubble" />
         <div className={`dealer dealer-${dealerId}`} />
       </div>

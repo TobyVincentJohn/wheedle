@@ -1,0 +1,177 @@
+.response-page {
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Blurred background - same as GamePage */
+.response-page::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 750px;
+  height: 750px;
+  background-image: url('../../assets/casino_backdrop.png');
+  background-size: 100% 100%;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: blur(2px);
+  z-index: 0;
+}
+
+.response-content {
+  position: relative;
+  width: 750px;
+  height: 750px;
+  overflow: hidden;
+  z-index: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Centered dealer */
+.response-dealer {
+  position: relative;
+  width: 400px;
+  height: 400px;
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+}
+
+/* Text bubble below dealer */
+.text-bubble {
+  position: relative;
+  width: 500px;
+  height: 200px;
+  background-image: url('../../assets/player_text.png');
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.text-input {
+  width: 80%;
+  max-width: 320px;
+  height: 120px;
+  background: rgba(255, 255, 255, 0);
+  padding: 10px 15px;
+  font-size: 24px;
+  color: #333;
+  outline: none;
+  resize: none;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-y: auto;
+  vertical-align: top;
+  font-family: 'VT323', monospace;
+  border: none;
+}
+
+.text-input::placeholder {
+  color: #888;
+  font-style: italic;
+  font-family: 'VT323', monospace;
+  opacity: 0.8;
+}
+
+.loading-message {
+  color: #FFD700;
+  font-family: 'VT323', monospace;
+  font-size: 24px;
+  text-align: center;
+}
+
+/* Dealer images - same as GamePage */
+.response-dealer-1 { background-image: url('../../assets/dealers/dealer1.png'); }
+.response-dealer-2 { background-image: url('../../assets/dealers/dealer2.png'); }
+.response-dealer-3 { background-image: url('../../assets/dealers/dealer3.png'); }
+.response-dealer-4 { background-image: url('../../assets/dealers/dealer4.png'); }
+.response-dealer-5 { background-image: url('../../assets/dealers/dealer5.png'); }
+.response-dealer-6 { background-image: url('../../assets/dealers/dealer6.png'); }
+.response-dealer-7 { background-image: url('../../assets/dealers/dealer7.png'); }
+.response-dealer-8 { background-image: url('../../assets/dealers/dealer8.png'); }
+
+/* Responsive design for mobile devices */
+@media screen and (max-width: 768px) {
+  .response-page::before {
+    width: 100vmin;
+    height: 100vmin;
+    background-size: 100% 100%;
+  }
+
+  .response-content {
+    width: 100vmin;
+    height: 100vmin;
+    max-width: 750px;
+    max-height: 750px;
+    padding: 20px;
+  }
+
+  .response-dealer {
+    width: 53.3vmin; /* 400px / 750px * 100 */
+    height: 53.3vmin;
+  }
+
+  .text-bubble {
+    width: 66.7vmin; /* 500px / 750px * 100 */
+    height: 26.7vmin; /* 200px / 750px * 100 */
+    padding: 2.7vmin;
+    margin-top: -2.7vmin; /* Adjust for mobile */
+  }
+
+  .text-input {
+    width: 80%;
+    height: 16vmin; /* 120px / 750px * 100 */
+    font-size: 3.2vmin;
+    padding: 1.3vmin 2vmin;
+  }
+
+  .loading-message {
+    font-size: 3.2vmin;
+  }
+}
+
+.back-button {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background: #4CAF50;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  font-family: 'VT323', monospace;
+  font-size: 16px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s;
+  z-index: 10;
+}
+
+.back-button:hover {
+  background: #45a049;
+  transform: scale(1.05);
+}
+
+@media screen and (max-width: 768px) {
+  .back-button {
+    top: 2.7vmin;
+    left: 2.7vmin;
+    padding: 1.1vmin 2.1vmin;
+    font-size: 2.1vmin;
+  }
+}
