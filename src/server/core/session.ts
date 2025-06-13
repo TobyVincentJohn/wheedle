@@ -317,25 +317,20 @@ export const sessionLeave = async ({
     return { moneyReturned: 0 }; // Session doesn't exist, nothing to do
   }
 
-  // Find the leaving player
-  const leavingPlayer = session.players.find(player => player.userId === userId);
-  
   // Get user's current money in hand
   const userKey = `user:${userId}`;
   const userData = await redis.get(userKey);
   let moneyToReturn = 0;
   
-  if (leavingPlayer) {
-    if (userData) {
-      const user = JSON.parse(userData);
-      // Return whatever money they have in hand
-      moneyToReturn = user.moneyInHand || 0;
-      
-      // Return money to user's total balance
-      user.money += moneyToReturn;
-      user.moneyInHand = 0;
-      await redis.set(userKey, JSON.stringify(user));
-    }
+  if (userData) {
+    const user = JSON.parse(userData);
+    // Return whatever money they have in hand
+    moneyToReturn = user.moneyInHand || 0;
+    
+    // Add money in hand back to total balance
+    user.money += moneyToReturn;
+    user.moneyInHand = 0;
+    await redis.set(userKey, JSON.stringify(user));
   }
 
   // Remove player from session
@@ -354,9 +349,8 @@ export const sessionLeave = async ({
     const userData = await redis.get(userKey);
     if (userData) {
       const user = JSON.parse(userData);
-      // Return their money in hand plus the entire prize pool
-      const totalWinnings = (user.moneyInHand || 0) + session.prizePool;
-      user.money += totalWinnings;
+      // Add their money in hand plus the entire prize pool to total balance
+      user.money += (user.moneyInHand || 0) + session.prizePool;
       user.moneyInHand = 0;
       await redis.set(userKey, JSON.stringify(user));
     }
