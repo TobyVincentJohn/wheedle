@@ -76,6 +76,7 @@ export const sessionCreate = async ({
     hostUserId,
     hostUsername,
     players: [hostPlayer],
+    previousPlayers: [],
     status: 'waiting',
     createdAt: Date.now(),
     maxPlayers,
@@ -87,9 +88,6 @@ export const sessionCreate = async ({
 
   // Store session
   await redis.set(getSessionKey(sessionId), JSON.stringify(session));
-  
-  // Initialize previous players list with host
-  await redis.set(`previous_players:${sessionId}`, JSON.stringify([hostUserId]));
   
   // Register room code
   await registerRoomCode({
@@ -154,9 +152,6 @@ export const sessionJoin = async ({
   }
   
   const user = JSON.parse(userData);
-  if (user.money < 100) {
-    throw new Error('Insufficient funds. You need at least $100 to join a game.');
-  }
   const session = await sessionGet({ redis, sessionId });
   if (!session) {
     throw new Error('Session not found');
@@ -170,38 +165,47 @@ export const sessionJoin = async ({
     throw new Error('Session is full');
   }
 
-  // Check if user is already in the session
-  if (session.players.some(p => p.userId === userId)) {
-    throw new Error('User is already in this session');
-  }
-  // Deduct entry fee from user's total money and set money in hand
-  user.money -= 100;
-  user.moneyInHand = 100;
-  await redis.set(userKey, JSON.stringify(user));
+  // Check if user was previously in this session
+  const previousPlayerIndex = session.previousPlayers.findIndex(p => p.userId === userId);
+  let wasHost = false;
+  let moneyAlreadyCommitted = 0;
 
+  if (previousPlayerIndex !== -1) {
+    // User was previously in this session
+    const previousPlayer = session.previousPlayers[previousPlayerIndex];
+    if (previousPlayer) {
+      wasHost = previousPlayer.wasHost || false;
+      moneyAlreadyCommitted = previousPlayer.moneyCommitted;
+      
+      // Remove from previousPlayers
+      session.previousPlayers.splice(previousPlayerIndex, 1);
+    }
+  } else {
+    // New player joining - check money
+    if (user.money < 100) {
+      throw new Error('Insufficient funds. You need at least $100 to join a game.');
+    }
+    // Deduct entry fee from user's total money and set money in hand
+    user.money -= 100;
+    user.moneyInHand = 100;
+    await redis.set(userKey, JSON.stringify(user));
+  }
+
+  // Add player to session
   const newPlayer: SessionPlayer = {
     userId,
     username,
     joinedAt: Date.now(),
     isHost: false,
-    moneyCommitted: 100,
+    wasHost,
+    moneyCommitted: moneyAlreadyCommitted || 100,
     hasPlacedMinimumBet: false,
   };
 
   session.players.push(newPlayer);
-
-  // Add to previous players list
-  const previousPlayers = await redis.get(`previous_players:${sessionId}`);
-  const playerIds = previousPlayers ? JSON.parse(previousPlayers) as string[] : [];
-  if (!playerIds.includes(userId)) {
-    playerIds.push(userId);
-    await redis.set(`previous_players:${sessionId}`, JSON.stringify(playerIds));
-  }
-
+  
   // Update session
   await redis.set(getSessionKey(sessionId), JSON.stringify(session));
-
-  // Map user to session
   await redis.set(USER_SESSION_KEY(userId), sessionId);
 
   return session;
@@ -299,55 +303,90 @@ export const sessionLeave = async ({
   redis: RedisClient;
   sessionId: string;
   userId: string;
-}): Promise<GameSession> => {
+}): Promise<{ moneyReturned: number }> => {
   const session = await sessionGet({ redis, sessionId });
   if (!session) {
-    throw new Error('Session not found');
+    return { moneyReturned: 0 }; // Session doesn't exist, nothing to do
   }
 
-  // Only allow leaving if the game hasn't started
-  if (session.status !== 'waiting') {
-    throw new Error('Cannot leave session after game has started');
+  // Get user's current money in hand
+  const userKey = `user:${userId}`;
+  const userData = await redis.get(userKey);
+  let moneyToReturn = 0;
+
+  if (!userData) {
+    throw new Error('User data not found');
   }
+  const user = JSON.parse(userData);
+  
+  // Return whatever money they have in hand
+  moneyToReturn = user.moneyInHand || 0;
+  
+  // Add money in hand back to total balance
+  user.money += moneyToReturn;
+  user.moneyInHand = 0;
 
   // Remove player from session
-  session.players = session.players.filter(p => p.userId !== userId);
+  session.players = session.players.filter(player => player.userId !== userId);
 
-  // If this was the last player, delete the session
-  if (session.players.length === 0) {
-    await sessionDelete({ redis, sessionId });
-    await redis.del(USER_SESSION_KEY(userId));
-    return session;
+  // If game hasn't started, add player to previousPlayers
+  if (session.status === 'waiting') {
+    const playerToMove: SessionPlayer = {
+      userId,
+      username: user.username,
+      joinedAt: Date.now(),
+      isHost: false,
+      wasHost: false,
+      moneyCommitted: 100,
+      hasPlacedMinimumBet: false
+    };
+    session.previousPlayers.push(playerToMove);
   }
 
-  // If the host left, assign a new host
-  if (userId === session.hostUserId && session.players.length > 0) {
-    const newHost = session.players[0];
+  // If there are still players and this was the host
+  const wasHost = session.hostUserId === userId;
+  if (session.players.length > 0 && wasHost) {
+    // Find the player who was previously a host, if any
+    const newHost = session.players.find(p => p.wasHost) || session.players[0];
     if (newHost) {
       session.hostUserId = newHost.userId;
       session.hostUsername = newHost.username;
       newHost.isHost = true;
+      newHost.wasHost = false; // Clear wasHost as they're now the active host
     }
   }
 
-  // Update session
-  await redis.set(getSessionKey(sessionId), JSON.stringify(session));
-
-  // Remove user's session mapping
+  // Remove user session mapping
   await redis.del(USER_SESSION_KEY(userId));
 
-  // Return money to the user
-  const userKey = `user:${userId}`;
-  const userData = await redis.get(userKey);
-  if (userData) {
-    const user = JSON.parse(userData);
-    if (user && typeof user.money === 'number') {
-      user.money += 100; // Return the entry fee
-      await redis.set(userKey, JSON.stringify(user));
+  if (session.players.length === 0) {
+    // Delete empty session
+    await sessionDelete({ redis, sessionId });
+  } else if (session.players.length === 1 && (session.status === 'in-game' || session.status === 'countdown')) {
+    // Last player remaining - they get the entire prize pool
+    const [lastPlayer] = session.players;
+    if (lastPlayer) {
+      const lastPlayerKey = `user:${lastPlayer.userId}`;
+      const lastPlayerData = await redis.get(lastPlayerKey);
+      if (lastPlayerData) {
+        const lastPlayerUser = JSON.parse(lastPlayerData);
+        // Add their money in hand plus the entire prize pool to total balance
+        lastPlayerUser.money += (lastPlayerUser.moneyInHand || 0) + session.prizePool;
+        lastPlayerUser.moneyInHand = 0;
+        await redis.set(lastPlayerKey, JSON.stringify(lastPlayerUser));
+      }
     }
+    // Delete the session since only one player remains
+    await sessionDelete({ redis, sessionId });
+  } else {
+    // Update session
+    await redis.set(getSessionKey(sessionId), JSON.stringify(session));
   }
 
-  return session;
+  // Update leaving user's money
+  await redis.set(userKey, JSON.stringify(user));
+
+  return { moneyReturned: moneyToReturn };
 };
 
 export const sessionDelete = async ({
@@ -481,20 +520,6 @@ export const sessionStartGame = async ({
       const publicSessions = JSON.parse(publicSessionsList) as string[];
       const updatedSessions = publicSessions.filter(id => id !== sessionId);
       await redis.set(PUBLIC_SESSIONS_LIST_KEY, JSON.stringify(updatedSessions));
-    }
-  }
-
-  // Only keep session mappings for active players
-  const currentPlayerIds = new Set(session.players.map((p: SessionPlayer) => p.userId));
-  
-  // For each player that was in the session but is not anymore, remove their mapping
-  const previousPlayers = await redis.get(`previous_players:${sessionId}`);
-  if (previousPlayers) {
-    const playerIds = JSON.parse(previousPlayers) as string[];
-    for (const playerId of playerIds) {
-      if (!currentPlayerIds.has(playerId)) {
-        await redis.del(USER_SESSION_KEY(playerId));
-      }
     }
   }
 

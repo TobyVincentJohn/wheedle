@@ -209,7 +209,6 @@ const GamePage: React.FC = () => {
       <div className="game-content">
         <div className="game-header">
           <div className="session-info">
-            <span>Room: {session.sessionCode}</span>
             <span>Players: {session.players.length}</span>
             <span>Prize Pool: ${session.prizePool || 0}</span>
             {user && <span>Money in Hand: ${user.moneyInHand || 0}</span>}

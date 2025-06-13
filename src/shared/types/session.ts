@@ -4,6 +4,7 @@ export interface GameSession {
   hostUserId: string;
   hostUsername: string;
   players: SessionPlayer[];
+  previousPlayers: SessionPlayer[]; // Players who have left but can rejoin
   status: 'waiting' | 'countdown' | 'in-game' | 'completed';
   createdAt: number;
   maxPlayers: number;
@@ -21,6 +22,7 @@ export interface SessionPlayer {
   username: string;
   joinedAt: number;
   isHost: boolean;
+  wasHost?: boolean; // Track if player was previously a host
   moneyCommitted: number; // Money this player has committed to the session
   hasPlacedMinimumBet: boolean; // Whether player has placed the minimum bet
 }
