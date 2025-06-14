@@ -86,17 +86,21 @@ const ResponsePage: React.FC = () => {
         {userPersona && (
           <div style={{
             position: 'absolute',
-            top: '80px',
+            bottom: '150px',
             left: '50%',
             transform: 'translateX(-50%)',
             color: '#FFD700',
             fontFamily: 'VT323, monospace',
-            fontSize: '18px',
+            fontSize: '20px',
             textAlign: 'center',
             maxWidth: '600px',
-            zIndex: 10
+            zIndex: 10,
+            background: 'rgba(0, 0, 0, 0.8)',
+            padding: '10px 20px',
+            borderRadius: '8px',
+            border: '2px solid #FFD700'
           }}>
-            You are: {userPersona}
+            Your Role: {userPersona}
           </div>
         )}
         

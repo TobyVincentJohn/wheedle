@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { GameSession } from '../shared/types/session';
+import { AIGameData } from '../shared/types/aiGame';
 import { useSession } from './hooks/useSession';
 import { useUser } from './hooks/useUser';
 import './GamePage.css';
@@ -11,6 +12,8 @@ interface PlayerLeftNotification {
   timestamp: number;
 }
 
+const CLUE_DURATION = 10000; // 10 seconds per clue
+
 const GamePage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -18,10 +21,18 @@ const GamePage: React.FC = () => {
   const { user } = useUser();
   const [dealerId, setDealerId] = useState<number>(1);
   const [session, setSession] = useState<GameSession | null>(null);
+  const [aiGameData, setAiGameData] = useState<AIGameData | null>(null);
   const [notifications, setNotifications] = useState<PlayerLeftNotification[]>([]);
   const [showAllPlayersLeftModal, setShowAllPlayersLeftModal] = useState(false);
   const [previousPlayerCount, setPreviousPlayerCount] = useState<number>(0);
   const [isInitialized, setIsInitialized] = useState(false);
+  
+  // Clue display state
+  const [currentClueIndex, setCurrentClueIndex] = useState(0);
+  const [clueStartTime, setClueStartTime] = useState(Date.now());
+  const [allCluesShown, setAllCluesShown] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState(CLUE_DURATION);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // Get session from location state or current session
@@ -35,6 +46,9 @@ const GamePage: React.FC = () => {
       if (sessionFromState.dealerId) {
         setDealerId(sessionFromState.dealerId);
       }
+      
+      // Fetch AI game data
+      fetchAIGameData(sessionFromState.sessionId);
       setIsInitialized(true);
     } else if (currentSession) {
       setSession(currentSession);
@@ -44,6 +58,9 @@ const GamePage: React.FC = () => {
       if (currentSession.dealerId) {
         setDealerId(currentSession.dealerId);
       }
+      
+      // Fetch AI game data
+      fetchAIGameData(currentSession.sessionId);
       setIsInitialized(true);
     } else {
       // No session found, redirect to home
@@ -51,6 +68,50 @@ const GamePage: React.FC = () => {
       return;
     }
   }, [location.state, currentSession, navigate]);
+
+  const fetchAIGameData = async (sessionId: string) => {
+    try {
+      const response = await fetch(`/api/ai-game-data/${sessionId}`);
+      const data = await response.json();
+      
+      if (data.status === 'success' && data.data) {
+        setAiGameData(data.data);
+        setClueStartTime(Date.now());
+        setCurrentClueIndex(0);
+        setAllCluesShown(false);
+      } else {
+        console.error('Failed to fetch AI game data:', data.message);
+      }
+    } catch (error) {
+      console.error('Error fetching AI game data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Timer for clue progression
+  useEffect(() => {
+    if (!aiGameData || allCluesShown) return;
+
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - clueStartTime;
+      const remaining = Math.max(0, CLUE_DURATION - elapsed);
+      setTimeRemaining(remaining);
+
+      if (remaining === 0) {
+        if (currentClueIndex < 2) {
+          // Move to next clue
+          setCurrentClueIndex(prev => prev + 1);
+          setClueStartTime(Date.now());
+        } else {
+          // All clues shown
+          setAllCluesShown(true);
+        }
+      }
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, [aiGameData, currentClueIndex, clueStartTime, allCluesShown]);
 
   // Background polling for session changes without UI refresh
   useEffect(() => {
@@ -190,7 +251,30 @@ const GamePage: React.FC = () => {
   };
 
   const handleResponseClick = () => {
-    navigate('/response', { state: { session } });
+    if (session && aiGameData) {
+      navigate('/response', { 
+        state: { 
+          session, 
+          aiGameData,
+          userPersona: aiGameData.userPersonas[Math.floor(Math.random() * 3)]
+        } 
+      });
+    }
+  };
+
+  const formatTime = (ms: number) => {
+    const seconds = Math.ceil(ms / 1000);
+    return `${seconds}s`;
+  };
+
+  const getCurrentClueText = () => {
+    if (!aiGameData) return 'Loading clues...';
+    
+    if (allCluesShown) {
+      return 'All clues revealed! Click "Respond" to make your guess.';
+    }
+    
+    return `Clue ${currentClueIndex + 1}: ${aiGameData.clues[currentClueIndex]} (Next in ${formatTime(timeRemaining)})`;
   };
 
   if (!session) {
@@ -198,6 +282,16 @@ const GamePage: React.FC = () => {
       <div className="game-page">
         <div className="game-content">
           <div className="loading-message">Loading game...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="game-page">
+        <div className="game-content">
+          <div className="loading-message">Loading AI clues...</div>
         </div>
       </div>
     );
@@ -213,7 +307,12 @@ const GamePage: React.FC = () => {
             {user && <span>Money in Hand: ${user.moneyInHand || 0}</span>}
           </div>
           <div className="header-buttons">
-            <button className="response-btn" onClick={handleResponseClick}>
+            <button 
+              className="response-btn" 
+              onClick={handleResponseClick}
+              disabled={!allCluesShown}
+              style={{ opacity: allCluesShown ? 1 : 0.5 }}
+            >
               Respond
             </button>
             <button className="leave-game-btn" onClick={handleLeaveGame}>
@@ -230,7 +329,23 @@ const GamePage: React.FC = () => {
           ))}
         </div>
         
-        <div className="dealer-text-bubble" />
+        <div className="dealer-text-bubble">
+          <div style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            color: '#333',
+            fontFamily: 'VT323, monospace',
+            fontSize: '18px',
+            textAlign: 'center',
+            maxWidth: '400px',
+            lineHeight: '1.4',
+            padding: '20px'
+          }}>
+            {getCurrentClueText()}
+          </div>
+        </div>
         <div className={`dealer dealer-${dealerId}`} />
       </div>
       

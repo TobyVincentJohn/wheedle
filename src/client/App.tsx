@@ -17,7 +17,7 @@ export const App: React.FC = () => {
         <Route path="/public-room" element={<PublicRoom />} />
         <Route path="/private-room" element={<PrivateRoom />} />
         <Route path="/waiting-room" element={<WaitingRoom />} />
-        <Route path="/game" element={<CluesPage />} />
+        <Route path="/game" element={<GamePage />} />
         <Route path="/response" element={<ResponsePage />} />
         <Route path="/leaderboard" element={<LeaderboardPage />} />
       </Routes>
