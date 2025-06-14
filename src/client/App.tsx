@@ -7,6 +7,7 @@ import WaitingRoom from './WaitingRoom';
 import GamePage from './GamePage';
 import LeaderboardPage from './LeaderboardPage';
 import ResponsePage from './ResponsePage';
+import CluesPage from './CluesPage';
 
 export const App: React.FC = () => {
   return (
@@ -16,7 +17,7 @@ export const App: React.FC = () => {
         <Route path="/public-room" element={<PublicRoom />} />
         <Route path="/private-room" element={<PrivateRoom />} />
         <Route path="/waiting-room" element={<WaitingRoom />} />
-        <Route path="/game" element={<GamePage />} />
+        <Route path="/game" element={<CluesPage />} />
         <Route path="/response" element={<ResponsePage />} />
         <Route path="/leaderboard" element={<LeaderboardPage />} />
       </Routes>
