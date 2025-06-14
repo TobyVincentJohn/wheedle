@@ -62,6 +62,10 @@ const ResponsePage: React.FC = () => {
         handleSubmitResponse(true);
       }
     }, 100);
+
+    return () => clearInterval(interval);
+  }, [responseStartTime, isTimeUp]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setUserInput(e.target.value);
   };
