@@ -113,6 +113,20 @@ const GamePage: React.FC = () => {
     return () => clearInterval(interval);
   }, [aiGameData, currentClueIndex, clueStartTime, allCluesShown]);
 
+  // Auto-navigate to response page after all clues are shown
+  useEffect(() => {
+    if (allCluesShown && session && aiGameData) {
+      // Navigate immediately after all clues are shown
+      navigate('/response', { 
+        state: { 
+          session, 
+          aiGameData,
+          userPersona: aiGameData.userPersonas[Math.floor(Math.random() * 3)]
+        } 
+      });
+    }
+  }, [allCluesShown, session, aiGameData, navigate]);
+
   // Background polling for session changes without UI refresh
   useEffect(() => {
     if (!session || !isInitialized) return;
@@ -307,14 +321,6 @@ const GamePage: React.FC = () => {
             {user && <span>Money in Hand: ${user.moneyInHand || 0}</span>}
           </div>
           <div className="header-buttons">
-            <button 
-              className="response-btn" 
-              onClick={handleResponseClick}
-              disabled={!allCluesShown}
-              style={{ opacity: allCluesShown ? 1 : 0.5 }}
-            >
-              Respond
-            </button>
             <button className="leave-game-btn" onClick={handleLeaveGame}>
               Leave Game
             </button>
