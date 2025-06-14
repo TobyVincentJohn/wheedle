@@ -303,12 +303,9 @@ const ResponsePage: React.FC = () => {
         >
           {isTimeUp ? 'Time Up' : 'Submit Guess (Ctrl+Enter)'}
         </button>
-
-          {isTimeUp ? 'Time Up' : 'Submit Guess (Ctrl+Enter)'}
-        </button>
       </div>
     </div>
   );
 };
 
-export default ResponsePage; 
+export default ResponsePage;
