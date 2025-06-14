@@ -10,32 +10,59 @@ export interface AIGameData {
 
 const getAIGameDataKey = (sessionId: string) => `ai_game_data:${sessionId}` as const;
 
-// Mock Gemini API call - replace with actual Gemini integration
 const generateAIGameData = async (): Promise<Omit<AIGameData, 'sessionId' | 'createdAt'>> => {
-  // This is a mock implementation. Replace with actual Gemini API call
-  // The prompt should ask Gemini to generate:
-  // 1. An AI persona (character the AI will play)
-  // 2. Three progressive clues about this persona
-  // 3. Three different user personas for variety
-  
-  const mockResponse = {
-    aiPersona: "I am a mysterious detective from the 1940s who specializes in solving supernatural cases. I wear a fedora and carry an old leather notebook filled with cryptic symbols.",
-    clues: [
-      "I work in the shadows when others sleep, seeking truth in the darkness.",
-      "My tools are not conventional - I rely on intuition and ancient symbols to solve mysteries.",
-      "The cases I handle involve things that science cannot easily explain, and I've been doing this since the jazz age."
-    ] as [string, string, string],
-    userPersonas: [
-      "A curious journalist investigating strange occurrences",
-      "A skeptical scientist trying to debunk supernatural claims", 
-      "An enthusiastic paranormal investigator seeking proof"
-    ] as [string, string, string]
-  };
+  const apiKey = await Devvit.secret.get('GEMINI_API_KEY');
+  if (!apiKey) throw new Error('Missing GEMINI_API_KEY in Devvit secrets');
 
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  return mockResponse;
+  const prompt = `
+Respond only with valid JSON:
+{
+  "aiPersona": string,
+  "clues": [string, string, string],
+  "userPersonas": [string, string, string]
+}
+Clues should get progressively more revealing.
+`;
+
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [
+        {
+          role: 'user',
+          parts: [{ text: prompt }]
+        }
+      ]
+    })
+  });
+
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(`Gemini API Error ${res.status}: ${errorText}`);
+  }
+
+  const json = await res.json();
+  const rawText = json?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!rawText) throw new Error('Gemini returned no text');
+
+  let data;
+  try {
+    data = JSON.parse(rawText);
+  } catch (err) {
+    throw new Error(`Invalid JSON from Gemini:\n${rawText}`);
+  }
+
+  // Manual validation
+  if (
+    typeof data.aiPersona !== 'string' ||
+    !Array.isArray(data.clues) || data.clues.length !== 3 || !data.clues.every(c => typeof c === 'string') ||
+    !Array.isArray(data.userPersonas) || data.userPersonas.length !== 3 || !data.userPersonas.every(p => typeof p === 'string')
+  ) {
+    throw new Error(`Invalid structure from Gemini:\n${JSON.stringify(data)}`);
+  }
+
+  return data;
 };
 
 export const createAIGameData = async ({
@@ -45,25 +72,19 @@ export const createAIGameData = async ({
   redis: RedisClient;
   sessionId: string;
 }): Promise<AIGameData> => {
-  // Check if data already exists
-  const existingData = await getAIGameData({ redis, sessionId });
-  if (existingData) {
-    return existingData;
-  }
+  const existing = await getAIGameData({ redis, sessionId });
+  if (existing) return existing;
 
-  // Generate new AI game data
   const gameData = await generateAIGameData();
-  
-  const aiGameData: AIGameData = {
+
+  const fullData: AIGameData = {
     ...gameData,
     sessionId,
-    createdAt: Date.now(),
+    createdAt: Date.now()
   };
 
-  // Store in Redis
-  await redis.set(getAIGameDataKey(sessionId), JSON.stringify(aiGameData));
-  
-  return aiGameData;
+  await redis.set(getAIGameDataKey(sessionId), JSON.stringify(fullData));
+  return fullData;
 };
 
 export const getAIGameData = async ({
