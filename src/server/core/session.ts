@@ -1,6 +1,7 @@
 import { RedisClient } from '@devvit/redis';
 import { GameSession, SessionPlayer } from '../../shared/types/session';
 import { registerRoomCode, unregisterRoomCode } from './roomCodeSearch';
+import { deleteAIGameData } from './aiService';
 
 const getSessionKey = (sessionId: string) => `session:${sessionId}` as const;
 const PUBLIC_SESSIONS_LIST_KEY = 'public_sessions_list' as const;
@@ -407,6 +408,9 @@ export const sessionDelete = async ({
 }): Promise<void> => {
   const session = await sessionGet({ redis, sessionId });
   if (session) {
+    // Delete AI game data
+    await deleteAIGameData({ redis, sessionId });
+    
     // Unregister room code
     await unregisterRoomCode({ redis, sessionCode: session.sessionCode });
     

@@ -17,6 +17,8 @@ import {
   getUserCurrentSession
 } from './core/session';
 import { findSessionByCode } from './core/roomCodeSearch';
+import { createAIGameData, getAIGameData, deleteAIGameData } from './core/aiService';
+import { GetAIGameDataResponse } from '../shared/types/aiGame';
 import { 
   CreateSessionResponse, 
   JoinSessionResponse, 
@@ -454,6 +456,47 @@ router.get('/api/sessions/current', async (_req, res): Promise<void> => {
       status: 'error', 
       message: error instanceof Error ? error.message : 'Unknown error fetching current session'
     });
+  }
+});
+
+// AI Game Data Endpoints
+router.get('/api/ai-game-data/:sessionId', async (req, res): Promise<void> => {
+  const { sessionId } = req.params;
+  const { userId } = getContext();
+  const redis = getRedis();
+  
+  if (!userId) {
+    res.status(401).json({ status: 'error', message: 'Must be logged in' } as GetAIGameDataResponse);
+    return;
+  }
+
+  try {
+    // Check if user is in the session
+    const session = await sessionGet({ redis, sessionId });
+    if (!session) {
+      res.status(404).json({ status: 'error', message: 'Session not found' } as GetAIGameDataResponse);
+      return;
+    }
+
+    const userInSession = session.players.some(p => p.userId === userId);
+    if (!userInSession) {
+      res.status(403).json({ status: 'error', message: 'User not in session' } as GetAIGameDataResponse);
+      return;
+    }
+
+    // Get or create AI game data
+    let aiGameData = await getAIGameData({ redis, sessionId });
+    if (!aiGameData) {
+      aiGameData = await createAIGameData({ redis, sessionId });
+    }
+
+    res.json({ status: 'success', data: aiGameData } as GetAIGameDataResponse);
+  } catch (error) {
+    console.error('Error fetching AI game data:', error);
+    res.status(500).json({ 
+      status: 'error', 
+      message: error instanceof Error ? error.message : 'Unknown error fetching AI game data'
+    } as GetAIGameDataResponse);
   }
 });
 
