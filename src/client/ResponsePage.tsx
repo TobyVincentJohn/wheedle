@@ -189,7 +189,7 @@ const ResponsePage: React.FC = () => {
             transition: 'all 0.2s',
             opacity: isTimeUp ? 0.6 : 1
           }}
-        >
+
           {isTimeUp ? 'Time Up' : 'Submit Guess (Ctrl+Enter)'}
         </button>
       </div>
