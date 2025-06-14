@@ -127,7 +127,7 @@ const GamePage: React.FC = () => {
     }
   }, [allCluesShown, session, aiGameData, navigate]);
 
-  // Background polling for session changes without UI refresh
+  // Background polling for session changes
   useEffect(() => {
     if (!session || !isInitialized) return;
 
@@ -135,24 +135,19 @@ const GamePage: React.FC = () => {
     
     const interval = setInterval(async () => {
       try {
-        // Fetch session data directly without triggering UI refresh
         const response = await fetch('/api/sessions/current');
         const data = await response.json();
         
         if (data.status === 'success' && data.data) {
           const updatedSession = data.data as GameSession;
           
-          // Only update if there are actual changes
           if (JSON.stringify(updatedSession) !== JSON.stringify(lastKnownSession)) {
-            // Check for player changes
             const newPlayerCount = updatedSession.players.length;
             
             if (newPlayerCount < lastKnownSession.players.length) {
-              // Find which players left
               const currentPlayerIds = new Set(updatedSession.players.map(p => p.userId));
               const leftPlayers = lastKnownSession.players.filter(p => !currentPlayerIds.has(p.userId));
               
-              // Add notifications for players who left
               leftPlayers.forEach(player => {
                 const notification: PlayerLeftNotification = {
                   id: `${player.userId}-${Date.now()}`,
@@ -162,22 +157,18 @@ const GamePage: React.FC = () => {
                 
                 setNotifications(prev => [...prev, notification]);
                 
-                // Remove notification after 4 seconds
                 setTimeout(() => {
                   setNotifications(prev => prev.filter(n => n.id !== notification.id));
                 }, 4000);
               });
             }
             
-            // Check if only one player remains
             if (newPlayerCount <= 1 && user && updatedSession.players.some(p => p.userId === user.userId)) {
               setShowAllPlayersLeftModal(true);
             }
             
-            // Update session state
             setSession(updatedSession);
             
-            // Update dealer ID if it's set in the session
             if (updatedSession.dealerId && updatedSession.dealerId !== dealerId) {
               setDealerId(updatedSession.dealerId);
             }
@@ -186,18 +177,16 @@ const GamePage: React.FC = () => {
             lastKnownSession = updatedSession;
           }
         } else if (data.status === 'success' && !data.data) {
-          // Session no longer exists, show modal and redirect
           setShowAllPlayersLeftModal(true);
         }
       } catch (error) {
         console.error('Error polling session:', error);
       }
-    }, 1000); // Check every second for real-time updates
+    }, 1000);
 
     return () => clearInterval(interval);
-  }, [session, isInitialized, user]);
+  }, [session, isInitialized, user, dealerId]);
 
-  // Handle browser back button or page refresh
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       e.preventDefault();
@@ -251,28 +240,15 @@ const GamePage: React.FC = () => {
 
   const handleAllPlayersLeftModalClose = () => {
     setShowAllPlayersLeftModal(false);
-    // Actually leave the session to properly terminate it
     if (session) {
       leaveSession(session.sessionId).then(() => {
         navigate('/');
       }).catch((error) => {
         console.error('Failed to leave session:', error);
-        navigate('/'); // Navigate anyway
+        navigate('/');
       });
     } else {
       navigate('/');
-    }
-  };
-
-  const handleResponseClick = () => {
-    if (session && aiGameData) {
-      navigate('/response', { 
-        state: { 
-          session, 
-          aiGameData,
-          userPersona: aiGameData.userPersonas[Math.floor(Math.random() * 3)]
-        } 
-      });
     }
   };
 

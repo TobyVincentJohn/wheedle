@@ -41,15 +41,24 @@ const PublicRoom: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // If user is already in a session, redirect to waiting room
+  // Check if user is already in a session and redirect appropriately
   useEffect(() => {
     if (currentSession) {
-      navigate('/waiting-room', { 
-        state: { 
-          roomType: 'public', 
-          session: currentSession 
-        } 
-      });
+      // Redirect based on session status
+      if (currentSession.status === 'waiting' || currentSession.status === 'countdown') {
+        navigate('/waiting-room', { 
+          state: { 
+            roomType: 'public', 
+            session: currentSession 
+          } 
+        });
+      } else if (currentSession.status === 'in-game') {
+        navigate('/game', { 
+          state: { 
+            session: currentSession 
+          } 
+        });
+      }
     }
   }, [currentSession, navigate]);
 

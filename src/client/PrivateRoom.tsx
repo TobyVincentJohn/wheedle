@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSession } from './hooks/useSession';
 import { useUser } from './hooks/useUser';
+import { useEffect } from 'react';
 import './PrivateRoom.css';
 
 const PrivateRoom: React.FC = () => {
@@ -9,14 +10,35 @@ const PrivateRoom: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isJoining, setIsJoining] = useState(false);
   const navigate = useNavigate();
-  const { createSession, joinSession } = useSession();
+  const { createSession, joinSession, currentSession } = useSession();
   const { refreshUser } = useUser();
+
+  // Check if user is already in a session and redirect appropriately
+  useEffect(() => {
+    if (currentSession) {
+      // Redirect based on session status
+      if (currentSession.status === 'waiting' || currentSession.status === 'countdown') {
+        navigate('/waiting-room', { 
+          state: { 
+            roomType: 'private', 
+            session: currentSession 
+          } 
+        });
+      } else if (currentSession.status === 'in-game') {
+        navigate('/game', { 
+          state: { 
+            session: currentSession 
+          } 
+        });
+      }
+    }
+  }, [currentSession, navigate]);
 
   const handleRoomCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.toUpperCase();
     if (value.length <= 5) {
       setRoomCode(value);
-      if (error) setError(null); // Clear error when user types
+      if (error) setError(null);
     }
   };
 

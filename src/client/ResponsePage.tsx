@@ -7,6 +7,8 @@ import './ResponsePage.css';
 
 const RESPONSE_TIME_LIMIT = 60000; // 1 minute in milliseconds
 
+type PageState = 'responding' | 'revealing';
+
 const ResponsePage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -19,9 +21,11 @@ const ResponsePage: React.FC = () => {
   const [timeRemaining, setTimeRemaining] = useState<number>(RESPONSE_TIME_LIMIT);
   const [responseStartTime, setResponseStartTime] = useState<number>(Date.now());
   const [isTimeUp, setIsTimeUp] = useState<boolean>(false);
+  const [pageState, setPageState] = useState<PageState>('responding');
+  const [winner, setWinner] = useState<string>('');
+  const [winnerReason, setWinnerReason] = useState<string>('');
 
   useEffect(() => {
-    // Get session from location state or current session
     const sessionFromState = location.state?.session;
     const aiGameDataFromState = location.state?.aiGameData;
     const userPersonaFromState = location.state?.userPersona;
@@ -31,26 +35,25 @@ const ResponsePage: React.FC = () => {
       setAiGameData(aiGameDataFromState || null);
       setUserPersona(userPersonaFromState || '');
       setResponseStartTime(Date.now());
-      // Set dealer ID from session
       if (sessionFromState.dealerId) {
         setDealerId(sessionFromState.dealerId);
       }
     } else if (currentSession) {
       setSession(currentSession);
       setResponseStartTime(Date.now());
-      // Set dealer ID from session
       if (currentSession.dealerId) {
         setDealerId(currentSession.dealerId);
       }
     } else {
-      // No session found, redirect to home
       navigate('/');
       return;
     }
   }, [location.state, currentSession, navigate]);
 
-  // Timer for response time limit
+  // Timer for response time limit (only during responding phase)
   useEffect(() => {
+    if (pageState !== 'responding') return;
+    
     const interval = setInterval(() => {
       const elapsed = Date.now() - responseStartTime;
       const remaining = Math.max(0, RESPONSE_TIME_LIMIT - elapsed);
@@ -58,13 +61,12 @@ const ResponsePage: React.FC = () => {
 
       if (remaining === 0 && !isTimeUp) {
         setIsTimeUp(true);
-        // Auto-submit or handle time up
         handleSubmitResponse(true);
       }
     }, 100);
 
     return () => clearInterval(interval);
-  }, [responseStartTime, isTimeUp]);
+  }, [responseStartTime, isTimeUp, pageState]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setUserInput(e.target.value);
@@ -72,20 +74,38 @@ const ResponsePage: React.FC = () => {
 
   const handleSubmitResponse = async (timeUp: boolean = false) => {
     if ((!userInput.trim() && !timeUp) || !session || !aiGameData) return;
-    if (isTimeUp && !timeUp) return; // Prevent multiple submissions
+    if (isTimeUp && !timeUp) return;
 
     try {
-      // Here you would submit the user's response to the AI for evaluation
-      // For now, just navigate back to game or show results
       console.log('User response:', timeUp ? '(Time up - no response)' : userInput);
       console.log('AI Persona:', aiGameData.aiPersona);
       console.log('User Persona:', userPersona);
       
-      // Navigate back to game or to results page
-      navigate('/game', { state: { session } });
+      // Simulate AI evaluation and winner determination
+      await evaluateResponsesAndDetermineWinner();
+      
     } catch (error) {
       console.error('Error submitting response:', error);
     }
+  };
+
+  const evaluateResponsesAndDetermineWinner = async () => {
+    // Simulate AI evaluation process
+    setPageState('revealing');
+    
+    // Mock winner determination - in real implementation, this would be an AI call
+    const players = session?.players || [];
+    const randomWinner = players[Math.floor(Math.random() * players.length)];
+    
+    // Simulate evaluation delay
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    setWinner(randomWinner?.username || 'Unknown');
+    setWinnerReason(`${randomWinner?.username} provided the most accurate guess about the AI's persona as a mysterious detective. Their response showed deep understanding of the supernatural investigation theme and correctly identified key elements from the clues.`);
+  };
+
+  const handleReturnToHome = () => {
+    navigate('/');
   };
 
   const formatTime = (ms: number) => {
@@ -105,10 +125,101 @@ const ResponsePage: React.FC = () => {
     );
   }
 
+  // Winner reveal state
+  if (pageState === 'revealing') {
+    return (
+      <div className="response-page">
+        <div className="response-content">
+          <div className={`response-dealer response-dealer-${dealerId}`} />
+          
+          {/* Winner announcement */}
+          <div style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            color: '#FFD700',
+            fontFamily: 'VT323, monospace',
+            fontSize: '32px',
+            textAlign: 'center',
+            maxWidth: '600px',
+            zIndex: 10,
+            background: 'rgba(0, 0, 0, 0.9)',
+            padding: '30px',
+            borderRadius: '12px',
+            border: '3px solid #FFD700'
+          }}>
+            {winner ? (
+              <>
+                <div style={{ fontSize: '40px', marginBottom: '20px', color: '#4CAF50' }}>
+                  🏆 WINNER 🏆
+                </div>
+                <div style={{ fontSize: '28px', marginBottom: '20px' }}>
+                  u/{winner}
+                </div>
+                <div style={{ fontSize: '18px', lineHeight: '1.4', color: '#ffffff', marginBottom: '30px' }}>
+                  {winnerReason}
+                </div>
+                <div style={{ fontSize: '20px', marginBottom: '20px', color: '#4CAF50' }}>
+                  Prize Pool: ${session.prizePool || 0}
+                </div>
+                <button
+                  onClick={handleReturnToHome}
+                  style={{
+                    background: '#4CAF50',
+                    color: 'white',
+                    border: 'none',
+                    padding: '12px 24px',
+                    fontFamily: 'VT323, monospace',
+                    fontSize: '18px',
+                    cursor: 'pointer',
+                    borderRadius: '4px',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  Return to Home
+                </button>
+              </>
+            ) : (
+              <div style={{ fontSize: '24px' }}>
+                Evaluating responses...
+              </div>
+            )}
+          </div>
+          
+          {/* AI Persona reveal */}
+          {aiGameData && (
+            <div style={{
+              position: 'absolute',
+              bottom: '50px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              color: '#FFD700',
+              fontFamily: 'VT323, monospace',
+              fontSize: '16px',
+              textAlign: 'center',
+              maxWidth: '600px',
+              zIndex: 10,
+              background: 'rgba(0, 0, 0, 0.8)',
+              padding: '15px',
+              borderRadius: '8px',
+              border: '2px solid #FFD700'
+            }}>
+              <div style={{ fontSize: '18px', marginBottom: '10px', color: '#4CAF50' }}>
+                The AI was:
+              </div>
+              {aiGameData.aiPersona}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Response input state
   return (
     <div className="response-page">
       <div className="response-content">
-        {/* Timer display */}
         <div style={{
           position: 'absolute',
           top: '20px',
@@ -189,6 +300,9 @@ const ResponsePage: React.FC = () => {
             transition: 'all 0.2s',
             opacity: isTimeUp ? 0.6 : 1
           }}
+        >
+          {isTimeUp ? 'Time Up' : 'Submit Guess (Ctrl+Enter)'}
+        </button>
 
           {isTimeUp ? 'Time Up' : 'Submit Guess (Ctrl+Enter)'}
         </button>
