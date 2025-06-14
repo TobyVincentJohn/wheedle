@@ -39,7 +39,14 @@ export const sessionCreate = async ({
   // Check if user is already in a session
   const existingSessionId = await redis.get(USER_SESSION_KEY(hostUserId));
   if (existingSessionId) {
-    throw new Error('User is already in a session');
+    // Check if the existing session actually exists
+    const existingSession = await sessionGet({ redis, sessionId: existingSessionId });
+    if (existingSession) {
+      throw new Error('User is already in a session');
+    } else {
+      // Clean up stale user session mapping
+      await redis.del(USER_SESSION_KEY(hostUserId));
+    }
   }
 
   // Check user's money before creating session
@@ -142,7 +149,14 @@ export const sessionJoin = async ({
   // Check if user is already in a session
   const existingSessionId = await redis.get(USER_SESSION_KEY(userId));
   if (existingSessionId) {
-    throw new Error('User is already in a session');
+    // Check if the existing session actually exists
+    const existingSession = await sessionGet({ redis, sessionId: existingSessionId });
+    if (existingSession) {
+      throw new Error('User is already in a session');
+    } else {
+      // Clean up stale user session mapping
+      await redis.del(USER_SESSION_KEY(userId));
+    }
   }
 
   // Check user's money before joining
