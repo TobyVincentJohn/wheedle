@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { Devvit } from '@devvit/public-api';
 
 export interface AIGameData {
   aiPersona: string;
@@ -17,8 +16,8 @@ const GeminiSchema = z.object({
 
 const getAIGameDataKey = (sessionId: string) => `ai_game_data:${sessionId}` as const;
 
-export const generateAIGameData = async (context: Devvit.Context): Promise<Omit<AIGameData, 'sessionId' | 'createdAt'>> => {
-  const apiKey = await context.settings.get('GEMINI_API_KEY');
+export const generateAIGameData = async (settings: any): Promise<Omit<AIGameData, 'sessionId' | 'createdAt'>> => {
+  const apiKey = await settings.get('GEMINI_API_KEY');
   if (!apiKey) {
     throw new Error('GEMINI_API_KEY is not set. Use `npx devvit settings set GEMINI_API_KEY` to set it.');
   }
@@ -71,17 +70,17 @@ Respond in JSON format with:
 
 export const createAIGameData = async ({
   redis,
-  context,
+  settings,
   sessionId,
 }: {
-  redis: Devvit.RedisClient;
-  context: Devvit.Context;
+  redis: any;
+  settings: any;
   sessionId: string;
 }): Promise<AIGameData> => {
   const existing = await getAIGameData({ redis, sessionId });
   if (existing) return existing;
 
-  const gameData = await generateAIGameData(context);
+  const gameData = await generateAIGameData(settings);
 
   const aiGameData: AIGameData = {
     ...gameData,
@@ -97,7 +96,7 @@ export const getAIGameData = async ({
   redis,
   sessionId,
 }: {
-  redis: Devvit.RedisClient;
+  redis: any;
   sessionId: string;
 }): Promise<AIGameData | null> => {
   const data = await redis.get(getAIGameDataKey(sessionId));
@@ -108,7 +107,7 @@ export const deleteAIGameData = async ({
   redis,
   sessionId,
 }: {
-  redis: Devvit.RedisClient;
+  redis: any;
   sessionId: string;
 }): Promise<void> => {
   await redis.del(getAIGameDataKey(sessionId));
