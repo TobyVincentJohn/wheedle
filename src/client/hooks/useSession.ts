@@ -29,8 +29,24 @@ export const useSession = () => {
     setCurrentSession(null);
   }, []);
 
+  const forceLeaveCurrentSession = useCallback(async () => {
+    if (currentSession) {
+      try {
+        await fetch(`/api/sessions/${currentSession.sessionId}/leave`, {
+          method: 'POST',
+        });
+      } catch (err) {
+        console.error('Error force leaving session:', err);
+      }
+    }
+    setCurrentSession(null);
+  }, [currentSession]);
+
   const createSession = useCallback(async (maxPlayers?: number, isPrivate?: boolean) => {
     try {
+      // Force leave any existing session before creating a new one
+      await forceLeaveCurrentSession();
+      
       const response = await fetch('/api/sessions', {
         method: 'POST',
         headers: {
@@ -142,5 +158,6 @@ export const useSession = () => {
     startGame,
     refreshSession: fetchCurrentSession,
     clearCurrentSession,
+    forceLeaveCurrentSession,
   };
 };

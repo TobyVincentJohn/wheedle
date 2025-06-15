@@ -42,7 +42,9 @@ export const sessionCreate = async ({
     // Check if the existing session actually exists
     const existingSession = await sessionGet({ redis, sessionId: existingSessionId });
     if (existingSession) {
-      throw new Error('User is already in a session');
+      // Force leave the existing session before creating a new one
+      console.log(`User ${hostUserId} is already in session ${existingSessionId}, forcing leave...`);
+      await sessionLeave({ redis, sessionId: existingSessionId, userId: hostUserId });
     } else {
       // Clean up stale user session mapping
       await redis.del(USER_SESSION_KEY(hostUserId));
@@ -152,7 +154,9 @@ export const sessionJoin = async ({
     // Check if the existing session actually exists
     const existingSession = await sessionGet({ redis, sessionId: existingSessionId });
     if (existingSession) {
-      throw new Error('User is already in a session');
+      // Force leave the existing session before joining a new one
+      console.log(`User ${userId} is already in session ${existingSessionId}, forcing leave...`);
+      await sessionLeave({ redis, sessionId: existingSessionId, userId });
     } else {
       // Clean up stale user session mapping
       await redis.del(USER_SESSION_KEY(userId));

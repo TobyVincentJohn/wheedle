@@ -10,14 +10,14 @@ const PrivateRoom: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isJoining, setIsJoining] = useState(false);
   const navigate = useNavigate();
-  const { createSession, joinSession, currentSession, clearCurrentSession } = useSession();
+  const { createSession, joinSession, currentSession, forceLeaveCurrentSession } = useSession();
   const { refreshUser } = useUser();
 
   // Clear any existing session when entering private room
   useEffect(() => {
     // Clear any existing session when user enters private room
-    clearCurrentSession();
-  }, [clearCurrentSession]);
+    forceLeaveCurrentSession();
+  }, [forceLeaveCurrentSession]);
 
   const handleRoomCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.toUpperCase();
