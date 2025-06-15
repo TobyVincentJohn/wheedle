@@ -4,6 +4,7 @@ import { Devvit, Post } from '@devvit/public-api';
 import '../server/index';
 import { defineConfig } from '@devvit/server';
 import { postConfigNew } from '../server/core/post';
+
 Devvit.addSettings([
   {
     name: 'open-ai-api-key',
