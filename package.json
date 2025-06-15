@@ -21,14 +21,14 @@
     "type-check": "tsc --build"
   },
   "dependencies": {
-    "@devvit/client": "0.11.17",
-    "@devvit/public-api": "0.11.17",
-    "@devvit/redis": "0.11.17",
+    "@devvit/client": "0.11.16",
+    "@devvit/public-api": "0.11.16",
+    "@devvit/redis": "0.11.16",
     "@tweenjs/tween.js": "18.6.4",
     "@types/styled-components": "^5.1.34",
     "bootstrap": "^5.3.6",
     "clsx": "2.1.1",
-    "devvit": "0.11.17",
+    "devvit": "0.11.16",
     "express": "5.1.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
@@ -55,7 +55,7 @@
     "prettier-package-json": "2.8.0",
     "prettier-plugin-tailwindcss": "0.6.11",
     "tailwindcss": "4.1.6",
-    "typescript": "5.8.2",
+    "typescript": "5.8.3",
     "typescript-eslint": "8.29.0",
     "vite": "6.2.4",
     "vitest": "3.1.1"
