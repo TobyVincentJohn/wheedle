@@ -96,10 +96,18 @@ Respond ONLY in valid JSON format:
 
     // Clean up the response text (remove markdown code blocks if present)
     let cleanedText = text.trim();
-    if (cleanedText.startsWith('```json')) {
-      cleanedText = cleanedText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
-    } else if (cleanedText.startsWith('```')) {
-      cleanedText = cleanedText.replace(/^```\s*/, '').replace(/\s*```$/, '');
+    
+    // Extract JSON from first { to last } using regex
+    const jsonMatch = cleanedText.match(/\{.*\}/s);
+    if (jsonMatch) {
+      cleanedText = jsonMatch[0];
+    } else {
+      // Fallback: remove markdown code blocks if present
+      if (cleanedText.startsWith('```json')) {
+        cleanedText = cleanedText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+      } else if (cleanedText.startsWith('```')) {
+        cleanedText = cleanedText.replace(/^```\s*/, '').replace(/\s*```$/, '');
+      }
     }
 
     console.log('🧹 Cleaned AI response text:', cleanedText);
