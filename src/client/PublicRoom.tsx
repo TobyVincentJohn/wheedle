@@ -12,7 +12,7 @@ const PublicRoom: React.FC = () => {
   const [searchedSession, setSearchedSession] = useState<GameSession | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { createSession, joinSession, currentSession, forceLeaveCurrentSession } = useSession();
+  const { createSession, joinSession, currentSession } = useSession();
   const { refreshUser } = useUser();
 
   const fetchPublicSessions = async () => {
@@ -49,11 +49,17 @@ const PublicRoom: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Clear any existing session when entering public room
+  // If user is already in a session, redirect to waiting room
   useEffect(() => {
-    // Clear any existing session when user enters public room
-    forceLeaveCurrentSession();
-  }, [forceLeaveCurrentSession]);
+    if (currentSession) {
+      navigate('/waiting-room', { 
+        state: { 
+          roomType: 'public', 
+          session: currentSession 
+        } 
+      });
+    }
+  }, [currentSession, navigate]);
 
   const handleCreateSession = async () => {
     try {

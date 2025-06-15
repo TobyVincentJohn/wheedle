@@ -10,14 +10,20 @@ const PrivateRoom: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isJoining, setIsJoining] = useState(false);
   const navigate = useNavigate();
-  const { createSession, joinSession, currentSession, forceLeaveCurrentSession } = useSession();
+  const { createSession, joinSession, currentSession } = useSession();
   const { refreshUser } = useUser();
 
-  // Clear any existing session when entering private room
+  // If user is already in a session, redirect to waiting room
   useEffect(() => {
-    // Clear any existing session when user enters private room
-    forceLeaveCurrentSession();
-  }, [forceLeaveCurrentSession]);
+    if (currentSession) {
+      navigate('/waiting-room', { 
+        state: { 
+          roomType: 'private', 
+          session: currentSession 
+        } 
+      });
+    }
+  }, [currentSession, navigate]);
 
   const handleRoomCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.toUpperCase();
@@ -32,7 +38,9 @@ const PrivateRoom: React.FC = () => {
     
     try {
       setIsJoining(true);
+      console.log('🏠 Creating private session...');
       const session = await createSession(6, true); // Max 6 players, private session
+      console.log('✅ Private session created:', session);
       await refreshUser(); // Refresh user data after creating session
       navigate('/waiting-room', { 
         state: { 
@@ -42,7 +50,7 @@ const PrivateRoom: React.FC = () => {
         } 
       });
     } catch (err) {
-      console.error('Failed to create private session:', err);
+      console.error('❌ Failed to create private session:', err);
       setError('Failed to create room. Please try again.');
       setIsJoining(false);
     }
@@ -55,31 +63,34 @@ const PrivateRoom: React.FC = () => {
       setIsJoining(true);
       setError(null);
       
-      console.log(`Searching for private session with code: ${roomCode}`);
+      console.log(`🔍 Searching for private session with code: ${roomCode}`);
       
       // First, search for the session by code
       const response = await fetch(`/api/sessions/by-code/${roomCode}/private`);
       
-      console.log('Response status:', response.status);
-      console.log('Response headers:', response.headers.get('content-type'));
+      console.log('📡 Response status:', response.status);
+      console.log('📡 Response headers:', response.headers.get('content-type'));
       
       if (!response.ok) {
+        console.error(`❌ HTTP error! status: ${response.status}`);
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
         const text = await response.text();
-        console.error('Non-JSON response:', text);
+        console.error('❌ Non-JSON response:', text);
         throw new Error('Server returned non-JSON response');
       }
       
       const data = await response.json();
-      console.log('API response:', data);
+      console.log('📦 API response:', data);
       
       if (data.status === 'success' && data.data) {
+        console.log('✅ Found private session:', data.data);
         // Join the found private session
         const session = await joinSession(data.data.sessionId);
+        console.log('✅ Successfully joined private session:', session);
         await refreshUser(); // Refresh user data after joining session
         navigate('/waiting-room', { 
           state: { 
@@ -88,13 +99,16 @@ const PrivateRoom: React.FC = () => {
           } 
         });
       } else {
+        console.error('❌ Session not found or error:', data.message);
         setError(data.message || 'Private room not found or not available');
         setIsJoining(false);
       }
     } catch (err) {
-      console.error('Failed to join private session:', err);
+      console.error('💥 Failed to join private session:', err);
       if (err instanceof Error && err.message.includes('non-JSON')) {
         setError('Server error. Please try again later.');
+      } else if (err instanceof Error && err.message.includes('HTTP error')) {
+        setError('Room not found. Please check the code and try again.');
       } else {
         setError('Failed to join room. Please check the code and try again.');
       }
