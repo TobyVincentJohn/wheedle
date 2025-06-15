@@ -71,20 +71,26 @@ const GamePage: React.FC = () => {
 
   const fetchAIGameData = async (sessionId: string) => {
     try {
+      console.log('🎮 Fetching AI game data for session:', sessionId);
       const response = await fetch(`/api/ai-game-data/${sessionId}`);
+      console.log('📡 AI game data response status:', response.status);
+      
       const data = await response.json();
+      console.log('📦 AI game data response:', data);
       
       if (data.status === 'success' && data.data) {
+        console.log('✅ AI game data loaded successfully:', data.data);
         setAiGameData(data.data);
         setClueStartTime(Date.now());
         setCurrentClueIndex(0);
         setAllCluesShown(false);
       } else {
-        console.error('Failed to fetch AI game data:', data.message);
+        console.error('❌ Failed to fetch AI game data:', data.message);
       }
     } catch (error) {
-      console.error('Error fetching AI game data:', error);
+      console.error('💥 Error fetching AI game data:', error);
     } finally {
+      console.log('🏁 Setting loading to false');
       setLoading(false);
     }
   };
