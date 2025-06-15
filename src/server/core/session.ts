@@ -4,8 +4,8 @@ import { registerRoomCode, unregisterRoomCode } from './roomCodeSearch';
 import { deleteAIGameData } from './aiService';
 
 const getSessionKey = (sessionId: string) => `session:${sessionId}` as const;
-const PUBLIC_SESSIONS_LIST_KEY = 'public_sessions_list' as const;
-const PRIVATE_SESSIONS_LIST_KEY = 'private_sessions_list' as const;
+const PUBLIC_SESSIONS_SET_KEY = 'public_sessions_set' as const;
+const PRIVATE_SESSIONS_SET_KEY = 'private_sessions_set' as const;
 const USER_SESSION_KEY = (userId: string) => `user_session:${userId}` as const;
 
 // Generate a random 5-character session code
@@ -107,7 +107,12 @@ export const sessionCreate = async ({
     isPrivate,
   });
   
-  // Note: We no longer maintain separate session lists since we scan all sessions
+  // Add session to appropriate set
+  if (isPrivate) {
+    await redis.sadd(PRIVATE_SESSIONS_SET_KEY, sessionId);
+  } else {
+    await redis.sadd(PUBLIC_SESSIONS_SET_KEY, sessionId);
+  }
 
   // Map user to session
   await redis.set(USER_SESSION_KEY(hostUserId), sessionId);
@@ -426,21 +431,11 @@ export const sessionDelete = async ({
       await redis.del(USER_SESSION_KEY(player.userId));
     }
     
-    // Remove from appropriate sessions list based on type
+    // Remove from appropriate sessions set
     if (session.isPrivate) {
-      const privateSessionsList = await redis.get(PRIVATE_SESSIONS_LIST_KEY);
-      if (privateSessionsList) {
-        const privateSessions = JSON.parse(privateSessionsList) as string[];
-        const updatedSessions = privateSessions.filter(id => id !== sessionId);
-        await redis.set(PRIVATE_SESSIONS_LIST_KEY, JSON.stringify(updatedSessions));
-      }
+      await redis.srem(PRIVATE_SESSIONS_SET_KEY, sessionId);
     } else {
-      const publicSessionsList = await redis.get(PUBLIC_SESSIONS_LIST_KEY);
-      if (publicSessionsList) {
-        const publicSessions = JSON.parse(publicSessionsList) as string[];
-        const updatedSessions = publicSessions.filter(id => id !== sessionId);
-        await redis.set(PUBLIC_SESSIONS_LIST_KEY, JSON.stringify(updatedSessions));
-      }
+      await redis.srem(PUBLIC_SESSIONS_SET_KEY, sessionId);
     }
   }
 
@@ -526,8 +521,6 @@ export const sessionStartGame = async ({
   // Update session
   await redis.set(getSessionKey(sessionId), JSON.stringify(session));
 
-  // Note: Sessions are automatically filtered by status when fetched
-
   return session;
 };
 
@@ -536,16 +529,17 @@ export const getPublicSessions = async ({
 }: {
   redis: RedisClient;
 }): Promise<GameSession[]> => {
-  // Get all session keys from Redis
-  const allKeys = await redis.keys('session:*');
+  // Get all public session IDs from the set
+  const sessionIds = await redis.smembers(PUBLIC_SESSIONS_SET_KEY);
   const sessions: GameSession[] = [];
 
-  for (const key of allKeys) {
-    const sessionId = key.replace('session:', '');
+  for (const sessionId of sessionIds) {
     const session = await sessionGet({ redis, sessionId });
-    // Only show sessions that are waiting (can be joined) and are public
     if (session && session.status === 'waiting' && !session.isPrivate) {
       sessions.push(session);
+    } else if (!session) {
+      // Clean up stale session ID from the set
+      await redis.srem(PUBLIC_SESSIONS_SET_KEY, sessionId);
     }
   }
 
@@ -558,16 +552,17 @@ export const getPrivateSessions = async ({
 }: {
   redis: RedisClient;
 }): Promise<GameSession[]> => {
-  // Get all session keys from Redis
-  const allKeys = await redis.keys('session:*');
+  // Get all private session IDs from the set
+  const sessionIds = await redis.smembers(PRIVATE_SESSIONS_SET_KEY);
   const sessions: GameSession[] = [];
 
-  for (const key of allKeys) {
-    const sessionId = key.replace('session:', '');
+  for (const sessionId of sessionIds) {
     const session = await sessionGet({ redis, sessionId });
-    // Only show sessions that are waiting (can be joined) and are private
     if (session && session.status === 'waiting' && session.isPrivate) {
       sessions.push(session);
+    } else if (!session) {
+      // Clean up stale session ID from the set
+      await redis.srem(PRIVATE_SESSIONS_SET_KEY, sessionId);
     }
   }
 
