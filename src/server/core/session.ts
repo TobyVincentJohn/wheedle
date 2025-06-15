@@ -426,7 +426,22 @@ export const sessionDelete = async ({
       await redis.del(USER_SESSION_KEY(player.userId));
     }
     
-    // Note: We no longer maintain separate session lists since we scan all sessions
+    // Remove from appropriate sessions list based on type
+    if (session.isPrivate) {
+      const privateSessionsList = await redis.get(PRIVATE_SESSIONS_LIST_KEY);
+      if (privateSessionsList) {
+        const privateSessions = JSON.parse(privateSessionsList) as string[];
+        const updatedSessions = privateSessions.filter(id => id !== sessionId);
+        await redis.set(PRIVATE_SESSIONS_LIST_KEY, JSON.stringify(updatedSessions));
+      }
+    } else {
+      const publicSessionsList = await redis.get(PUBLIC_SESSIONS_LIST_KEY);
+      if (publicSessionsList) {
+        const publicSessions = JSON.parse(publicSessionsList) as string[];
+        const updatedSessions = publicSessions.filter(id => id !== sessionId);
+        await redis.set(PUBLIC_SESSIONS_LIST_KEY, JSON.stringify(updatedSessions));
+      }
+    }
   }
 
   // Delete session
