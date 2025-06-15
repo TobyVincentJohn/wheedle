@@ -18,15 +18,20 @@ const PublicRoom: React.FC = () => {
   const fetchPublicSessions = async () => {
     try {
       setLoading(true);
+      console.log('🔍 Fetching public sessions...');
       const response = await fetch('/api/sessions/public');
       const data = await response.json();
+      console.log('📊 Public sessions response:', data);
       
       if (data.status === 'success') {
+        console.log(`✅ Found ${data.data?.length || 0} public sessions`);
         setPublicSessions(data.data || []);
       } else {
+        console.log('❌ Failed to fetch sessions:', data.message);
         setError(data.message || 'Failed to fetch sessions');
       }
     } catch (err) {
+      console.error('💥 Error fetching public sessions:', err);
       setError('Failed to fetch public sessions');
     } finally {
       setLoading(false);
@@ -188,6 +193,20 @@ const PublicRoom: React.FC = () => {
           <>
             <div className="sessions-header">
               <h2>Public Sessions</h2>
+              <div style={{
+                fontSize: '12px',
+                color: '#888',
+                fontFamily: 'VT323, monospace',
+                textAlign: 'center',
+                marginBottom: '10px'
+              }}>
+                {publicSessions.length} session(s) found
+                {process.env.NODE_ENV === 'development' && (
+                  <div style={{ color: '#ff6b6b', marginTop: '5px' }}>
+                    ⚠️ Local dev: Sessions only visible within this environment
+                  </div>
+                )}
+              </div>
               <button className="create-session-btn" onClick={handleCreateSession}>
                 Create New Session
               </button>

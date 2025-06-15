@@ -69,6 +69,15 @@ const HomePage: React.FC = () => {
         {user && (
           <div className="user-greeting">
             Hi u/{user.username} | ${user.money || 1000}
+            {process.env.NODE_ENV === 'development' && (
+              <span style={{ 
+                color: '#ff6b6b', 
+                fontSize: '14px',
+                marginLeft: '10px'
+              }}>
+                [DEV]
+              </span>
+            )}
             <button className="logout-button" onClick={logout}>
               Reset User
             </button>

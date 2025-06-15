@@ -30,6 +30,36 @@ In Wheedle, players enter a high-stakes battle of wit and persuasion. Here's how
 
 This game is built using Reddit's Devvit platform. To set up the development environment:
 
+## Testing Across Multiple Systems
+
+**Important**: Sessions created in local development are only visible within that specific development environment. To test the game with multiple users across different systems, you need to deploy the app to production.
+
+### Deploy to Production
+
+1. Build and deploy your app:
+```bash
+npm run deploy
+```
+
+2. Install the app on your test subreddit:
+   - Go to your subreddit's mod tools
+   - Navigate to "Apps" 
+   - Find your deployed app and install it
+
+3. Create a new post using your app:
+   - In your subreddit, click "Create Post"
+   - Look for your app in the post creation options
+   - Create the post
+
+4. Now multiple users can access the same game sessions by visiting the post on Reddit
+
+### Why Local Development Shows Limited Sessions
+
+- Each local development environment uses its own isolated Redis database
+- Sessions created on your machine are only stored in your local Redis
+- Other developers/users have their own separate local Redis instances
+- Only the production environment provides a shared Redis instance for all users
+
 ## Getting Started
 
 This template is made specifically to work with **Bolt.new**.
