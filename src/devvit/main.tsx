@@ -7,8 +7,8 @@ import { postConfigNew } from '../server/core/post';
 
 Devvit.addSettings([
   {
-    name: 'open-ai-api-key',
-    label: 'Open AI API key',
+    name: 'GEMINI_API_KEY',
+    label: 'gemini_api_key',
     type: 'string',
     isSecret: true,
     scope: 'app',
