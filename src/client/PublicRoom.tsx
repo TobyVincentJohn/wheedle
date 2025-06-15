@@ -26,13 +26,16 @@ const PublicRoom: React.FC = () => {
       if (data.status === 'success') {
         console.log(`✅ Found ${data.data?.length || 0} public sessions`);
         setPublicSessions(data.data || []);
+        setError(null); // Clear any previous errors
       } else {
         console.log('❌ Failed to fetch sessions:', data.message);
         setError(data.message || 'Failed to fetch sessions');
+        setPublicSessions([]); // Clear sessions on error
       }
     } catch (err) {
       console.error('💥 Error fetching public sessions:', err);
       setError('Failed to fetch public sessions');
+      setPublicSessions([]); // Clear sessions on error
     } finally {
       setLoading(false);
     }
@@ -200,7 +203,7 @@ const PublicRoom: React.FC = () => {
                 textAlign: 'center',
                 marginBottom: '10px'
               }}>
-                {publicSessions.length} session(s) found
+                {publicSessions.length} public session(s) found
                 {process.env.NODE_ENV === 'development' && (
                   <div style={{ color: '#ff6b6b', marginTop: '5px' }}>
                     ⚠️ Local dev: Sessions only visible within this environment

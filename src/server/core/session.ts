@@ -107,18 +107,7 @@ export const sessionCreate = async ({
     isPrivate,
   });
   
-  // Add to appropriate sessions list based on type
-  if (isPrivate) {
-    const privateSessionsList = await redis.get(PRIVATE_SESSIONS_LIST_KEY);
-    const privateSessions = privateSessionsList ? JSON.parse(privateSessionsList) as string[] : [];
-    privateSessions.push(sessionId);
-    await redis.set(PRIVATE_SESSIONS_LIST_KEY, JSON.stringify(privateSessions));
-  } else {
-    const publicSessionsList = await redis.get(PUBLIC_SESSIONS_LIST_KEY);
-    const publicSessions = publicSessionsList ? JSON.parse(publicSessionsList) as string[] : [];
-    publicSessions.push(sessionId);
-    await redis.set(PUBLIC_SESSIONS_LIST_KEY, JSON.stringify(publicSessions));
-  }
+  // Note: We no longer maintain separate session lists since we scan all sessions
 
   // Map user to session
   await redis.set(USER_SESSION_KEY(hostUserId), sessionId);
@@ -436,23 +425,8 @@ export const sessionDelete = async ({
     for (const player of session.players) {
       await redis.del(USER_SESSION_KEY(player.userId));
     }
-
-    // Remove from appropriate sessions list based on type
-    if (session.isPrivate) {
-      const privateSessionsList = await redis.get(PRIVATE_SESSIONS_LIST_KEY);
-      if (privateSessionsList) {
-        const privateSessions = JSON.parse(privateSessionsList) as string[];
-        const updatedSessions = privateSessions.filter(id => id !== sessionId);
-        await redis.set(PRIVATE_SESSIONS_LIST_KEY, JSON.stringify(updatedSessions));
-      }
-    } else {
-      const publicSessionsList = await redis.get(PUBLIC_SESSIONS_LIST_KEY);
-      if (publicSessionsList) {
-        const publicSessions = JSON.parse(publicSessionsList) as string[];
-        const updatedSessions = publicSessions.filter(id => id !== sessionId);
-        await redis.set(PUBLIC_SESSIONS_LIST_KEY, JSON.stringify(updatedSessions));
-      }
-    }
+    
+    // Note: We no longer maintain separate session lists since we scan all sessions
   }
 
   // Delete session
@@ -537,8 +511,7 @@ export const sessionStartGame = async ({
   // Update session
   await redis.set(getSessionKey(sessionId), JSON.stringify(session));
 
-  // Note: We don't remove from sessions list here anymore since 
-  // sessions are filtered by status in getPublicSessions/getPrivateSessions
+  // Note: Sessions are automatically filtered by status when fetched
 
   return session;
 };
@@ -548,23 +521,21 @@ export const getPublicSessions = async ({
 }: {
   redis: RedisClient;
 }): Promise<GameSession[]> => {
-  const publicSessionsList = await redis.get(PUBLIC_SESSIONS_LIST_KEY);
-  if (!publicSessionsList) {
-    return [];
-  }
-
-  const sessionIds = JSON.parse(publicSessionsList) as string[];
+  // Get all session keys from Redis
+  const allKeys = await redis.keys('session:*');
   const sessions: GameSession[] = [];
 
-  for (const sessionId of sessionIds) {
+  for (const key of allKeys) {
+    const sessionId = key.replace('session:', '');
     const session = await sessionGet({ redis, sessionId });
-    // Only show sessions that are waiting (can be joined) and explicitly NOT private
-    if (session && (session.status === 'waiting') && !session.isPrivate) {
+    // Only show sessions that are waiting (can be joined) and are public
+    if (session && session.status === 'waiting' && !session.isPrivate) {
       sessions.push(session);
     }
   }
 
-  return sessions;
+  // Sort by creation time (newest first)
+  return sessions.sort((a, b) => b.createdAt - a.createdAt);
 };
 
 export const getPrivateSessions = async ({
@@ -572,23 +543,21 @@ export const getPrivateSessions = async ({
 }: {
   redis: RedisClient;
 }): Promise<GameSession[]> => {
-  const privateSessionsList = await redis.get(PRIVATE_SESSIONS_LIST_KEY);
-  if (!privateSessionsList) {
-    return [];
-  }
-
-  const sessionIds = JSON.parse(privateSessionsList) as string[];
+  // Get all session keys from Redis
+  const allKeys = await redis.keys('session:*');
   const sessions: GameSession[] = [];
 
-  for (const sessionId of sessionIds) {
+  for (const key of allKeys) {
+    const sessionId = key.replace('session:', '');
     const session = await sessionGet({ redis, sessionId });
-    // Only show sessions that are waiting (can be joined) and explicitly private
-    if (session && (session.status === 'waiting') && session.isPrivate) {
+    // Only show sessions that are waiting (can be joined) and are private
+    if (session && session.status === 'waiting' && session.isPrivate) {
       sessions.push(session);
     }
   }
 
-  return sessions;
+  // Sort by creation time (newest first)
+  return sessions.sort((a, b) => b.createdAt - a.createdAt);
 };
 
 export const getUserCurrentSession = async ({
