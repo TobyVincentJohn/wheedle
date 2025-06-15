@@ -86,9 +86,51 @@ const GamePage: React.FC = () => {
         setAllCluesShown(false);
       } else {
         console.error('❌ Failed to fetch AI game data:', data.message);
+        // Set fallback data if AI fails
+        const fallbackData = {
+          aiPersona: "A mysterious detective AI who specializes in supernatural cases and has a dry sense of humor",
+          clues: [
+            "I work in a profession that requires careful observation and logical thinking",
+            "My cases often involve things that others might consider impossible or unexplained", 
+            "I have a particular fondness for sarcastic remarks when dealing with the supernatural"
+          ] as [string, string, string],
+          userPersonas: [
+            "A skeptical scientist who doesn't believe in the paranormal",
+            "An enthusiastic paranormal investigator who believes everything",
+            "A local police officer who just wants to solve cases practically"
+          ] as [string, string, string],
+          sessionId,
+          createdAt: Date.now()
+        };
+        console.log('🔄 Using fallback AI game data:', fallbackData);
+        setAiGameData(fallbackData);
+        setClueStartTime(Date.now());
+        setCurrentClueIndex(0);
+        setAllCluesShown(false);
       }
     } catch (error) {
       console.error('💥 Error fetching AI game data:', error);
+      // Set fallback data on error
+      const fallbackData = {
+        aiPersona: "A mysterious detective AI who specializes in supernatural cases and has a dry sense of humor",
+        clues: [
+          "I work in a profession that requires careful observation and logical thinking",
+          "My cases often involve things that others might consider impossible or unexplained", 
+          "I have a particular fondness for sarcastic remarks when dealing with the supernatural"
+        ] as [string, string, string],
+        userPersonas: [
+          "A skeptical scientist who doesn't believe in the paranormal",
+          "An enthusiastic paranormal investigator who believes everything",
+          "A local police officer who just wants to solve cases practically"
+        ] as [string, string, string],
+        sessionId,
+        createdAt: Date.now()
+      };
+      console.log('🔄 Using fallback AI game data after error:', fallbackData);
+      setAiGameData(fallbackData);
+      setClueStartTime(Date.now());
+      setCurrentClueIndex(0);
+      setAllCluesShown(false);
     } finally {
       console.log('🏁 Setting loading to false');
       setLoading(false);

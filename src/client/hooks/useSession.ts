@@ -25,6 +25,10 @@ export const useSession = () => {
     }
   }, []);
 
+  const clearCurrentSession = useCallback(() => {
+    setCurrentSession(null);
+  }, []);
+
   const createSession = useCallback(async (maxPlayers?: number, isPrivate?: boolean) => {
     try {
       const response = await fetch('/api/sessions', {
@@ -137,5 +141,6 @@ export const useSession = () => {
     startCountdown,
     startGame,
     refreshSession: fetchCurrentSession,
+    clearCurrentSession,
   };
 };

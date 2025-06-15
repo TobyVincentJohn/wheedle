@@ -533,22 +533,8 @@ export const sessionStartGame = async ({
   // Update session
   await redis.set(getSessionKey(sessionId), JSON.stringify(session));
 
-  // Remove from appropriate sessions list (so new players can't join)
-  if (session.isPrivate) {
-    const privateSessionsList = await redis.get(PRIVATE_SESSIONS_LIST_KEY);
-    if (privateSessionsList) {
-      const privateSessions = JSON.parse(privateSessionsList) as string[];
-      const updatedSessions = privateSessions.filter(id => id !== sessionId);
-      await redis.set(PRIVATE_SESSIONS_LIST_KEY, JSON.stringify(updatedSessions));
-    }
-  } else {
-    const publicSessionsList = await redis.get(PUBLIC_SESSIONS_LIST_KEY);
-    if (publicSessionsList) {
-      const publicSessions = JSON.parse(publicSessionsList) as string[];
-      const updatedSessions = publicSessions.filter(id => id !== sessionId);
-      await redis.set(PUBLIC_SESSIONS_LIST_KEY, JSON.stringify(updatedSessions));
-    }
-  }
+  // Note: We don't remove from sessions list here anymore since 
+  // sessions are filtered by status in getPublicSessions/getPrivateSessions
 
   return session;
 };
@@ -568,8 +554,8 @@ export const getPublicSessions = async ({
 
   for (const sessionId of sessionIds) {
     const session = await sessionGet({ redis, sessionId });
-    // Only show sessions that are waiting and explicitly NOT private
-    if (session && session.status === 'waiting' && !session.isPrivate) {
+    // Only show sessions that are waiting (can be joined) and explicitly NOT private
+    if (session && (session.status === 'waiting') && !session.isPrivate) {
       sessions.push(session);
     }
   }
@@ -592,8 +578,8 @@ export const getPrivateSessions = async ({
 
   for (const sessionId of sessionIds) {
     const session = await sessionGet({ redis, sessionId });
-    // Only show sessions that are waiting and explicitly private
-    if (session && session.status === 'waiting' && session.isPrivate) {
+    // Only show sessions that are waiting (can be joined) and explicitly private
+    if (session && (session.status === 'waiting') && session.isPrivate) {
       sessions.push(session);
     }
   }

@@ -66,7 +66,7 @@ const WaitingRoom: React.FC = () => {
           setCountdown(remaining);
           setIsCountingDown(true);
         } else {
-          // Countdown finished, start the game
+          // Countdown finished, navigate to game
           setIsCountingDown(false);
           navigate('/game', { state: { session: currentSession } });
         }
@@ -78,7 +78,7 @@ const WaitingRoom: React.FC = () => {
         setCountdown(0);
       }
     }
-  }, [currentSession, session, navigate]);
+  }, [currentSession, session, navigate, user]);
 
   // Countdown timer
   useEffect(() => {
@@ -88,11 +88,27 @@ const WaitingRoom: React.FC = () => {
       }, 1000);
       return () => clearTimeout(timer);
     } else if (isCountingDown && countdown === 0) {
-      // Countdown finished, navigate to game
+      // Countdown finished, start the actual game
       setIsCountingDown(false);
-      navigate('/game', { state: { session } });
+      if (session && isHost) {
+        // Host starts the game when countdown reaches 0
+        handleStartGame();
+      }
     }
-  }, [countdown, isCountingDown, session, navigate]);
+  }, [countdown, isCountingDown, session, navigate, isHost]);
+
+  const handleStartGame = async () => {
+    if (session && isHost) {
+      try {
+        await fetch(`/api/sessions/${session.sessionId}/start`, {
+          method: 'POST',
+        });
+        // The session update will trigger navigation to game page
+      } catch (error) {
+        console.error('Failed to start game:', error);
+      }
+    }
+  };
 
   const handleQuit = async () => {
     if (session) {

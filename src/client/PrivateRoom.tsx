@@ -10,29 +10,14 @@ const PrivateRoom: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isJoining, setIsJoining] = useState(false);
   const navigate = useNavigate();
-  const { createSession, joinSession, currentSession } = useSession();
+  const { createSession, joinSession, currentSession, clearCurrentSession } = useSession();
   const { refreshUser } = useUser();
 
-  // Check if user is already in a session and redirect appropriately
+  // Clear any existing session when entering private room
   useEffect(() => {
-    if (currentSession) {
-      // Redirect based on session status
-      if (currentSession.status === 'waiting' || currentSession.status === 'countdown') {
-        navigate('/waiting-room', { 
-          state: { 
-            roomType: 'private', 
-            session: currentSession 
-          } 
-        });
-      } else if (currentSession.status === 'in-game') {
-        navigate('/game', { 
-          state: { 
-            session: currentSession 
-          } 
-        });
-      }
-    }
-  }, [currentSession, navigate]);
+    // Clear any existing session when user enters private room
+    clearCurrentSession();
+  }, [clearCurrentSession]);
 
   const handleRoomCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.toUpperCase();
