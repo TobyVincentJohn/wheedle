@@ -462,7 +462,7 @@ router.get('/api/sessions/current', async (_req, res): Promise<void> => {
 // AI Game Data Endpoints
 router.get('/api/ai-game-data/:sessionId', async (req, res): Promise<void> => {
   const { sessionId } = req.params;
-  const { userId, ...context } = getContext();
+  const { userId, settings } = getContext();
   const redis = getRedis();
   
   if (!userId) {
@@ -487,7 +487,7 @@ router.get('/api/ai-game-data/:sessionId', async (req, res): Promise<void> => {
     // Get or create AI game data
     let aiGameData = await getAIGameData({ redis, sessionId });
     if (!aiGameData) {
-      aiGameData = await createAIGameData({ redis, context: { userId, ...context }, sessionId });
+      aiGameData = await createAIGameData({ redis, settings, sessionId });
     }
 
     res.json({ status: 'success', data: aiGameData } as GetAIGameDataResponse);
