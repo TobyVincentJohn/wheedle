@@ -4,8 +4,8 @@ import { registerRoomCode, unregisterRoomCode } from './roomCodeSearch';
 import { deleteAIGameData } from './aiService';
 
 const getSessionKey = (sessionId: string) => `session:${sessionId}` as const;
-const PUBLIC_SESSIONS_HASH_KEY = 'public_sessions_hash' as const;
-const PRIVATE_SESSIONS_HASH_KEY = 'private_sessions_hash' as const;
+const PUBLIC_SESSIONS_SET_KEY = 'public_sessions_set' as const;
+const PRIVATE_SESSIONS_SET_KEY = 'private_sessions_set' as const;
 const USER_SESSION_KEY = (userId: string) => `user_session:${userId}` as const;
 
 // Generate a random 5-character session code
@@ -107,11 +107,11 @@ export const sessionCreate = async ({
     isPrivate,
   });
   
-  // Add session to appropriate hash using hSet
+  // Add session to appropriate set using sAdd
   if (isPrivate) {
-    await redis.hSet(PRIVATE_SESSIONS_HASH_KEY, sessionId, JSON.stringify(session));
+    await redis.sAdd(PRIVATE_SESSIONS_SET_KEY, sessionId);
   } else {
-    await redis.hSet(PUBLIC_SESSIONS_HASH_KEY, sessionId, JSON.stringify(session));
+    await redis.sAdd(PUBLIC_SESSIONS_SET_KEY, sessionId);
   }
 
   // Map user to session
@@ -221,11 +221,11 @@ export const sessionJoin = async ({
   await redis.set(getSessionKey(sessionId), JSON.stringify(session));
   await redis.set(USER_SESSION_KEY(userId), sessionId);
 
-  // Update session in appropriate hash
+  // Update session in appropriate set
   if (session.isPrivate) {
-    await redis.hSet(PRIVATE_SESSIONS_HASH_KEY, sessionId, JSON.stringify(session));
+    await redis.sAdd(PRIVATE_SESSIONS_SET_KEY, sessionId);
   } else {
-    await redis.hSet(PUBLIC_SESSIONS_HASH_KEY, sessionId, JSON.stringify(session));
+    await redis.sAdd(PUBLIC_SESSIONS_SET_KEY, sessionId);
   }
 
   return session;
@@ -411,11 +411,11 @@ export const sessionLeave = async ({
     // Update session
     await redis.set(getSessionKey(sessionId), JSON.stringify(session));
     
-    // Update session in appropriate hash
+    // Update session in appropriate set
     if (session.isPrivate) {
-      await redis.hSet(PRIVATE_SESSIONS_HASH_KEY, sessionId, JSON.stringify(session));
+      await redis.sAdd(PRIVATE_SESSIONS_SET_KEY, sessionId);
     } else {
-      await redis.hSet(PUBLIC_SESSIONS_HASH_KEY, sessionId, JSON.stringify(session));
+      await redis.sAdd(PUBLIC_SESSIONS_SET_KEY, sessionId);
     }
   }
 
@@ -445,11 +445,11 @@ export const sessionDelete = async ({
       await redis.del(USER_SESSION_KEY(player.userId));
     }
     
-    // Remove from appropriate sessions hash
+    // Remove from appropriate sessions set
     if (session.isPrivate) {
-      await redis.hDel(PRIVATE_SESSIONS_HASH_KEY, sessionId);
+      await redis.sRem(PRIVATE_SESSIONS_SET_KEY, sessionId);
     } else {
-      await redis.hDel(PUBLIC_SESSIONS_HASH_KEY, sessionId);
+      await redis.sRem(PUBLIC_SESSIONS_SET_KEY, sessionId);
     }
   }
 
@@ -505,11 +505,11 @@ export const sessionStartCountdown = async ({
   // Update session
   await redis.set(getSessionKey(sessionId), JSON.stringify(session));
   
-  // Update session in appropriate hash
+  // Update session in appropriate set
   if (session.isPrivate) {
-    await redis.hSet(PRIVATE_SESSIONS_HASH_KEY, sessionId, JSON.stringify(session));
+    await redis.sAdd(PRIVATE_SESSIONS_SET_KEY, sessionId);
   } else {
-    await redis.hSet(PUBLIC_SESSIONS_HASH_KEY, sessionId, JSON.stringify(session));
+    await redis.sAdd(PUBLIC_SESSIONS_SET_KEY, sessionId);
   }
 
   return session;
@@ -542,11 +542,11 @@ export const sessionStartGame = async ({
   // Update session
   await redis.set(getSessionKey(sessionId), JSON.stringify(session));
   
-  // Remove from sessions hash since game is no longer joinable
+  // Remove from sessions set since game is no longer joinable
   if (session.isPrivate) {
-    await redis.hDel(PRIVATE_SESSIONS_HASH_KEY, sessionId);
+    await redis.sRem(PRIVATE_SESSIONS_SET_KEY, sessionId);
   } else {
-    await redis.hDel(PUBLIC_SESSIONS_HASH_KEY, sessionId);
+    await redis.sRem(PUBLIC_SESSIONS_SET_KEY, sessionId);
   }
 
   return session;
@@ -558,26 +558,24 @@ export const getPublicSessions = async ({
   redis: RedisClient;
 }): Promise<GameSession[]> => {
   try {
-    // Get all public sessions from hash
-    const sessionsData = await redis.hGetAll(PUBLIC_SESSIONS_HASH_KEY);
+    // Get all public session IDs from set
+    const sessionIds = await redis.sMembers(PUBLIC_SESSIONS_SET_KEY);
     const sessions: GameSession[] = [];
 
-    for (const [sessionId, sessionData] of Object.entries(sessionsData)) {
+    for (const sessionId of sessionIds) {
       try {
-        const session = JSON.parse(sessionData) as GameSession;
-        
-        // Verify session still exists and is valid
+        // Get session data
         const currentSession = await sessionGet({ redis, sessionId });
         if (currentSession && currentSession.status === 'waiting' && !currentSession.isPrivate) {
           sessions.push(currentSession);
         } else {
-          // Clean up stale session from hash
-          await redis.hDel(PUBLIC_SESSIONS_HASH_KEY, sessionId);
+          // Clean up stale session from set
+          await redis.sRem(PUBLIC_SESSIONS_SET_KEY, sessionId);
         }
       } catch (parseError) {
         console.error('Error parsing session data:', parseError);
         // Clean up invalid session data
-        await redis.hDel(PUBLIC_SESSIONS_HASH_KEY, sessionId);
+        await redis.sRem(PUBLIC_SESSIONS_SET_KEY, sessionId);
       }
     }
 
@@ -595,26 +593,24 @@ export const getPrivateSessions = async ({
   redis: RedisClient;
 }): Promise<GameSession[]> => {
   try {
-    // Get all private sessions from hash
-    const sessionsData = await redis.hGetAll(PRIVATE_SESSIONS_HASH_KEY);
+    // Get all private session IDs from set
+    const sessionIds = await redis.sMembers(PRIVATE_SESSIONS_SET_KEY);
     const sessions: GameSession[] = [];
 
-    for (const [sessionId, sessionData] of Object.entries(sessionsData)) {
+    for (const sessionId of sessionIds) {
       try {
-        const session = JSON.parse(sessionData) as GameSession;
-        
-        // Verify session still exists and is valid
+        // Get session data
         const currentSession = await sessionGet({ redis, sessionId });
         if (currentSession && currentSession.status === 'waiting' && currentSession.isPrivate) {
           sessions.push(currentSession);
         } else {
-          // Clean up stale session from hash
-          await redis.hDel(PRIVATE_SESSIONS_HASH_KEY, sessionId);
+          // Clean up stale session from set
+          await redis.sRem(PRIVATE_SESSIONS_SET_KEY, sessionId);
         }
       } catch (parseError) {
         console.error('Error parsing session data:', parseError);
         // Clean up invalid session data
-        await redis.hDel(PRIVATE_SESSIONS_HASH_KEY, sessionId);
+        await redis.sRem(PRIVATE_SESSIONS_SET_KEY, sessionId);
       }
     }
 
