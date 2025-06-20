@@ -47,7 +47,7 @@ Respond ONLY in valid JSON format:
 
   try {
     // Get API key from context (passed from server)
-    const apiKey = context?.GEMINI_API_KEY;
+    const apiKey = context.settings.GEMINI_API_KEY;
     
     if (!apiKey) {
       console.warn('⚠️ No Gemini API key found in settings, using fallback data');
