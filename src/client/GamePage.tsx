@@ -17,14 +17,13 @@ const CLUE_DURATION = 10000; // 10 seconds per clue
 const GamePage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { leaveSession, currentSession, refreshSession } = useSession();
+  const { leaveSession } = useSession();
   const { user } = useUser();
   const [dealerId, setDealerId] = useState<number>(1);
   const [session, setSession] = useState<GameSession | null>(null);
   const [aiGameData, setAiGameData] = useState<AIGameData | null>(null);
   const [notifications, setNotifications] = useState<PlayerLeftNotification[]>([]);
   const [showAllPlayersLeftModal, setShowAllPlayersLeftModal] = useState(false);
-  const [previousPlayerCount, setPreviousPlayerCount] = useState<number>(0);
   const [isInitialized, setIsInitialized] = useState(false);
   
   // Clue display state
@@ -35,107 +34,23 @@ const GamePage: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get session from location state or current session
     const sessionFromState = location.state?.session;
-    
-    if (sessionFromState) {
+    const aiGameDataFromState = location.state?.aiGameData;
+
+    if (sessionFromState && aiGameDataFromState) {
       setSession(sessionFromState);
-      setPreviousPlayerCount(sessionFromState.players.length);
-      
-      // Set dealer ID from session or generate one
+      setAiGameData(aiGameDataFromState);
+      setLoading(false);
+      setIsInitialized(true);
+
       if (sessionFromState.dealerId) {
         setDealerId(sessionFromState.dealerId);
       }
-      
-      // Fetch AI game data
-      fetchAIGameData(sessionFromState.sessionId);
-      setIsInitialized(true);
-    } else if (currentSession) {
-      setSession(currentSession);
-      setPreviousPlayerCount(currentSession.players.length);
-      
-      // Set dealer ID from session or generate one
-      if (currentSession.dealerId) {
-        setDealerId(currentSession.dealerId);
-      }
-      
-      // Fetch AI game data
-      fetchAIGameData(currentSession.sessionId);
-      setIsInitialized(true);
     } else {
-      // No session found, redirect to home
+      console.error("Missing session or AI data, redirecting home.");
       navigate('/');
-      return;
     }
-  }, [location.state, currentSession, navigate]);
-
-  const fetchAIGameData = async (sessionId: string) => {
-    try {
-      console.log('🎮 Fetching AI game data for session:', sessionId);
-      const response = await fetch(`/api/ai-game-data/${sessionId}`);
-      console.log('📡 AI game data response status:', response.status);
-      
-      const data = await response.json();
-      console.log('📦 AI game data response:', data);
-      
-      if (data.status === 'success' && data.data) {
-        console.log('✅ AI game data loaded successfully:', data.data);
-        setAiGameData(data.data);
-        setClueStartTime(Date.now());
-        setCurrentClueIndex(0);
-        setAllCluesShown(false);
-      } else {
-        console.error('❌ Failed to fetch AI game data:', data.message);
-        // Set fallback data if AI fails
-        const fallbackData = {
-          aiPersona: "A mysterious detective AI who specializes in supernatural cases and has a dry sense of humor",
-          clues: [
-            "I work in a profession that requires careful observation and logical thinking",
-            "My cases often involve things that others might consider impossible or unexplained", 
-            "I have a particular fondness for sarcastic remarks when dealing with the supernatural"
-          ] as [string, string, string],
-          userPersonas: [
-            "A skeptical scientist who doesn't believe in the paranormal",
-            "An enthusiastic paranormal investigator who believes everything",
-            "A local police officer who just wants to solve cases practically"
-          ] as [string, string, string],
-          sessionId,
-          createdAt: Date.now()
-        };
-        console.log('🔄 Using fallback AI game data:', fallbackData);
-        setAiGameData(fallbackData);
-        setClueStartTime(Date.now());
-        setCurrentClueIndex(0);
-        setAllCluesShown(false);
-      }
-    } catch (error) {
-      console.error('💥 Error fetching AI game data:', error);
-      // Set fallback data on error
-      const fallbackData = {
-        aiPersona: "A mysterious detective AI who specializes in supernatural cases and has a dry sense of humor",
-        clues: [
-          "I work in a profession that requires careful observation and logical thinking",
-          "My cases often involve things that others might consider impossible or unexplained", 
-          "I have a particular fondness for sarcastic remarks when dealing with the supernatural"
-        ] as [string, string, string],
-        userPersonas: [
-          "A skeptical scientist who doesn't believe in the paranormal",
-          "An enthusiastic paranormal investigator who believes everything",
-          "A local police officer who just wants to solve cases practically"
-        ] as [string, string, string],
-        sessionId,
-        createdAt: Date.now()
-      };
-      console.log('🔄 Using fallback AI game data after error:', fallbackData);
-      setAiGameData(fallbackData);
-      setClueStartTime(Date.now());
-      setCurrentClueIndex(0);
-      setAllCluesShown(false);
-    } finally {
-      console.log('🏁 Setting loading to false');
-      setLoading(false);
-    }
-  };
+  }, [location.state, navigate]);
 
   // Timer for clue progression
   useEffect(() => {
@@ -221,7 +136,6 @@ const GamePage: React.FC = () => {
               setDealerId(updatedSession.dealerId);
             }
             
-            setPreviousPlayerCount(newPlayerCount);
             lastKnownSession = updatedSession;
           }
         } else if (data.status === 'success' && !data.data) {

@@ -4,7 +4,10 @@ import { Devvit, Post } from '@devvit/public-api';
 import '../server/index';
 import { defineConfig } from '@devvit/server';
 import { postConfigNew } from '../server/core/post';
-
+Devvit.configure({
+  http: true,
+  // other capabilities if needed
+});
 Devvit.addSettings([
   {
     name: 'GEMINI_API_KEY',

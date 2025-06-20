@@ -66,13 +66,13 @@ const WaitingRoom: React.FC = () => {
           setCountdown(remaining);
           setIsCountingDown(true);
         } else {
-          // Countdown finished, navigate to game
+          // Countdown finished, navigate to the loading screen
           setIsCountingDown(false);
-          navigate('/game', { state: { session: currentSession } });
+          navigate('/loading', { state: { session: currentSession } });
         }
       } else if (currentSession.status === 'in-game') {
-        // Game has started, navigate to game page
-        navigate('/game', { state: { session: currentSession } });
+        // Game has already started, navigate to loading screen to fetch data
+        navigate('/loading', { state: { session: currentSession } });
       } else {
         setIsCountingDown(false);
         setCountdown(0);

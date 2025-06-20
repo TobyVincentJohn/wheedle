@@ -485,10 +485,10 @@ router.get('/api/ai-game-data/:sessionId', async (req, res): Promise<void> => {
     }
 
     // Get or create AI game data
-    let aiGameData = await getAIGameData({ redis, sessionId });
-    if (!aiGameData) {
-      aiGameData = await createAIGameData({ redis, settings, sessionId });
-    }
+    let aiGameData = await createAIGameData({ redis, sessionId });
+      // if (!aiGameData) {
+      //   aiGameData = await createAIGameData({ redis, sessionId });
+      // }
 
     res.json({ status: 'success', data: aiGameData } as GetAIGameDataResponse);
   } catch (error) {

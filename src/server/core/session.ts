@@ -1,7 +1,7 @@
 import { RedisClient } from '@devvit/redis';
 import { GameSession, SessionPlayer } from '../../shared/types/session';
 import { registerRoomCode, unregisterRoomCode } from './roomCodeSearch';
-import { deleteAIGameData } from './aiService';
+import { deleteAIGameData, fetchGeminiReply } from './aiService';
 
 const getSessionKey = (sessionId: string) => `session:${sessionId}` as const;
 const PUBLIC_SESSIONS_LIST_KEY = 'public_sessions_list' as const;
@@ -392,7 +392,7 @@ export const sessionLeave = async ({
   const wasHost = session.hostUserId === userId;
   if (session.players.length > 0 && wasHost) {
     // Find the player who was previously a host, if any
-    const newHost = session.players.find(p => p.wasHost) || session.players[0];
+    const newHost = session.players[0];//session.players.find(p => p.wasHost) || 
     if (newHost) {
       session.hostUserId = newHost.userId;
       session.hostUsername = newHost.username;
@@ -460,12 +460,12 @@ export const sessionDelete = async ({
 }): Promise<void> => {
   const session = await sessionGet({ redis, sessionId });
   if (session) {
-    // Delete AI game data
-    await deleteAIGameData({ redis, sessionId });
-    
-    // Unregister room code
+    // Unregister room code first
     await unregisterRoomCode({ redis, sessionCode: session.sessionCode });
     
+    // Then, delete AI game data
+    await deleteAIGameData({ redis, sessionId });
+
     // Remove all user session mappings
     for (const player of session.players) {
       await redis.del(USER_SESSION_KEY(player.userId));
@@ -547,9 +547,11 @@ export const sessionStartCountdown = async ({
 export const sessionStartGame = async ({
   redis,
   sessionId,
+  settings,
 }: {
   redis: RedisClient;
   sessionId: string;
+  settings: any;
 }): Promise<GameSession> => {
   const session = await sessionGet({ redis, sessionId });
   if (!session) {
@@ -587,6 +589,15 @@ export const sessionStartGame = async ({
       await redis.set(PUBLIC_SESSIONS_LIST_KEY, JSON.stringify(updatedSessions));
     }
   }
+
+  // Call Gemini when the game starts (for logging/demo)
+  fetchGeminiReply({ prompt: `Game started for session: ${sessionId}`, settings })
+    .then(reply => {
+      console.log(`[Gemini][GameStart][${sessionId}]`, reply);
+    })
+    .catch(err => {
+      console.error(`[Gemini][GameStart][${sessionId}] Error:`, err);
+    });
 
   return session;
 };
