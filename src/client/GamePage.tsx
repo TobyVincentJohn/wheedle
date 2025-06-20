@@ -163,15 +163,29 @@ const GamePage: React.FC = () => {
           console.error('Failed to leave session:', error);
         }
       }
-      navigate('/');
+    };
+
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'hidden' && session) {
+        // User is leaving/closing the tab, remove them from session
+        try {
+          await fetch(`/api/sessions/${session.sessionId}/leave`, {
+            method: 'POST',
+          });
+        } catch (error) {
+          console.error('Failed to leave session on visibility change:', error);
+        }
+      }
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
     window.addEventListener('popstate', handlePopState);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
       window.removeEventListener('popstate', handlePopState);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [session, leaveSession, navigate]);
 

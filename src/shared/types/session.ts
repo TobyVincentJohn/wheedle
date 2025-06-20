@@ -10,6 +10,9 @@ export interface GameSession {
   maxPlayers: number;
   gameStartedAt?: number;
   countdownStartedAt?: number; // When the 10-second countdown began
+  completedAt?: number; // When the game was completed
+  winnerId?: string; // ID of the winning player
+  winnerUsername?: string; // Username of the winning player
   dealerId?: number; // Dealer image ID for consistency across all players
   isPrivate?: boolean; // Whether this is a private session
 }

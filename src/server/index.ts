@@ -12,7 +12,8 @@ import {
   sessionJoin, 
   sessionLeave, 
   sessionStartCountdown,
-  sessionStartGame, 
+  sessionStartGame,
+  sessionComplete,
   getPublicSessions,
   getUserCurrentSession
 } from './core/session';
@@ -537,6 +538,35 @@ router.get('/api/sessions/by-code/:sessionCode/:type', async (req, res): Promise
       message: error instanceof Error ? error.message : 'Unknown error fetching session'
     });
     return;
+  }
+});
+
+// New endpoint to complete a session and declare a winner
+router.post('/api/sessions/:sessionId/complete', async (req, res): Promise<void> => {
+  const { sessionId } = req.params;
+  const { winnerId, winnerUsername } = req.body;
+  const { userId } = getContext();
+  const redis = getRedis();
+  
+  if (!userId) {
+    res.status(401).json({ status: 'error', message: 'Must be logged in' });
+    return;
+  }
+
+  if (!winnerId || !winnerUsername) {
+    res.status(400).json({ status: 'error', message: 'Winner ID and username are required' });
+    return;
+  }
+
+  try {
+    const session = await sessionComplete({ redis, sessionId, winnerId, winnerUsername });
+    res.json({ status: 'success', data: session });
+  } catch (error) {
+    console.error('Error completing session:', error);
+    res.status(500).json({ 
+      status: 'error', 
+      message: error instanceof Error ? error.message : 'Unknown error completing session'
+    });
   }
 });
 

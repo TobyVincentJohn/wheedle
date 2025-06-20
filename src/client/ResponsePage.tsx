@@ -100,11 +100,41 @@ const ResponsePage: React.FC = () => {
     // Simulate evaluation delay
     await new Promise(resolve => setTimeout(resolve, 2000));
     
-    setWinner(randomWinner?.username || 'Unknown');
-    setWinnerReason(`${randomWinner?.username} provided the most accurate guess about the AI's persona as a mysterious detective. Their response showed deep understanding of the supernatural investigation theme and correctly identified key elements from the clues.`);
+    const winnerUsername = randomWinner?.username || 'Unknown';
+    const winnerId = randomWinner?.userId || '';
+    
+    setWinner(winnerUsername);
+    setWinnerReason(`${winnerUsername} provided the most accurate guess about the AI's persona. Their response showed deep understanding of the theme and correctly identified key elements from the clues.`);
+    
+    // Mark session as completed with winner
+    if (session && winnerId) {
+      try {
+        await fetch(`/api/sessions/${session.sessionId}/complete`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            winnerId,
+            winnerUsername,
+          }),
+        });
+        console.log('✅ Session marked as completed with winner');
+      } catch (error) {
+        console.error('❌ Failed to mark session as completed:', error);
+      }
+    }
   };
 
   const handleReturnToHome = () => {
+    // Leave the session when returning to home
+    if (session) {
+      fetch(`/api/sessions/${session.sessionId}/leave`, {
+        method: 'POST',
+      }).catch(error => {
+        console.error('Failed to leave session:', error);
+      });
+    }
     navigate('/');
   };
 

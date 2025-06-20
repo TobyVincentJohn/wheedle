@@ -1,12 +1,13 @@
 import { RedisClient } from '@devvit/redis';
 import { GameSession, SessionPlayer } from '../../shared/types/session';
 import { registerRoomCode, unregisterRoomCode } from './roomCodeSearch';
-import { deleteAIGameData, fetchGeminiReply } from './aiService';
+import { deleteAIGameData } from './aiService';
 
 const getSessionKey = (sessionId: string) => `session:${sessionId}` as const;
 const PUBLIC_SESSIONS_LIST_KEY = 'public_sessions_list' as const;
 const PRIVATE_SESSIONS_LIST_KEY = 'private_sessions_list' as const;
 const USER_SESSION_KEY = (userId: string) => `user_session:${userId}` as const;
+const SESSION_DELETION_TIMER_KEY = (sessionId: string) => `session_deletion_timer:${sessionId}` as const;
 
 // Generate a random 5-character session code
 const generateSessionCode = (): string => {
@@ -266,33 +267,100 @@ export const sessionLeave = async ({
   // Remove user session mapping
   await redis.del(USER_SESSION_KEY(userId));
 
-  if (session.players.length === 0) {
-    // Delete empty session
-    await sessionDelete({ redis, sessionId });
-  } else if (session.players.length === 1 && (session.status === 'in-game' || session.status === 'countdown')) {
-    // Last player remaining - end the game
-    await sessionDelete({ redis, sessionId });
-  } else {
-    // Update session
-    await redis.set(getSessionKey(sessionId), JSON.stringify(session));
-    
-    // Update session in appropriate list to ensure it's visible
-    if (!session.isPrivate) {
-      const publicSessionsList = await redis.get(PUBLIC_SESSIONS_LIST_KEY);
-      const publicSessions = publicSessionsList ? JSON.parse(publicSessionsList) as string[] : [];
-      if (!publicSessions.includes(sessionId)) {
-        publicSessions.push(sessionId);
-        await redis.set(PUBLIC_SESSIONS_LIST_KEY, JSON.stringify(publicSessions));
-      }
+  // Handle different scenarios based on session status and remaining players
+  if (session.status === 'waiting') {
+    // In waiting state, delete session if empty, otherwise update
+    if (session.players.length === 0) {
+      await sessionDelete({ redis, sessionId });
     } else {
-      const privateSessionsList = await redis.get(PRIVATE_SESSIONS_LIST_KEY);
-      const privateSessions = privateSessionsList ? JSON.parse(privateSessionsList) as string[] : [];
-      if (!privateSessions.includes(sessionId)) {
-        privateSessions.push(sessionId);
-        await redis.set(PRIVATE_SESSIONS_LIST_KEY, JSON.stringify(privateSessions));
+      // Update session and keep it in the appropriate list for new players to join
+      await redis.set(getSessionKey(sessionId), JSON.stringify(session));
+      
+      if (!session.isPrivate) {
+        const publicSessionsList = await redis.get(PUBLIC_SESSIONS_LIST_KEY);
+        const publicSessions = publicSessionsList ? JSON.parse(publicSessionsList) as string[] : [];
+        if (!publicSessions.includes(sessionId)) {
+          publicSessions.push(sessionId);
+          await redis.set(PUBLIC_SESSIONS_LIST_KEY, JSON.stringify(publicSessions));
+        }
+      } else {
+        const privateSessionsList = await redis.get(PRIVATE_SESSIONS_LIST_KEY);
+        const privateSessions = privateSessionsList ? JSON.parse(privateSessionsList) as string[] : [];
+        if (!privateSessions.includes(sessionId)) {
+          privateSessions.push(sessionId);
+          await redis.set(PRIVATE_SESSIONS_LIST_KEY, JSON.stringify(privateSessions));
+        }
       }
     }
+  } else if (session.status === 'countdown' || session.status === 'in-game') {
+    // During countdown or in-game, just remove the player but keep the session
+    if (session.players.length === 0) {
+      // All players left during game - delete immediately
+      await sessionDelete({ redis, sessionId });
+    } else if (session.players.length === 1) {
+      // Only one player left - they win by default, but don't delete yet
+      // The game will handle winner declaration and trigger auto-deletion
+      await redis.set(getSessionKey(sessionId), JSON.stringify(session));
+    } else {
+      // Multiple players still in game - just update session
+      await redis.set(getSessionKey(sessionId), JSON.stringify(session));
+    }
+  } else if (session.status === 'completed') {
+    // Game is completed, just remove the player
+    if (session.players.length === 0) {
+      // All players left after completion - delete immediately
+      await sessionDelete({ redis, sessionId });
+    } else {
+      // Some players still viewing results - just update session
+      await redis.set(getSessionKey(sessionId), JSON.stringify(session));
+    }
   }
+};
+
+// New function to mark session as completed and start auto-deletion timer
+export const sessionComplete = async ({
+  redis,
+  sessionId,
+  winnerId,
+  winnerUsername,
+}: {
+  redis: RedisClient;
+  sessionId: string;
+  winnerId: string;
+  winnerUsername: string;
+}): Promise<GameSession> => {
+  const session = await sessionGet({ redis, sessionId });
+  if (!session) {
+    throw new Error('Session not found');
+  }
+
+  // Mark session as completed
+  session.status = 'completed';
+  session.completedAt = Date.now();
+  session.winnerId = winnerId;
+  session.winnerUsername = winnerUsername;
+
+  // Update session
+  await redis.set(getSessionKey(sessionId), JSON.stringify(session));
+
+  // Set auto-deletion timer for 30 seconds
+  await redis.set(SESSION_DELETION_TIMER_KEY(sessionId), 'pending', { ex: 30 });
+
+  // Schedule deletion after 30 seconds
+  setTimeout(async () => {
+    try {
+      const timerExists = await redis.get(SESSION_DELETION_TIMER_KEY(sessionId));
+      if (timerExists) {
+        console.log(`🕒 Auto-deleting completed session ${sessionId} after 30 seconds`);
+        await redis.del(SESSION_DELETION_TIMER_KEY(sessionId));
+        await sessionDelete({ redis, sessionId });
+      }
+    } catch (error) {
+      console.error(`Error auto-deleting session ${sessionId}:`, error);
+    }
+  }, 30000);
+
+  return session;
 };
 
 export const sessionDelete = async ({
@@ -335,6 +403,9 @@ export const sessionDelete = async ({
 
   // Delete session
   await redis.del(getSessionKey(sessionId));
+  
+  // Also clean up any pending deletion timer
+  await redis.del(SESSION_DELETION_TIMER_KEY(sessionId));
 };
 
 export const sessionStartCountdown = async ({
@@ -374,11 +445,9 @@ export const sessionStartCountdown = async ({
 export const sessionStartGame = async ({
   redis,
   sessionId,
-  settings,
 }: {
   redis: RedisClient;
   sessionId: string;
-  settings: any;
 }): Promise<GameSession> => {
   const session = await sessionGet({ redis, sessionId });
   if (!session) {
