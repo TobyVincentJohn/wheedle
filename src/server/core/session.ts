@@ -157,26 +157,19 @@ export const sessionJoin = async ({
 
   // Check if user was previously in this session
   const previousPlayerIndex = session.previousPlayers.findIndex(p => p.userId === userId);
-  let wasHost = false;
 
   if (previousPlayerIndex !== -1) {
     // User was previously in this session
-    const previousPlayer = session.previousPlayers[previousPlayerIndex];
-    if (previousPlayer) {
-      wasHost = previousPlayer.wasHost || false;
-      
-      // Remove from previousPlayers
-      session.previousPlayers.splice(previousPlayerIndex, 1);
-    }
+    // Remove from previousPlayers
+    session.previousPlayers.splice(previousPlayerIndex, 1);
   }
 
   // Add player to session
   const newPlayer: SessionPlayer = {
-    userId,
-    username,
+    userId: userId,
+    username: username,
     joinedAt: Date.now(),
     isHost: false,
-    wasHost,
   };
 
   session.players.push(newPlayer);
@@ -239,82 +232,39 @@ export const sessionLeave = async ({
   session.players = oldPlayers.filter(player => player.userId !== userId);
   const removedPlayer = oldPlayers.find(player => player.userId === userId);
 
+  const wasHost = removedPlayer?.isHost || false;
+
   // If game hasn't started, add player to previousPlayers
-  if (session.status === 'waiting') {
+  if (session.status === 'waiting' && removedPlayer) {
     const playerToMove: SessionPlayer = {
       userId,
-      username: user.username,
-      joinedAt: Date.now(),
+      username: removedPlayer.username,
+      joinedAt: removedPlayer.joinedAt,
       isHost: false,
-      wasHost: removedPlayer?.isHost || false,
     };
     session.previousPlayers.push(playerToMove);
   }
-
-  // If there are still players and this was the host
-  const wasHost = session.hostUserId === userId;
-  if (session.players.length > 0 && wasHost) {
-    // Find the player who was previously a host, if any
-    const newHost = session.players.find(p => p.wasHost) || session.players[0];
-    if (newHost) {
-      session.hostUserId = newHost.userId;
-      session.hostUsername = newHost.username;
-      newHost.isHost = true;
-      newHost.wasHost = false; // Clear wasHost as they're now the active host
-    }
+  
+  // If the host left, assign a new host
+  if (wasHost && session.players.length > 0) {
+    const newHost = session.players[0]!;
+    newHost.isHost = true;
+    session.hostUserId = newHost.userId;
+    session.hostUsername = newHost.username;
   }
 
   // Remove user session mapping
   await redis.del(USER_SESSION_KEY(userId));
 
-  // Handle different scenarios based on session status and remaining players
-  if (session.status === 'waiting') {
-    // In waiting state, delete session if empty, otherwise update
-    if (session.players.length === 0) {
-      await sessionDelete({ redis, sessionId });
-    } else {
-      // Update session and keep it in the appropriate list for new players to join
-      await redis.set(getSessionKey(sessionId), JSON.stringify(session));
-      
-      if (!session.isPrivate) {
-        const publicSessionsList = await redis.get(PUBLIC_SESSIONS_LIST_KEY);
-        const publicSessions = publicSessionsList ? JSON.parse(publicSessionsList) as string[] : [];
-        if (!publicSessions.includes(sessionId)) {
-          publicSessions.push(sessionId);
-          await redis.set(PUBLIC_SESSIONS_LIST_KEY, JSON.stringify(publicSessions));
-        }
-      } else {
-        const privateSessionsList = await redis.get(PRIVATE_SESSIONS_LIST_KEY);
-        const privateSessions = privateSessionsList ? JSON.parse(privateSessionsList) as string[] : [];
-        if (!privateSessions.includes(sessionId)) {
-          privateSessions.push(sessionId);
-          await redis.set(PRIVATE_SESSIONS_LIST_KEY, JSON.stringify(privateSessions));
-        }
-      }
-    }
-  } else if (session.status === 'countdown' || session.status === 'in-game') {
-    // During countdown or in-game, just remove the player but keep the session
-    if (session.players.length === 0) {
-      // All players left during game - delete immediately
-      await sessionDelete({ redis, sessionId });
-    } else if (session.players.length === 1) {
-      // Only one player left - they win by default, but don't delete yet
-      // The game will handle winner declaration and trigger auto-deletion
-      await redis.set(getSessionKey(sessionId), JSON.stringify(session));
-    } else {
-      // Multiple players still in game - just update session
-      await redis.set(getSessionKey(sessionId), JSON.stringify(session));
-    }
-  } else if (session.status === 'completed') {
-    // Game is completed, just remove the player
-    if (session.players.length === 0) {
-      // All players left after completion - delete immediately
-      await sessionDelete({ redis, sessionId });
-    } else {
-      // Some players still viewing results - just update session
-      await redis.set(getSessionKey(sessionId), JSON.stringify(session));
-    }
+  if (session.players.length === 0) {
+    // Session is empty, schedule for deletion
+    console.log(`Session ${sessionId} is empty. Scheduling for deletion in 60 seconds.`);
+    await redis.set(SESSION_DELETION_TIMER_KEY(sessionId), 'delete');
+    await redis.expire(SESSION_DELETION_TIMER_KEY(sessionId), 60);
+    return;
   }
+
+  await redis.set(getSessionKey(sessionId), JSON.stringify(session));
 };
 
 // New function to mark session as completed and start auto-deletion timer
@@ -344,7 +294,8 @@ export const sessionComplete = async ({
   await redis.set(getSessionKey(sessionId), JSON.stringify(session));
 
   // Set auto-deletion timer for 30 seconds
-  await redis.set(SESSION_DELETION_TIMER_KEY(sessionId), 'pending', { ex: 30 });
+  await redis.set(SESSION_DELETION_TIMER_KEY(sessionId), 'pending');
+  await redis.expire(SESSION_DELETION_TIMER_KEY(sessionId), 30);
 
   // Schedule deletion after 30 seconds
   setTimeout(async () => {

@@ -3,21 +3,10 @@ import { Devvit, Post } from '@devvit/public-api';
 // Side effect import to bundle the server. The /index is required for server splitting.
 import '../server/index';
 import { defineConfig } from '@devvit/server';
-import { postConfigNew } from '../server/core/post';
+
 Devvit.configure({
   http: true,
-  // other capabilities if needed
 });
-Devvit.addSettings([
-  {
-    name: 'GEMINI_API_KEY',
-    label: 'gemini_api_key',
-    type: 'string',
-    isSecret: true,
-    scope: 'app',
-  },
-]);
-
 defineConfig({
   name: '[Bolt] Word Guesser',
   entry: 'index.html',
@@ -70,10 +59,6 @@ Devvit.addMenuItem({
         title: 'Word Guesser',
         subredditName: subreddit.name,
         preview: <Preview />,
-      });
-      await postConfigNew({
-        redis: context.redis,
-        postId: post.id,
       });
       ui.showToast({ text: 'Created post!' });
       ui.navigateTo(post.url);

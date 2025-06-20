@@ -8,10 +8,21 @@ import LoadingScreen from './LoadingScreen';
 import GamePage from './GamePage';
 import LeaderboardPage from './LeaderboardPage';
 import ResponsePage from './ResponsePage';
+import { useSessionsRedisData } from './hooks/useRedisData';
+import { useEffect } from 'react';
+
+const RedisDataLogger: React.FC = () => {
+  const sessionsData = useSessionsRedisData();
+  useEffect(() => {
+    console.log('Active Sessions Data:', sessionsData);
+  }, [sessionsData]);
+  return null;
+}
 
 export const App: React.FC = () => {
   return (
     <Router>
+      <RedisDataLogger />
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/public-room" element={<PublicRoom />} />

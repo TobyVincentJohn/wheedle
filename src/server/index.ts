@@ -1,8 +1,5 @@
 import express from 'express';
 import { createServer, getContext, getServerPort } from '@devvit/server';
-import { CheckResponse, InitResponse, LetterState } from '../shared/types/game';
-import { postConfigGet, postConfigNew, postConfigMaybeGet } from './core/post';
-import { allWords } from './core/words';
 import { getRedis } from '@devvit/redis';
 import { userGet, userSet, userUpdate, userDelete, getActiveUsers } from './core/user';
 import { UserDetails } from '../shared/types/user';
@@ -18,7 +15,7 @@ import {
   getUserCurrentSession
 } from './core/session';
 import { findSessionByCode } from './core/roomCodeSearch';
-import { createAIGameData, getAIGameData, deleteAIGameData } from './core/aiService';
+import { createAIGameData} from './core/aiService';
 import { GetAIGameDataResponse } from '../shared/types/aiGame';
 import { 
   CreateSessionResponse, 
@@ -39,137 +36,30 @@ app.use(express.text());
 
 const router = express.Router();
 
-router.get<{ postId: string }, InitResponse | { status: string; message: string }>(
-  '/api/init',
-  async (_req, res): Promise<void> => {
-    const { postId } = getContext();
-    const redis = getRedis();
+router.get('/api/redis-data/sessions/all', async (req, res) => {
+  const { userId } = getContext();
+  const redis = getRedis();
 
-    if (!postId) {
-      console.error('API Init Error: postId not found in devvit context');
-      res.status(400).json({
-        status: 'error',
-        message: 'postId is required but missing from context',
-      });
-      return;
-    }
-
-    try {
-      let config = await postConfigMaybeGet({ redis, postId });
-      if (!config || !config.wordOfTheDay) {
-        console.log(`No valid config found for post ${postId}, creating new one.`);
-        await postConfigNew({ redis: getRedis(), postId });
-        config = await postConfigGet({ redis, postId });
-      }
-
-      if (!config.wordOfTheDay) {
-        console.error(
-          `API Init Error: wordOfTheDay still not found for post ${postId} after attempting creation.`
-        );
-        throw new Error('Failed to initialize game configuration.');
-      }
-
-      res.json({
-        status: 'success',
-        postId: postId,
-      });
-    } catch (error) {
-      console.error(`API Init Error for post ${postId}:`, error);
-      const message =
-        error instanceof Error ? error.message : 'Unknown error during initialization';
-      res.status(500).json({ status: 'error', message });
-    }
-  }
-);
-
-router.post<{ postId: string }, CheckResponse, { guess: string }>(
-  '/api/check',
-  async (req, res): Promise<void> => {
-    const { guess } = req.body;
-    const { postId, userId } = getContext();
-    const redis = getRedis();
-
-    if (!postId) {
-      res.status(400).json({ status: 'error', message: 'postId is required' });
-      return;
-    }
-    if (!userId) {
-      res.status(400).json({ status: 'error', message: 'Must be logged in' });
-      return;
-    }
-    if (!guess) {
-      res.status(400).json({ status: 'error', message: 'Guess is required' });
-      return;
-    }
-
-    const config = await postConfigGet({ redis, postId });
-    const { wordOfTheDay } = config;
-
-    const normalizedGuess = guess.toLowerCase();
-
-    if (normalizedGuess.length !== 5) {
-      res.status(400).json({ status: 'error', message: 'Guess must be 5 letters long' });
-      return;
-    }
-
-    const wordExists = allWords.includes(normalizedGuess);
-
-    if (!wordExists) {
-      res.json({
-        status: 'success',
-        exists: false,
-        solved: false,
-        correct: Array(5).fill('initial') as [
-          LetterState,
-          LetterState,
-          LetterState,
-          LetterState,
-          LetterState,
-        ],
-      });
-      return;
-    }
-
-    const answerLetters = wordOfTheDay.split('');
-    const resultCorrect: LetterState[] = Array(5).fill('initial');
-    let solved = true;
-    const guessLetters = normalizedGuess.split('');
-
-    for (let i = 0; i < 5; i++) {
-      if (guessLetters[i] === answerLetters[i]) {
-        resultCorrect[i] = 'correct';
-        answerLetters[i] = '';
-      } else {
-        solved = false;
-      }
-    }
-
-    for (let i = 0; i < 5; i++) {
-      if (resultCorrect[i] === 'initial') {
-        const guessedLetter = guessLetters[i]!;
-        const presentIndex = answerLetters.indexOf(guessedLetter);
-        if (presentIndex !== -1) {
-          resultCorrect[i] = 'present';
-          answerLetters[presentIndex] = '';
-        }
-      }
-    }
-
-    for (let i = 0; i < 5; i++) {
-      if (resultCorrect[i] === 'initial') {
-        resultCorrect[i] = 'absent';
-      }
-    }
+  try {
+    const publicSessions = await getPublicSessions({ redis });
+    const userData = userId ? await userGet({ redis, userId }) : null;
+    const currentSession = userId ? await getUserCurrentSession({ redis, userId }) : null;
 
     res.json({
       status: 'success',
-      exists: true,
-      solved,
-      correct: resultCorrect as [LetterState, LetterState, LetterState, LetterState, LetterState],
+      data: {
+        publicSessions,
+        currentSession,
+        userData,
+      },
     });
+  } catch (error) {
+    console.error('Error fetching sessions data:', error);
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({ status: 'error', message });
   }
-);
-
+});
+  
 // User Management Endpoints
 router.post('/api/users', async (req, res) => {
   const { userId, reddit } = getContext();
@@ -462,37 +352,19 @@ router.get('/api/sessions/current', async (_req, res): Promise<void> => {
 // AI Game Data Endpoints
 router.get('/api/ai-game-data/:sessionId', async (req, res): Promise<void> => {
   const { sessionId } = req.params;
-  const { userId, settings } = getContext();
+  //const { userId} = getContext();
   const redis = getRedis();
-  
-  if (!userId) {
-    res.status(401).json({ status: 'error', message: 'Must be logged in' } as GetAIGameDataResponse);
-    return;
-  }
 
   try {
-    // Check if user is in the session
-    const session = await sessionGet({ redis, sessionId });
-    if (!session) {
-      res.status(404).json({ status: 'error', message: 'Session not found' } as GetAIGameDataResponse);
-      return;
-    }
-
-    const userInSession = session.players.some(p => p.userId === userId);
-    if (!userInSession) {
-      res.status(403).json({ status: 'error', message: 'User not in session' } as GetAIGameDataResponse);
-      return;
-    }
-
     // Get or create AI game data
-    let aiGameData = await createAIGameData({ redis, sessionId, settings: { GEMINI_API_KEY: await settings.get('GEMINI_API_KEY') } });
+    let aiGameData = await createAIGameData({ redis, sessionId });
       // if (!aiGameData) {
       //   aiGameData = await createAIGameData({ redis, sessionId });
       // }
 
     res.json({ status: 'success', data: aiGameData } as GetAIGameDataResponse);
   } catch (error) {
-    console.error('Error fetching AI game data:', error);
+    console.log('Error fetching AI game data:', error);
     res.status(500).json({ 
       status: 'error', 
       message: error instanceof Error ? error.message : 'Unknown error fetching AI game data'

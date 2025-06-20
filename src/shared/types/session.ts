@@ -22,7 +22,6 @@ export interface SessionPlayer {
   username: string;
   joinedAt: number;
   isHost: boolean;
-  wasHost?: boolean; // Track if player was previously a host
 }
 
 export interface CreateSessionRequest {

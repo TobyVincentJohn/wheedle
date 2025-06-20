@@ -69,9 +69,10 @@ const LoadingScreen: React.FC = () => {
         console.log('🎮 Fetching AI game data from loading screen...');
         const response = await fetch(`/api/ai-game-data/${sessionId}`);
         const data = await response.json();
-        
+        console.log('🎮 AI game data:', data);
         if (data.status === 'success' && data.data) {
           console.log('✅ AI game data loaded successfully.');
+          console.log(data.data);
           setAiGameData(data.data);
           setAiDataReady(true);
         } else {
