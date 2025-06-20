@@ -4,6 +4,7 @@ import { GameSession } from '../shared/types/session';
 import { AIGameData } from '../shared/types/aiGame';
 import { useSession } from './hooks/useSession';
 import { useUser } from './hooks/useUser';
+import { RedisDataViewer } from './components/RedisDataViewer';
 import './GamePage.css';
 
 interface PlayerLeftNotification {
@@ -337,47 +338,47 @@ const GamePage: React.FC = () => {
 
   return (
     <div className="game-page">
-      <div className="game-content">
-        <div className="game-header">
-          <div className="session-info">
-            <span>Players: {session.players.length}</span>
-            <span>Prize Pool: ${session.prizePool || 0}</span>
-            {user && <span>Money in Hand: ${user.moneyInHand || 0}</span>}
-          </div>
-          <div className="header-buttons">
-            <button className="leave-game-btn" onClick={handleLeaveGame}>
-              Leave Game
-            </button>
-          </div>
+      <RedisDataViewer sessionId={session.sessionId} userId={user?.userId || null} />
+      
+      <div className="game-header">
+        <div className="session-info">
+          <span>Players: {session.players.length}</span>
+          <span>Prize Pool: ${session.prizePool || 0}</span>
+          {user && <span>Money in Hand: ${user.moneyInHand || 0}</span>}
         </div>
-        
-        <div className="game-notifications">
-          {notifications.map((notification) => (
-            <div key={notification.id} className="player-left-notification">
-              u/{notification.username} left the game
-            </div>
-          ))}
+        <div className="header-buttons">
+          <button className="leave-game-btn" onClick={handleLeaveGame}>
+            Leave Game
+          </button>
         </div>
-        
-        <div className="dealer-text-bubble">
-          <div style={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            color: '#333',
-            fontFamily: 'VT323, monospace',
-            fontSize: '18px',
-            textAlign: 'center',
-            maxWidth: '400px',
-            lineHeight: '1.4',
-            padding: '20px'
-          }}>
-            {getCurrentClueText()}
-          </div>
-        </div>
-        <div className={`dealer dealer-${dealerId}`} />
       </div>
+      
+      <div className="game-notifications">
+        {notifications.map((notification) => (
+          <div key={notification.id} className="player-left-notification">
+            u/{notification.username} left the game
+          </div>
+        ))}
+      </div>
+      
+      <div className="dealer-text-bubble">
+        <div style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          color: '#333',
+          fontFamily: 'VT323, monospace',
+          fontSize: '18px',
+          textAlign: 'center',
+          maxWidth: '400px',
+          lineHeight: '1.4',
+          padding: '20px'
+        }}>
+          {getCurrentClueText()}
+        </div>
+      </div>
+      <div className={`dealer dealer-${dealerId}`} />
       
       {showAllPlayersLeftModal && (
         <div className="all-players-left-modal">

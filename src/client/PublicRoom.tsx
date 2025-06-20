@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { GameSession } from '../shared/types/session';
 import { useSession } from './hooks/useSession';
 import { useUser } from './hooks/useUser';
+import { SessionsRedisViewer } from './components/SessionsRedisViewer';
 import './PublicRoom.css';
 
 const PublicRoom: React.FC = () => {
@@ -166,6 +167,8 @@ const PublicRoom: React.FC = () => {
   return (
     <div className="public-room">
       <div className="public-room-content">
+        <SessionsRedisViewer />
+        
         <button 
           className="back-button" 
           onClick={() => navigate('/')}

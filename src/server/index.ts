@@ -541,12 +541,122 @@ router.get('/api/sessions/by-code/:sessionCode/:type', async (req, res): Promise
   }
 });
 
+// Add new endpoints for Redis data viewer
+router.get('/api/redis-data/:sessionId', async (req, res) => {
+  const { sessionId } = req.params;
+  const { userId } = getContext();
+  const redis = getRedis();
+
+  if (!userId) {
+    res.status(401).json({ status: 'error', message: 'Must be logged in' });
+    return;
+  }
+
+  try {
+    // Get session data
+    const session = await sessionGet({ redis, sessionId });
+    if (!session) {
+      res.status(404).json({ status: 'error', message: 'Session not found' });
+      return;
+    }
+
+    // Get AI game data if session is in-game
+    let aiGameData = null;
+    if (session.status === 'in-game') {
+      aiGameData = await getAIGameData({ redis, sessionId });
+    }
+
+    // Get user data
+    let userData = await userGet({ redis, userId });
+    if (!userData) {
+      // Create new user if not found
+      const newUser: UserDetails = {
+        userId,
+        username: 'Anonymous',
+        lastActive: Date.now(),
+        money: 1000, // Default starting money
+        score: 0
+      };
+      await userSet({ redis, userDetails: newUser });
+      userData = newUser;
+    }
+
+    res.json({
+      status: 'success',
+      data: {
+        session,
+        aiGameData,
+        userData
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching Redis data:', error);
+    res.status(500).json({ 
+      status: 'error', 
+      message: error instanceof Error ? error.message : 'Unknown error fetching Redis data'
+    });
+  }
+});
+
+// Add endpoint to get Redis data for sessions page
+router.get('/api/redis-data/sessions/all', async (req, res) => {
+  const { userId } = getContext();
+  const redis = getRedis();
+
+  if (!userId) {
+    res.status(401).json({ status: 'error', message: 'Must be logged in' });
+    return;
+  }
+
+  try {
+    // Get all public sessions
+    const publicSessions = await getPublicSessions({ redis });
+    
+    // Get user data
+    let userData = await userGet({ redis, userId });
+    if (!userData) {
+      // Create new user if not found
+      const newUser: UserDetails = {
+        userId,
+        username: 'Anonymous',
+        lastActive: Date.now(),
+        money: 1000, // Default starting money
+        score: 0
+      };
+      await userSet({ redis, userDetails: newUser });
+      userData = newUser;
+    } else if (userData.money === undefined) {
+      // Ensure existing users have the money field
+      userData.money = 1000;
+      await userSet({ redis, userDetails: userData });
+    }
+
+    // Get current user's session if any
+    const currentSession = await getUserCurrentSession({ redis, userId });
+
+    res.json({
+      status: 'success',
+      data: {
+        publicSessions,
+        userData,
+        currentSession
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching sessions Redis data:', error);
+    res.status(500).json({ 
+      status: 'error', 
+      message: error instanceof Error ? error.message : 'Unknown error fetching Redis data'
+    });
+  }
+});
+
 // Use router middleware
 app.use(router);
 
-// Get port from environment variable with fallback
-const port = getServerPort();
-
+// Create and start the server
 const server = createServer(app);
-server.on('error', (err) => console.error(`server error; ${err.stack}`));
-server.listen(port, () => console.log(`http://localhost:${port}`));
+const port = getServerPort();
+server.listen(port, () => {
+  console.log(`Server listening on port ${port}`);
+});

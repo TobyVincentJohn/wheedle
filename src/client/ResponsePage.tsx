@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { GameSession } from '../shared/types/session';
 import { AIGameData } from '../shared/types/aiGame';
 import { useSession } from './hooks/useSession';
+import { RedisDataViewer } from './components/RedisDataViewer';
 import './ResponsePage.css';
 
 const RESPONSE_TIME_LIMIT = 60000; // 1 minute in milliseconds
@@ -129,6 +130,10 @@ const ResponsePage: React.FC = () => {
   if (pageState === 'revealing') {
     return (
       <div className="response-page">
+        <RedisDataViewer 
+          sessionId={session.sessionId} 
+          userId={session.hostUserId} 
+        />
         <div className="response-content">
           <div className={`response-dealer response-dealer-${dealerId}`} />
           
@@ -219,6 +224,10 @@ const ResponsePage: React.FC = () => {
   // Response input state
   return (
     <div className="response-page">
+      <RedisDataViewer 
+        sessionId={session.sessionId} 
+        userId={session.hostUserId} 
+      />
       <div className="response-content">
         <div style={{
           position: 'absolute',
@@ -283,7 +292,7 @@ const ResponsePage: React.FC = () => {
         
         <button
           onClick={() => handleSubmitResponse()}
-          disabled={(!userInput.trim() && !isTimeUp) || (isTimeUp && userInput.trim())}
+          disabled={isTimeUp ? true : !userInput.trim()}
           style={{
             position: 'absolute',
             bottom: '100px',

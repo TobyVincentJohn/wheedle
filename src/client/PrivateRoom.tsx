@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSession } from './hooks/useSession';
 import { useUser } from './hooks/useUser';
 import { useEffect } from 'react';
+import { SessionsRedisViewer } from './components/SessionsRedisViewer';
 import './PrivateRoom.css';
 
 const PrivateRoom: React.FC = () => {
@@ -119,6 +120,8 @@ const PrivateRoom: React.FC = () => {
   return (
     <div className="private-room">
       <div className="private-room-content">
+        <SessionsRedisViewer />
+        
         <button 
           className="back-button" 
           onClick={() => navigate('/')}
