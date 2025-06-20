@@ -485,7 +485,7 @@ router.get('/api/ai-game-data/:sessionId', async (req, res): Promise<void> => {
     }
 
     // Get or create AI game data
-    let aiGameData = await createAIGameData({ redis, sessionId, settings });
+    let aiGameData = await createAIGameData({ redis, sessionId, settings: { GEMINI_API_KEY: await settings.get('GEMINI_API_KEY') } });
       // if (!aiGameData) {
       //   aiGameData = await createAIGameData({ redis, sessionId });
       // }

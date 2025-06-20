@@ -46,8 +46,8 @@ Respond ONLY in valid JSON format:
   `.trim();
 
   try {
-    // Get API key from settings
-    const apiKey = await context.settings.get('GEMINI_API_KEY')
+    // Get API key from context (passed from server)
+    const apiKey = context?.GEMINI_API_KEY;
     
     if (!apiKey) {
       console.warn('⚠️ No Gemini API key found in settings, using fallback data');
@@ -185,21 +185,68 @@ export const createAIGameData = async ({
 }): Promise<AIGameData> => {
   console.log(`🎮 Creating AI game data for session: ${sessionId}`);
   
-  // Always generate fresh AI game data for each session
-  console.log('🆕 Generating new AI game data...');
-  const gameData = await generateAIGameData(settings);
+  // Check if AI game data already exists to prevent race conditions
+  const existing = await getAIGameData({ redis, sessionId });
+  if (existing) {
+    console.log('♻️ Found existing AI game data for session:', sessionId);
+    return existing;
+  }
 
-  const aiGameData: AIGameData = {
-    ...gameData,
-    sessionId,
-    createdAt: Date.now(),
-  };
-
-  console.log('💾 Storing AI game data in Redis...');
-  await redis.set(getAIGameDataKey(sessionId), JSON.stringify(aiGameData));
+  // Use Redis lock to prevent multiple players from generating data simultaneously
+  const lockKey = `ai_game_data_lock:${sessionId}`;
+  const lockValue = `${Date.now()}_${Math.random()}`;
   
-  console.log('✅ AI game data created and stored successfully');
-  return aiGameData;
+  // Try to acquire lock with 30 second expiration
+  const lockAcquired = await redis.set(lockKey, lockValue, { ex: 30, nx: true });
+  
+  if (!lockAcquired) {
+    // Another player is generating data, wait for it
+    console.log('🔒 Another player is generating AI data, waiting...');
+    
+    // Poll for data to be available (max 25 seconds)
+    for (let i = 0; i < 50; i++) {
+      await new Promise(resolve => setTimeout(resolve, 500)); // Wait 500ms
+      const data = await getAIGameData({ redis, sessionId });
+      if (data) {
+        console.log('✅ AI game data became available while waiting');
+        return data;
+      }
+    }
+    
+    // If we get here, something went wrong, generate fallback
+    console.warn('⚠️ Timeout waiting for AI data, generating fallback');
+    return {
+      aiPersona: "A mysterious detective AI who specializes in supernatural cases",
+      clues: ["I work with logic and observation", "I deal with unexplained phenomena", "I have a dry sense of humor about the supernatural"],
+      userPersonas: ["A skeptical scientist", "An enthusiastic investigator", "A practical police officer"],
+      sessionId,
+      createdAt: Date.now(),
+    };
+  }
+
+  try {
+    console.log('🔑 Acquired lock, generating new AI game data...');
+    const gameData = await generateAIGameData(settings);
+
+    const aiGameData: AIGameData = {
+      ...gameData,
+      sessionId,
+      createdAt: Date.now(),
+    };
+
+    console.log('💾 Storing AI game data in Redis...');
+    await redis.set(getAIGameDataKey(sessionId), JSON.stringify(aiGameData));
+    
+    console.log('✅ AI game data created and stored successfully');
+    return aiGameData;
+  } finally {
+    // Always release the lock
+    const currentLock = await redis.get(lockKey);
+    if (currentLock === lockValue) {
+      await redis.del(lockKey);
+      console.log('🔓 Released AI generation lock');
+    }
+  }
 };
 
 export const getAIGameData = async ({
