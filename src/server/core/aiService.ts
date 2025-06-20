@@ -17,7 +17,7 @@ const GeminiSchema = z.object({
 
 const getAIGameDataKey = (sessionId: string) => `ai_game_data:${sessionId}` as const;
 
-export const generateAIGameData = async (settings?: any): Promise<Omit<AIGameData, 'sessionId' | 'createdAt'>> => {
+export const generateAIGameData = async (context: Devvit.Context): Promise<Omit<AIGameData, 'sessionId' | 'createdAt'>> => {
   console.log('🤖 Starting AI game data generation...');
 
   const prompt = `
@@ -47,7 +47,7 @@ Respond ONLY in valid JSON format:
 
   try {
     // Get API key from settings
-    const apiKey = settings?.GEMINI_API_KEY;
+    const apiKey = await context.settings.get('GEMINI_API_KEY')
     
     if (!apiKey) {
       console.warn('⚠️ No Gemini API key found in settings, using fallback data');
