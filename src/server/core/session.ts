@@ -253,22 +253,6 @@ export const sessionLeave = async ({
   // If there are still players and this was the host
   const wasHost = session.hostUserId === userId;
   if (session.players.length > 0 && wasHost) {
-    // Find the player who was previously a host, if any
-    const newHost = session.players[0];//session.players.find(p => p.wasHost) || 
-    if (newHost) {
-      session.hostUserId = newHost.userId;
-      session.hostUsername = newHost.username;
-      newHost.isHost = true;
-      newHost.wasHost = false; // Clear wasHost as they're now the active host
-    }
-  }
-
-  // Remove user session mapping
-  await redis.del(USER_SESSION_KEY(userId));
-
-  if (session.players.length === 0) {
-    // Delete empty session
-    await sessionDelete({ redis, sessionId });
   } else {
     // Update session
     await redis.set(getSessionKey(sessionId), JSON.stringify(session));
