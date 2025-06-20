@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { GoogleGenAI } from '@google/genai';
-
+import { Devvit } from '@devvit/public-api'
 export interface AIGameData {
   aiPersona: string;
   clues: [string, string, string];
@@ -210,7 +210,7 @@ export const getAIGameData = async ({
   sessionId: string;
 }): Promise<AIGameData | null> => {
   console.log(`🔍 Fetching AI game data for session: ${sessionId}`);
-  
+
   const data = await redis.get(getAIGameDataKey(sessionId));
   if (data) {
     console.log('✅ Found AI game data in Redis');
