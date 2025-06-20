@@ -51,23 +51,6 @@ export const sessionCreate = async ({
     }
   }
 
-  // Check user's money before creating session
-  const userKey = `user:${hostUserId}`;
-  const userData = await redis.get(userKey);
-  if (!userData) {
-    throw new Error('User not found');
-  }
-  
-  const user = JSON.parse(userData);
-  if (user.money < 100) {
-    throw new Error('Insufficient funds. You need at least $100 to create a game.');
-  }
-  
-  // Deduct entry fee from user's total money and set money in hand
-  user.money -= 100;
-  user.moneyInHand = 100;
-  await redis.set(userKey, JSON.stringify(user));
-  
   const sessionId = generateSessionId();
   const sessionCode = generateSessionCode();
 
@@ -76,8 +59,6 @@ export const sessionCreate = async ({
     username: hostUsername,
     joinedAt: Date.now(),
     isHost: true,
-    moneyCommitted: 100,
-    hasPlacedMinimumBet: false,
   };
 
   const session: GameSession = {
@@ -91,9 +72,6 @@ export const sessionCreate = async ({
     createdAt: Date.now(),
     maxPlayers,
     isPrivate,
-    prizePool: 0,
-    entryFee: 100,
-    minimumBet: 10,
   };
 
   // Store session
@@ -163,14 +141,6 @@ export const sessionJoin = async ({
     }
   }
 
-  // Check user's money before joining
-  const userKey = `user:${userId}`;
-  const userData = await redis.get(userKey);
-  if (!userData) {
-    throw new Error('User not found');
-  }
-  
-  const user = JSON.parse(userData);
   const session = await sessionGet({ redis, sessionId });
   if (!session) {
     throw new Error('Session not found');
@@ -187,27 +157,16 @@ export const sessionJoin = async ({
   // Check if user was previously in this session
   const previousPlayerIndex = session.previousPlayers.findIndex(p => p.userId === userId);
   let wasHost = false;
-  let moneyAlreadyCommitted = 0;
 
   if (previousPlayerIndex !== -1) {
     // User was previously in this session
     const previousPlayer = session.previousPlayers[previousPlayerIndex];
     if (previousPlayer) {
       wasHost = previousPlayer.wasHost || false;
-      moneyAlreadyCommitted = previousPlayer.moneyCommitted;
       
       // Remove from previousPlayers
       session.previousPlayers.splice(previousPlayerIndex, 1);
     }
-  } else {
-    // New player joining - check money
-    if (user.money < 100) {
-      throw new Error('Insufficient funds. You need at least $100 to join a game.');
-    }
-    // Deduct entry fee from user's total money and set money in hand
-    user.money -= 100;
-    user.moneyInHand = 100;
-    await redis.set(userKey, JSON.stringify(user));
   }
 
   // Add player to session
@@ -217,8 +176,6 @@ export const sessionJoin = async ({
     joinedAt: Date.now(),
     isHost: false,
     wasHost,
-    moneyCommitted: moneyAlreadyCommitted || 100,
-    hasPlacedMinimumBet: false,
   };
 
   session.players.push(newPlayer);
@@ -247,90 +204,7 @@ export const sessionJoin = async ({
   return session;
 };
 
-// New function to handle money transactions when joining a game
-export const sessionJoinWithMoney = async ({
-  redis,
-  sessionId,
-  userId,
-  username,
-}: {
-  redis: RedisClient;
-  sessionId: string;
-  userId: string;
-  username: string;
-}): Promise<{ session: GameSession; userMoney: number }> => {
-  // Get user's current money
-  const userKey = `user:${userId}`;
-  const userData = await redis.get(userKey);
-  if (!userData) {
-    throw new Error('User not found');
-  }
-  
-  const user = JSON.parse(userData);
-  if (user.money < 100) {
-    throw new Error('Insufficient funds. You need at least $100 to join a game.');
-  }
-  
-  // Join the session first
-  const session = await sessionJoin({ redis, sessionId, userId, username });
-  
-  // Deduct entry fee from user's money
-  user.money -= 100;
-  user.moneyInHand = 100;
-  await redis.set(userKey, JSON.stringify(user));
-  
-  // Update player's committed money in session
-  const playerIndex = session.players.findIndex(p => p.userId === userId);
-  if (playerIndex !== -1) {
-    session.players[playerIndex].moneyCommitted = 100;
-  }
-  
-  // Update session
-  await redis.set(`session:${sessionId}`, JSON.stringify(session));
-  
-  return { session, userMoney: user.money };
-};
-
-// New function to handle money when placing minimum bet
-export const sessionPlaceMinimumBet = async ({
-  redis,
-  sessionId,
-  userId,
-}: {
-  redis: RedisClient;
-  sessionId: string;
-  userId: string;
-}): Promise<GameSession> => {
-  const session = await sessionGet({ redis, sessionId });
-  if (!session) {
-    throw new Error('Session not found');
-  }
-  
-  const playerIndex = session.players.findIndex(p => p.userId === userId);
-  if (playerIndex === -1) {
-    throw new Error('Player not found in session');
-  }
-  
-  const player = session.players[playerIndex];
-  if (player.hasPlacedMinimumBet) {
-    throw new Error('Minimum bet already placed');
-  }
-  
-  if (player.moneyCommitted < session.minimumBet) {
-    throw new Error('Insufficient money committed to place minimum bet');
-  }
-  
-  // Place minimum bet
-  player.hasPlacedMinimumBet = true;
-  session.prizePool += session.minimumBet;
-  
-  // Update session
-  await redis.set(`session:${sessionId}`, JSON.stringify(session));
-  
-  return session;
-};
-
-// Modified leave function to handle money returns
+// Modified leave function
 export const sessionLeave = async ({
   redis,
   sessionId,
@@ -339,35 +213,25 @@ export const sessionLeave = async ({
   redis: RedisClient;
   sessionId: string;
   userId: string;
-}): Promise<{ moneyReturned: number }> => {
+}): Promise<void> => {
   const session = await sessionGet({ redis, sessionId });
   if (!session) {
-    return { moneyReturned: 0 }; // Session doesn't exist, nothing to do
+    return; // Session doesn't exist, nothing to do
   }
 
-  // Get user's current money in hand
+  // Get user data for username
   const userKey = `user:${userId}`;
   const userData = await redis.get(userKey);
-  let moneyToReturn = 0;
 
   if (!userData) {
     throw new Error('User data not found');
   }
 
   interface UserData {
-    money: number;
-    moneyInHand: number;
     username: string;
   }
 
   const user = JSON.parse(userData) as UserData;
-  
-  // Return whatever money they have in hand
-  moneyToReturn = user.moneyInHand || 0;
-  
-  // Add money in hand back to total balance
-  user.money += moneyToReturn;
-  user.moneyInHand = 0;
 
   // Remove player from session and get the removed player if any
   const oldPlayers = [...session.players];
@@ -382,8 +246,6 @@ export const sessionLeave = async ({
       joinedAt: Date.now(),
       isHost: false,
       wasHost: removedPlayer?.isHost || false,
-      moneyCommitted: 100,
-      hasPlacedMinimumBet: false
     };
     session.previousPlayers.push(playerToMove);
   }
@@ -407,22 +269,6 @@ export const sessionLeave = async ({
   if (session.players.length === 0) {
     // Delete empty session
     await sessionDelete({ redis, sessionId });
-  } else if (session.players.length === 1 && (session.status === 'in-game' || session.status === 'countdown')) {
-    // Last player remaining - they get the entire prize pool
-    const [lastPlayer] = session.players;
-    if (lastPlayer) {
-      const lastPlayerKey = `user:${lastPlayer.userId}`;
-      const lastPlayerData = await redis.get(lastPlayerKey);
-      if (lastPlayerData) {
-        const lastPlayerUser = JSON.parse(lastPlayerData) as UserData;
-        // Add their money in hand plus the entire prize pool to total balance
-        lastPlayerUser.money += (lastPlayerUser.moneyInHand || 0) + session.prizePool;
-        lastPlayerUser.moneyInHand = 0;
-        await redis.set(lastPlayerKey, JSON.stringify(lastPlayerUser));
-      }
-    }
-    // Delete the session since only one player remains
-    await sessionDelete({ redis, sessionId });
   } else {
     // Update session
     await redis.set(getSessionKey(sessionId), JSON.stringify(session));
@@ -444,11 +290,6 @@ export const sessionLeave = async ({
       }
     }
   }
-
-  // Update leaving user's money
-  await redis.set(userKey, JSON.stringify(user));
-
-  return { moneyReturned: moneyToReturn };
 };
 
 export const sessionDelete = async ({
@@ -516,23 +357,6 @@ export const sessionStartCountdown = async ({
   session.status = 'countdown';
   session.countdownStartedAt = Date.now();
   
-  // All players must place minimum bet when countdown starts
-  for (const player of session.players) {
-    if (!player.hasPlacedMinimumBet) {
-      player.hasPlacedMinimumBet = true;
-      session.prizePool += session.minimumBet;
-      
-      // Update user's money in hand
-      const userKey = `user:${player.userId}`;
-      const userData = await redis.get(userKey);
-      if (userData) {
-        const user = JSON.parse(userData);
-        user.moneyInHand = 90; // 100 - 10 minimum bet
-        await redis.set(userKey, JSON.stringify(user));
-      }
-    }
-  }
-  
   // Assign a random dealer for this session when countdown starts (1-8)
   if (!session.dealerId) {
     session.dealerId = Math.floor(Math.random() * 8) + 1;
@@ -589,15 +413,6 @@ export const sessionStartGame = async ({
       await redis.set(PUBLIC_SESSIONS_LIST_KEY, JSON.stringify(updatedSessions));
     }
   }
-
-  // Call Gemini when the game starts (for logging/demo)
-  fetchGeminiReply({ prompt: `Game started for session: ${sessionId}`, settings })
-    .then(reply => {
-      console.log(`[Gemini][GameStart][${sessionId}]`, reply);
-    })
-    .catch(err => {
-      console.error(`[Gemini][GameStart][${sessionId}] Error:`, err);
-    });
 
   return session;
 };

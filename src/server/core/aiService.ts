@@ -114,11 +114,11 @@ export const createAIGameData = async ({
 }): Promise<AIGameData> => {
   console.log(`🎮 Creating AI game data for session: ${sessionId}`);
   
-  // const existing = await getAIGameData({ redis, sessionId });
-  // if (existing) {
-  //   console.log('♻️ Found existing AI game data for session:', sessionId);
-  //   return existing;
-  // }
+  const existing = await getAIGameData({ redis, sessionId });
+  if (existing) {
+    console.log('♻️ Found existing AI game data for session:', sessionId);
+    return existing;
+  }
 
   console.log('🆕 Generating new AI game data...');
   const gameData = await generateAIGameData();

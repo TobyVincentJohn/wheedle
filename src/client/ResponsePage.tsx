@@ -161,7 +161,7 @@ const ResponsePage: React.FC = () => {
                   {winnerReason}
                 </div>
                 <div style={{ fontSize: '20px', marginBottom: '20px', color: '#4CAF50' }}>
-                  Prize Pool: ${session.prizePool || 0}
+                  Congratulations!
                 </div>
                 <button
                   onClick={handleReturnToHome}

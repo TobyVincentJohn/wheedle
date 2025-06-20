@@ -190,7 +190,7 @@ router.post('/api/users', async (req, res) => {
       username: redditUser.username,
       lastActive: Date.now(),
       currentRoom: req.body.currentRoom,
-      score: req.body.score || 0
+      score: req.body.score || 0,
     };
 
     await userSet({ redis, userDetails });
@@ -380,10 +380,9 @@ router.post('/api/sessions/:sessionId/leave', async (req, res): Promise<void> =>
   }
 
   try {
-    const result = await sessionLeave({ redis, sessionId, userId });
+    await sessionLeave({ redis, sessionId, userId });
     res.json({ 
-      status: 'success',
-      moneyReturned: result.moneyReturned 
+      status: 'success'
     } as LeaveSessionResponse);
   } catch (error) {
     console.error('Error leaving session:', error);

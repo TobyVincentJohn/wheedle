@@ -181,14 +181,6 @@ const GamePage: React.FC = () => {
         const response = await fetch(`/api/sessions/${session.sessionId}/leave`, {
           method: 'POST',
         });
-        const data = await response.json();
-        
-        if (data.status === 'success' && data.moneyReturned !== undefined) {
-          // Show money returned message if any
-          if (data.moneyReturned > 0) {
-            console.log(`Money returned: $${data.moneyReturned}`);
-          }
-        }
         
         navigate('/');
       } catch (error) {
