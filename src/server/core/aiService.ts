@@ -20,89 +20,53 @@ const getAIGameDataKey = (sessionId: string) => `ai_game_data:${sessionId}` as c
 export const generateAIGameData = async (): Promise<Omit<AIGameData, 'sessionId' | 'createdAt'>> => {
   console.log('🤖 Starting AI game data generation...');
 
-  // Using a hardcoded API key as requested for testing.
-  //const apiKey = "AIzaSyDoG76hqBeYvfoMHuy-dPiFlW1nRzV1_sE"; // 🚨 IMPORTANT: Replace with your actual key.
-  // if (apiKey === "YOUR_API_KEY_HERE") {
-  //   console.error('❌ Please replace "YOUR_API_KEY_HERE" with your actual Gemini API key in aiService.ts');
-  //   throw new Error('Missing Gemini API key.');
-  // }
-  
-  const prompt = `
-You are an AI game master for a psychological guessing game.
-Generate:
-- A fictional AI persona with strong characteristics (be creative and interesting)
-- 3 progressively revealing clues about that AI persona (start vague, get more specific)
-- 3 contrasting user personas (different roles or backgrounds that players can roleplay)
-
-Example format:
-{
-  "aiPersona": "A mysterious detective AI who specializes in supernatural cases and has a dry sense of humor",
-  "clues": [
-    "I work in a profession that requires careful observation and logical thinking",
-    "My cases often involve things that others might consider impossible or unexplained", 
-    "I have a particular fondness for sarcastic remarks when dealing with the supernatural"
-  ],
-  "userPersonas": [
-    "A skeptical scientist who doesn't believe in the paranormal",
-    "An enthusiastic paranormal investigator who believes everything",
-    "A local police officer who just wants to solve cases practically"
-  ]
-}
-
-Respond ONLY in valid JSON format:
-  `.trim();
-// const ai = new GoogleGenAI({ apiKey:"AIzaSyDoG76hqBeYvfoMHuy-dPiFlW1nRzV1_sE" });
-// const result = await ai.models.generateContent({
-//   model: 'gemini-2.0-flash',
-//   contents: [{ parts: [{ text: prompt }] }],
-// });
-// const text = result.text ?? '';
-  
-  // Log the raw response before parsing.
-//console.log('📄 Raw AI response text:', text);
-  try {
-    const ai = new GoogleGenAI({ apiKey:"AIzaSyAo5_MJKl50n5K4EeZ0OQ6enrlZSMDcjPI" });
-    const result = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
-      contents: [{ parts: [{ text: prompt }] }],
-    });
-    const text = result.text ?? '';
-    
-    // Log the raw response before parsing.
-    console.log('📄 Raw AI response text:', text);
-
-    let cleanedText = text.trim();
-    const jsonMatch = cleanedText.match(/\{.*\}/s);
-    if (jsonMatch) {
-      cleanedText = jsonMatch[0];
-    } else {
-      if (cleanedText.startsWith('```json')) {
-        cleanedText = cleanedText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
-      } else if (cleanedText.startsWith('```')) {
-        cleanedText = cleanedText.replace(/^```\s*/, '').replace(/\s*```$/, '');
-      }
+  // Return hardcoded game data for consistent testing
+  const gameDataOptions = [
+    {
+      aiPersona: "A mysterious detective AI who specializes in supernatural cases and has a dry sense of humor",
+      clues: [
+        "I work in a profession that requires careful observation and logical thinking",
+        "My cases often involve things that others might consider impossible or unexplained", 
+        "I have a particular fondness for sarcastic remarks when dealing with the supernatural"
+      ],
+      userPersonas: [
+        "A skeptical scientist who doesn't believe in the paranormal",
+        "An enthusiastic paranormal investigator who believes everything",
+        "A local police officer who just wants to solve cases practically"
+      ]
+    },
+    {
+      aiPersona: "A cheerful cooking AI that loves experimenting with fusion cuisine from different planets",
+      clues: [
+        "I spend most of my time creating delicious combinations of ingredients",
+        "My recipes often include ingredients that aren't found on Earth",
+        "I get excited about mixing flavors from different worlds and galaxies"
+      ],
+      userPersonas: [
+        "A traditional chef who prefers classic Earth recipes",
+        "An adventurous food blogger always seeking new experiences",
+        "A nutritionist concerned about the health effects of alien ingredients"
+      ]
+    },
+    {
+      aiPersona: "A philosophical AI librarian who guards ancient digital wisdom and speaks in riddles",
+      clues: [
+        "I am the keeper of knowledge that spans millennia",
+        "My words often come in the form of puzzles and ancient sayings",
+        "I protect digital scrolls and virtual tomes from a time long past"
+      ],
+      userPersonas: [
+        "A modern student who just wants straightforward answers",
+        "A historian fascinated by ancient knowledge and mysteries",
+        "A tech expert trying to understand old digital systems"
+      ]
     }
+  ];
 
-    const parsed = JSON.parse(cleanedText);
-    const validationResult = GeminiSchema.safeParse(parsed);
-
-    if (!validationResult.success) {
-      console.error('❌ Schema validation failed:', validationResult.error.message);
-      throw new Error(`Gemini response validation failed: ${validationResult.error.message}`);
-    }
-
-    console.log('🎉 AI game data generated successfully:', validationResult.data);
-    return validationResult.data;
-
-  } catch (error) {
-    console.error('💥 Error in generateAIGameData (SDK):', error);
-    // Fallback data
-    return {
-      aiPersona: "A fallback AI persona",
-      clues: ["fallback clue 1", "fallback clue 2", "fallback clue 3"],
-      userPersonas: ["fallback user 1", "fallback user 2", "fallback user 3"]
-    };
-  }
+  // Select a random game data set
+  const selectedData = gameDataOptions[Math.floor(Math.random() * gameDataOptions.length)];
+  console.log('🎉 AI game data generated successfully:', selectedData);
+  return selectedData;
 };
 
 export const createAIGameData = async ({
