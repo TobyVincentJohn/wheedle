@@ -51,7 +51,6 @@ export interface GetPublicSessionsResponse {
 export interface LeaveSessionResponse {
   status: 'success' | 'error';
   message?: string;
-}
 
 export interface StartCountdownResponse {
   status: 'success' | 'error';
