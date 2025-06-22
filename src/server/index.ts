@@ -15,7 +15,7 @@ import {
   getUserCurrentSession
 } from './core/session';
 import { findSessionByCode } from './core/roomCodeSearch';
-import { createAIGameData} from './core/aiService';
+import { createAIGameData, getAIGameData } from './core/aiService';
 import { GetAIGameDataResponse } from '../shared/types/aiGame';
 import { 
   CreateSessionResponse, 
@@ -24,6 +24,8 @@ import {
   LeaveSessionResponse,
   StartCountdownResponse 
 } from '../shared/types/session';
+
+import { Devvit } from '@devvit/public-api';
 
 const app = express();
 
@@ -296,6 +298,11 @@ router.post('/api/sessions/:sessionId/start-countdown', async (req, res): Promis
 
   try {
     const session = await sessionStartCountdown({ redis, sessionId });
+    // Asynchronously create AI game data when countdown starts
+    createAIGameData({ redis, sessionId }).catch(err => {
+      console.error('Failed to create AI game data on countdown start:', err);
+    });
+
     res.json({ status: 'success', data: session } as StartCountdownResponse);
   } catch (error) {
     console.error('Error starting countdown:', error);
@@ -352,19 +359,17 @@ router.get('/api/sessions/current', async (_req, res): Promise<void> => {
 // AI Game Data Endpoints
 router.get('/api/ai-game-data/:sessionId', async (req, res): Promise<void> => {
   const { sessionId } = req.params;
-  //const { userId} = getContext();
   const redis = getRedis();
 
   try {
-    // Get or create AI game data
-    let aiGameData = await createAIGameData({ redis, sessionId });
-      // if (!aiGameData) {
-      //   aiGameData = await createAIGameData({ redis, sessionId });
-      // }
-
-    res.json({ status: 'success', data: aiGameData } as GetAIGameDataResponse);
+    const aiGameData = await getAIGameData({ redis, sessionId });
+    if (aiGameData) {
+      res.json({ status: 'success', data: aiGameData } as GetAIGameDataResponse);
+    } else {
+      res.status(404).json({ status: 'error', message: 'AI game data not found yet.' });
+    }
   } catch (error) {
-    console.log('Error fetching AI game data:', error);
+    console.error('Error fetching AI game data:', error);
     res.status(500).json({ 
       status: 'error', 
       message: error instanceof Error ? error.message : 'Unknown error fetching AI game data'

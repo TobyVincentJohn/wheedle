@@ -101,7 +101,7 @@ export const sessionCreate = async ({
 
   // Map user to session
   await redis.set(USER_SESSION_KEY(hostUserId), sessionId);
-
+  await redis.expire(getSessionKey(sessionId), 120);
   return session;
 };
 
@@ -178,6 +178,9 @@ export const sessionJoin = async ({
   await redis.set(getSessionKey(sessionId), JSON.stringify(session));
   await redis.set(USER_SESSION_KEY(userId), sessionId);
 
+  // Reset the expiration timer since a new player has joined
+  await redis.expire(getSessionKey(sessionId), 120);
+
   // Update session in appropriate list to ensure it's visible
   if (!session.isPrivate) {
     const publicSessionsList = await redis.get(PUBLIC_SESSIONS_LIST_KEY);
@@ -213,58 +216,60 @@ export const sessionLeave = async ({
     return; // Session doesn't exist, nothing to do
   }
 
-  // Get user data for username
-  const userKey = `user:${userId}`;
-  const userData = await redis.get(userKey);
+  const initialPlayerCount = session.players.length;
+  const wasHost = session.players.find(p => p.userId === userId)?.isHost ?? false;
 
-  if (!userData) {
-    throw new Error('User data not found');
+  // Remove player from session
+  session.players = session.players.filter(player => player.userId !== userId);
+
+  // If there are no players left, delete the session
+  if (session.players.length === 0) {
+    console.log(`Last player left session ${sessionId}, deleting...`);
+    await sessionDelete({ redis, sessionId });
+    // Also ensure user-session mapping is cleared
+    const userCurrentSessionId = await redis.get(USER_SESSION_KEY(userId));
+    if (userCurrentSessionId === sessionId) {
+      await redis.del(USER_SESSION_KEY(userId));
+    }
+    return;
   }
 
-  interface UserData {
-    username: string;
+  // If the host left and there are still players, assign a new host
+  if (wasHost) {
+    const newHost = session.players[0];
+    if (newHost) {
+      newHost.isHost = true;
+      session.hostUserId = newHost.userId;
+      session.hostUsername = newHost.username;
+      console.log(`Host ${userId} left session ${sessionId}. New host is ${newHost.userId}.`);
+    }
   }
 
-  const user = JSON.parse(userData) as UserData;
-
-  // Remove player from session and get the removed player if any
-  const oldPlayers = [...session.players];
-  session.players = oldPlayers.filter(player => player.userId !== userId);
-  const removedPlayer = oldPlayers.find(player => player.userId === userId);
-
-  const wasHost = removedPlayer?.isHost || false;
-
-  // If game hasn't started, add player to previousPlayers
-  if (session.status === 'waiting' && removedPlayer) {
+  // If the game has not started, move the leaving player to previousPlayers list
+  const removedPlayer = session.players.find(p => p.userId === userId);
+  if (session.status === 'waiting' && initialPlayerCount > session.players.length) {
     const playerToMove: SessionPlayer = {
       userId,
-      username: removedPlayer.username,
-      joinedAt: removedPlayer.joinedAt,
+      username: removedPlayer?.username || 'Unknown', 
+      joinedAt: removedPlayer?.joinedAt || Date.now(),
       isHost: false,
     };
     session.previousPlayers.push(playerToMove);
   }
-  
-  // If the host left, assign a new host
-  if (wasHost && session.players.length > 0) {
-    const newHost = session.players[0]!;
-    newHost.isHost = true;
-    session.hostUserId = newHost.userId;
-    session.hostUsername = newHost.username;
-  }
 
-  // Remove user session mapping
-  await redis.del(USER_SESSION_KEY(userId));
-
-  if (session.players.length === 0) {
-    // Session is empty, schedule for deletion
-    console.log(`Session ${sessionId} is empty. Scheduling for deletion in 60 seconds.`);
-    await redis.set(SESSION_DELETION_TIMER_KEY(sessionId), 'delete');
-    await redis.expire(SESSION_DELETION_TIMER_KEY(sessionId), 60);
-    return;
-  }
-
+  // Update the session in Redis
   await redis.set(getSessionKey(sessionId), JSON.stringify(session));
+
+  // If the session is still in waiting, reset its expiration
+  if (session.status === 'waiting') {
+    await redis.expire(getSessionKey(sessionId), 120);
+  }
+
+  // Unmap user from session only if they are leaving the session they are mapped to
+  const userCurrentSessionId = await redis.get(USER_SESSION_KEY(userId));
+  if (userCurrentSessionId === sessionId) {
+    await redis.del(USER_SESSION_KEY(userId));
+  }
 };
 
 // New function to mark session as completed and start auto-deletion timer
@@ -390,6 +395,23 @@ export const sessionStartCountdown = async ({
   // Update session
   await redis.set(getSessionKey(sessionId), JSON.stringify(session));
 
+  // Remove from appropriate sessions list (so new players can't join)
+  if (session.isPrivate) {
+    const privateSessionsList = await redis.get(PRIVATE_SESSIONS_LIST_KEY);
+    if (privateSessionsList) {
+      const privateSessions = JSON.parse(privateSessionsList) as string[];
+      const updatedSessions = privateSessions.filter(id => id !== sessionId);
+      await redis.set(PRIVATE_SESSIONS_LIST_KEY, JSON.stringify(updatedSessions));
+    }
+  } else {
+    const publicSessionsList = await redis.get(PUBLIC_SESSIONS_LIST_KEY);
+    if (publicSessionsList) {
+      const publicSessions = JSON.parse(publicSessionsList) as string[];
+      const updatedSessions = publicSessions.filter(id => id !== sessionId);
+      await redis.set(PUBLIC_SESSIONS_LIST_KEY, JSON.stringify(updatedSessions));
+    }
+  }
+
   return session;
 };
 
@@ -419,23 +441,6 @@ export const sessionStartGame = async ({
 
   // Update session
   await redis.set(getSessionKey(sessionId), JSON.stringify(session));
-
-  // Remove from appropriate sessions list (so new players can't join)
-  if (session.isPrivate) {
-    const privateSessionsList = await redis.get(PRIVATE_SESSIONS_LIST_KEY);
-    if (privateSessionsList) {
-      const privateSessions = JSON.parse(privateSessionsList) as string[];
-      const updatedSessions = privateSessions.filter(id => id !== sessionId);
-      await redis.set(PRIVATE_SESSIONS_LIST_KEY, JSON.stringify(updatedSessions));
-    }
-  } else {
-    const publicSessionsList = await redis.get(PUBLIC_SESSIONS_LIST_KEY);
-    if (publicSessionsList) {
-      const publicSessions = JSON.parse(publicSessionsList) as string[];
-      const updatedSessions = publicSessions.filter(id => id !== sessionId);
-      await redis.set(PUBLIC_SESSIONS_LIST_KEY, JSON.stringify(updatedSessions));
-    }
-  }
 
   return session;
 };

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { AIGameData } from '../shared/types/aiGame';
 import './LoadingScreen.css';
 
 interface Star {
@@ -16,19 +15,22 @@ const LoadingScreen: React.FC = () => {
   const location = useLocation();
   const session = location.state?.session;
   const [stars, setStars] = useState<Star[]>([]);
-  const [loadingStartTime] = useState(Date.now());
-  const [minimumLoadingComplete, setMinimumLoadingComplete] = useState(false);
-  const [aiDataReady, setAiDataReady] = useState(false);
-  const [aiGameData, setAiGameData] = useState<AIGameData | null>(null);
 
-  // Minimum 2 second loading timer
+  // Fixed 3-second timer to navigate to the game page
   useEffect(() => {
+    if (!session) {
+      console.error('No session data found, redirecting to home.');
+      navigate('/');
+      return;
+    }
+
     const timer = setTimeout(() => {
-      setMinimumLoadingComplete(true);
-    }, 2000);
+      console.log('🚀 3-second loading time complete, navigating to game...');
+      navigate('/game', { state: { session } });
+    }, 3000);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [session, navigate]);
 
   useEffect(() => {
     // Starfield animation
@@ -57,61 +59,6 @@ const LoadingScreen: React.FC = () => {
     return () => cancelAnimationFrame(animationFrame);
   }, []);
 
-  useEffect(() => {
-    if (!session) {
-      console.error('No session data found, redirecting to home.');
-      navigate('/');
-      return;
-    }
-
-    const fetchAIGameData = async (sessionId: string) => {
-      try {
-        console.log('🎮 Fetching AI game data from loading screen...');
-        const response = await fetch(`/api/ai-game-data/${sessionId}`);
-        const data = await response.json();
-        console.log('🎮 AI game data:', data);
-        if (data.status === 'success' && data.data) {
-          console.log('✅ AI game data loaded successfully.');
-          console.log(data.data);
-          setAiGameData(data.data);
-          setAiDataReady(true);
-        } else {
-          console.error('❌ Failed to fetch AI game data:', data.message);
-          const fallbackData: AIGameData = {
-            aiPersona: "A fallback detective AI",
-            clues: ["Clue 1", "Clue 2", "Clue 3"],
-            userPersonas: ["Persona 1", "Persona 2", "Persona 3"],
-            sessionId,
-            createdAt: Date.now()
-          };
-          setAiGameData(fallbackData);
-          setAiDataReady(true);
-        }
-      } catch (error) {
-        console.error('💥 Error fetching AI game data:', error);
-        const fallbackData: AIGameData = {
-          aiPersona: "A fallback detective AI",
-          clues: ["Clue 1", "Clue 2", "Clue 3"],
-          userPersonas: ["Persona 1", "Persona 2", "Persona 3"],
-          sessionId,
-          createdAt: Date.now()
-        };
-        setAiGameData(fallbackData);
-        setAiDataReady(true);
-      }
-    };
-
-    fetchAIGameData(session.sessionId);
-  }, [session, navigate]);
-
-  // Navigate to game when both conditions are met
-  useEffect(() => {
-    if (minimumLoadingComplete && aiDataReady && aiGameData) {
-      console.log('🚀 Both minimum loading time and AI data ready, navigating to game...');
-      navigate('/game', { state: { session, aiGameData } });
-    }
-  }, [minimumLoadingComplete, aiDataReady, aiGameData, session, navigate]);
-
 
   return (
     <div className="loading-screen">
@@ -130,7 +77,7 @@ const LoadingScreen: React.FC = () => {
         ))}
       </div>
       <div className="loading-text">
-        {!aiDataReady ? 'Generating AI Clues...' : 'Preparing Game...'}
+        {'Preparing Game...'}
       </div>
     </div>
   );

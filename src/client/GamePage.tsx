@@ -35,26 +35,64 @@ const GamePage: React.FC = () => {
 
   useEffect(() => {
     const sessionFromState = location.state?.session;
-    const aiGameDataFromState = location.state?.aiGameData;
-
-    if (sessionFromState && aiGameDataFromState) {
+    
+    if (sessionFromState) {
       setSession(sessionFromState);
-      setAiGameData(aiGameDataFromState);
-      setLoading(false);
-      setIsInitialized(true);
-
       if (sessionFromState.dealerId) {
         setDealerId(sessionFromState.dealerId);
       }
     } else {
-      console.error("Missing session or AI data, redirecting home.");
+      console.error("Missing session data, redirecting home.");
       navigate('/');
     }
   }, [location.state, navigate]);
 
+  // Poll for AI Game Data
+  useEffect(() => {
+    if (!session || (session.status !== 'countdown' && session.status !== 'in-game')) {
+      return;
+    }
+
+    let attempts = 0;
+    const maxAttempts = 15; // 15 seconds timeout
+
+    const fetchAIGameData = async () => {
+      attempts++;
+      if (attempts > maxAttempts) {
+        console.error('Polling timed out after 15 seconds.');
+        clearInterval(poll);
+        // Optional: Redirect or show an error message
+        navigate('/error', { state: { message: 'Failed to load game data.' } });
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/ai-game-data/${session.sessionId}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.status === 'success' && data.data) {
+            console.log('✅ AI game data loaded successfully.');
+            setAiGameData(data.data);
+            setLoading(false);
+            setIsInitialized(true);
+            return true; // Data found, stop polling
+          }
+        }
+        return false; // Data not found yet, continue polling
+      } catch (error) {
+        console.error('💥 Error fetching AI game data:', error);
+        return false; // Error occurred, continue polling
+      }
+    };
+
+    const poll = setInterval(fetchAIGameData, 1000); // Poll every second
+
+    return () => clearInterval(poll);
+  }, [session, navigate]);
+
   // Timer for clue progression
   useEffect(() => {
-    if (!aiGameData || allCluesShown) return;
+    if (!aiGameData || allCluesShown || loading) return;
 
     const interval = setInterval(() => {
       const elapsed = Date.now() - clueStartTime;
@@ -74,7 +112,7 @@ const GamePage: React.FC = () => {
     }, 100);
 
     return () => clearInterval(interval);
-  }, [aiGameData, currentClueIndex, clueStartTime, allCluesShown]);
+  }, [aiGameData, currentClueIndex, clueStartTime, allCluesShown, loading]);
 
   // Auto-navigate to response page after all clues are shown
   useEffect(() => {

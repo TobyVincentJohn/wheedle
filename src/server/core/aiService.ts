@@ -1,5 +1,7 @@
 import { z } from 'zod';
 import { GoogleGenAI } from '@google/genai';
+import { Devvit } from '@devvit/public-api';
+
 export interface AIGameData {
   aiPersona: string;
   clues: [string, string, string];
@@ -19,13 +21,6 @@ const getAIGameDataKey = (sessionId: string) => `ai_game_data:${sessionId}` as c
 export const generateAIGameData = async (): Promise<Omit<AIGameData, 'sessionId' | 'createdAt'>> => {
   console.log('🤖 Starting AI game data generation...');
 
-  // Using a hardcoded API key as requested for testing.
-  //const apiKey = "AIzaSyDoG76hqBeYvfoMHuy-dPiFlW1nRzV1_sE"; // 🚨 IMPORTANT: Replace with your actual key.
-  // if (apiKey === "YOUR_API_KEY_HERE") {
-  //   console.error('❌ Please replace "YOUR_API_KEY_HERE" with your actual Gemini API key in aiService.ts');
-  //   throw new Error('Missing Gemini API key.');
-  // }
-  
   const prompt = `
 You are an AI game master for a psychological guessing game.
 Generate:
@@ -50,39 +45,22 @@ Example format:
 
 Respond ONLY in valid JSON format:
   `.trim();
-const ai = new GoogleGenAI({ apiKey:"AIzaSyAYc1qYsF8HkOlb0GLHPRcgChwCUR6rBvM" });
-const result = await ai.models.generateContent({
-model: 'gemini-2.0-flash',
-contents: [{ parts: [{ text: prompt }] }],
-});
-const text = result.text ?? '';
-  
-  //Log the raw response before parsing.
-console.log('📄 Raw AI response text:', text);
+  const ai = new GoogleGenAI({ apiKey: "AIzaSyCJobF0XKy-KCeCwRkx8AyygPJmukEUw-o" });
+  const result = await ai.models.generateContent({
+    model: 'gemini-2.0-flash',
+    contents: [{ parts: [{ text: prompt }] }],
+  });
+  const text = result.text ?? '';
+  console.log('Raw AI response:', text);
   try {
-    const ai = new GoogleGenAI({ apiKey:"AIzaSyAYc1qYsF8HkOlb0GLHPRcgChwCUR6rBvM" });
+    const ai = new GoogleGenAI({ apiKey: "AIzaSyCJobF0XKy-KCeCwRkx8AyygPJmukEUw-o" });
     const result = await ai.models.generateContent({
       model: 'gemini-2.0-flash',
       contents: [{ parts: [{ text: prompt }] }],
     });
     const text = result.text ?? '';
-    
-    // Log the raw response before parsing.
-    console.log('📄 Raw AI response text:', text);
-
-    let cleanedText = text.trim();
-    const jsonMatch = cleanedText.match(/\{.*\}/s);
-    if (jsonMatch) {
-      cleanedText = jsonMatch[0];
-    } else {
-      if (cleanedText.startsWith('```json')) {
-        cleanedText = cleanedText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
-      } else if (cleanedText.startsWith('```')) {
-        cleanedText = cleanedText.replace(/^```\s*/, '').replace(/\s*```$/, '');
-      }
-    }
-
-    const parsed = JSON.parse(cleanedText);
+    console.log('Raw AI response:', text);
+    const parsed = JSON.parse(text);
     const validationResult = GeminiSchema.safeParse(parsed);
 
     if (!validationResult.success) {
@@ -113,11 +91,11 @@ export const createAIGameData = async ({
 }): Promise<AIGameData> => {
   console.log(`🎮 Creating AI game data for session: ${sessionId}`);
   
-  // const existing = await getAIGameData({ redis, sessionId });
-  // if (existing) {
-  //   console.log('♻️ Found existing AI game data for session:', sessionId);
-  //   return existing;
-  // }
+  const existing = await getAIGameData({ redis, sessionId });
+  if (existing) {
+    console.log('♻️ Found existing AI game data for session:', sessionId);
+    return existing;
+  }
 
   console.log('🆕 Generating new AI game data...');
   const gameData = await generateAIGameData();
@@ -151,6 +129,7 @@ export const getAIGameData = async ({
     console.log('📋 AI game data:', parsed);
     return parsed;
   } else {
+    console.log(data)
     console.log('❌ No AI game data found in Redis');
     return null;
   }
