@@ -60,9 +60,10 @@ const GamePage: React.FC = () => {
       attempts++;
       if (attempts > maxAttempts) {
         console.error('Polling timed out after 15 seconds.');
+        console.log(session.sessionId);
         clearInterval(poll);
         // Optional: Redirect or show an error message
-        navigate('/error', { state: { message: 'Failed to load game data.' } });
+        //navigate('/error', { state: { message: 'Failed to load game data.' } });
         return;
       }
 
@@ -80,7 +81,7 @@ const GamePage: React.FC = () => {
         }
         return false; // Data not found yet, continue polling
       } catch (error) {
-        console.error('💥 Error fetching AI game data:', error);
+        console.log('💥 Error fetching AI game data:', error);
         return false; // Error occurred, continue polling
       }
     };
@@ -203,27 +204,13 @@ const GamePage: React.FC = () => {
       }
     };
 
-    const handleVisibilityChange = async () => {
-      if (document.visibilityState === 'hidden' && session) {
-        // User is leaving/closing the tab, remove them from session
-        try {
-          await fetch(`/api/sessions/${session.sessionId}/leave`, {
-            method: 'POST',
-          });
-        } catch (error) {
-          console.error('Failed to leave session on visibility change:', error);
-        }
-      }
-    };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
     window.addEventListener('popstate', handlePopState);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
       window.removeEventListener('popstate', handlePopState);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [session, leaveSession, navigate]);
 

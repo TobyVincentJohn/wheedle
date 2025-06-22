@@ -300,7 +300,7 @@ router.post('/api/sessions/:sessionId/start-countdown', async (req, res): Promis
     const session = await sessionStartCountdown({ redis, sessionId });
     // Asynchronously create AI game data when countdown starts
     createAIGameData({ redis, sessionId }).catch(err => {
-      console.error('Failed to create AI game data on countdown start:', err);
+      console.error('💥 UNHANDLED ERROR in createAIGameData:', err);
     });
 
     res.json({ status: 'success', data: session } as StartCountdownResponse);

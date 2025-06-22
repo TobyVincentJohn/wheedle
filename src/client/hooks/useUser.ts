@@ -8,10 +8,32 @@ export const useUser = () => {
 
   const fetchUser = useCallback(async () => {
     try {
+      console.log('🔍 Fetching current user...');
       const response = await fetch('/api/users/current');
-      const data = await response.json();
+      console.log('📡 Response status:', response.status);
+
+      // If user is not found (404), we'll proceed to create one.
+      // For other errors, we throw.
+      if (!response.ok && response.status !== 404) {
+        console.log(`❌ HTTP error! status: ${response.status}`);
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        console.error('❌ Non-JSON response:', text);
+        // Don't throw here if it's a 404, as the body might be empty or non-JSON.
+        if (response.status !== 404) {
+          throw new Error('Server returned non-JSON response');
+        }
+      }
+      
+      const data = response.status === 404 ? { status: 'not-found' } : await response.json();
+      console.log('📦 User data response:', data);
       
       if (data.status === 'success') {
+        console.log('✅ User found:', data.data.username);
         setUser(data.data);
       } else {
         // If user doesn't exist, create a new user

@@ -45,13 +45,13 @@ Example format:
 
 Respond ONLY in valid JSON format:
   `.trim();
-  const ai = new GoogleGenAI({ apiKey: "AIzaSyCJobF0XKy-KCeCwRkx8AyygPJmukEUw-o" });
-  const result = await ai.models.generateContent({
-    model: 'gemini-2.0-flash',
-    contents: [{ parts: [{ text: prompt }] }],
-  });
-  const text = result.text ?? '';
-  console.log('Raw AI response:', text);
+  // const ai = new GoogleGenAI({ apiKey: "AIzaSyCJobF0XKy-KCeCwRkx8AyygPJmukEUw-o" });
+  // const result = await ai.models.generateContent({
+  //   model: 'gemini-2.0-flash',
+  //   contents: [{ parts: [{ text: prompt }] }],
+  // });
+  // const text = result.text ?? '';
+  // console.log('Raw AI response:', text);
   try {
     const ai = new GoogleGenAI({ apiKey: "AIzaSyCJobF0XKy-KCeCwRkx8AyygPJmukEUw-o" });
     const result = await ai.models.generateContent({
@@ -60,18 +60,33 @@ Respond ONLY in valid JSON format:
     });
     const text = result.text ?? '';
     console.log('Raw AI response:', text);
-    const parsed = JSON.parse(text);
-    const validationResult = GeminiSchema.safeParse(parsed);
-
-    if (!validationResult.success) {
-      console.error('❌ Schema validation failed:', validationResult.error.message);
-      throw new Error(`Gemini response validation failed: ${validationResult.error.message}`);
+    const match = text.match(/\{[\s\S]*\}/);
+    if (!match) {
+      console.error("❌ Failed to extract JSON from AI response.");
     }
+    const jsonString = match[0];
+    
+    try {
+      const parsed = JSON.parse(jsonString);
+      console.log("✅ Parsed JSON:", parsed);
+      return parsed;
+      // Optional: validate it
+      // const validationResult = GeminiSchema.safeParse(parsed);
+      // console.log(validationResult.success ? '✅ Valid schema' : validationResult.error);
+    
+    }
+    // const parsed = JSON.parse(text);
+    // const validationResult = GeminiSchema.safeParse(parsed);
 
-    console.log('🎉 AI game data generated successfully:', validationResult.data);
-    return validationResult.data;
+    // if (!validationResult.success) {
+    //   console.error('❌ Schema validation failed:', validationResult.error.message);
+    //   throw new Error(`Gemini response validation failed: ${validationResult.error.message}`);
+    // }
 
-  } catch (error) {
+    // console.log('🎉 AI game data generated successfully:', validationResult.data);
+    // return validationResult.data;
+
+  catch (error) {
     console.log('💥 Error in generateAIGameData (SDK):', error);
     // Fallback data
     return {
@@ -80,6 +95,11 @@ Respond ONLY in valid JSON format:
       userPersonas: ["fallback user 1", "fallback user 2", "fallback user 3"]
     };
   }
+}
+catch (err) {
+  console.log('💥 Error in generateAIGameData (SDK):', err);
+  throw err;
+}
 };
 
 export const createAIGameData = async ({
@@ -91,14 +111,20 @@ export const createAIGameData = async ({
 }): Promise<AIGameData> => {
   console.log(`🎮 Creating AI game data for session: ${sessionId}`);
   
-  const existing = await getAIGameData({ redis, sessionId });
-  if (existing) {
-    console.log('♻️ Found existing AI game data for session:', sessionId);
-    return existing;
-  }
+// const existing = await getAIGameData({ redis, sessionId });
+//   if (existing) {
+//     console.log('♻️ Found existing AI game data for session:', sessionId);
+//     return existing;
+//   }
 
   console.log('🆕 Generating new AI game data...');
   const gameData = await generateAIGameData();
+
+  if (!gameData) {
+    console.error('❌ AI game data generation returned null or undefined.');
+    throw new Error('Failed to generate AI game data.');
+  }
+  console.log('📊 Generated game data:', gameData);
 
   const aiGameData: AIGameData = {
     ...gameData,
@@ -106,10 +132,15 @@ export const createAIGameData = async ({
     createdAt: Date.now(),
   };
 
-  console.log('💾 Storing AI game data in Redis...');
-  await redis.set(getAIGameDataKey(sessionId), JSON.stringify(aiGameData));
+  try {
+    console.log('💾 Storing AI game data in Redis...');
+    await redis.set(getAIGameDataKey(sessionId), JSON.stringify(aiGameData));
+    console.log('✅ AI game data created and stored successfully');
+  } catch (error) {
+    console.error('❌ Failed to store AI game data in Redis:', error);
+    throw error; // Re-throw the error to be caught by the caller
+  }
   
-  console.log('✅ AI game data created and stored successfully');
   return aiGameData;
 };
 
@@ -123,18 +154,25 @@ export const getAIGameData = async ({
   console.log(`🔍 Fetching AI game data for session: ${sessionId}`);
   
   const data = await redis.get(getAIGameDataKey(sessionId));
+  try{
   if (data) {
     console.log('✅ Found AI game data in Redis');
     const parsed = JSON.parse(data);
     console.log('📋 AI game data:', parsed);
-    return parsed;
-  } else {
-    console.log(data)
-    console.log('❌ No AI game data found in Redis');
+    const aiGameData: AIGameData = {
+      ...data,
+      sessionId,
+      createdAt: Date.now(),
+   };
+    return aiGameData;
+  }
+  }catch (err) {
+    console.log('❌ Failed to get AI game data from Redis:', err);
+    console.error(err.stack)
     return null;
+    //throw err; // Re-throw the error to be caught by the caller
   }
 };
-
 export const deleteAIGameData = async ({
   redis,
   sessionId,

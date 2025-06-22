@@ -395,22 +395,22 @@ export const sessionStartCountdown = async ({
   // Update session
   await redis.set(getSessionKey(sessionId), JSON.stringify(session));
 
-  // Remove from appropriate sessions list (so new players can't join)
-  if (session.isPrivate) {
-    const privateSessionsList = await redis.get(PRIVATE_SESSIONS_LIST_KEY);
-    if (privateSessionsList) {
-      const privateSessions = JSON.parse(privateSessionsList) as string[];
-      const updatedSessions = privateSessions.filter(id => id !== sessionId);
-      await redis.set(PRIVATE_SESSIONS_LIST_KEY, JSON.stringify(updatedSessions));
+  // Schedule a job to automatically start the game after the countdown
+  setTimeout(async () => {
+    try {
+      console.log(`⏰ Countdown finished for session ${sessionId}, starting game...`);
+      await sessionStartGame({ redis, sessionId });
+    } catch (error) {
+      console.error(`💥 Failed to auto-start game for session ${sessionId}:`, error);
+      // Optionally, set the session back to 'waiting' or some error state
+      const currentSession = await sessionGet({ redis, sessionId });
+      if (currentSession && currentSession.status === 'countdown') {
+        currentSession.status = 'waiting';
+        currentSession.countdownStartedAt = undefined;
+        await redis.set(getSessionKey(sessionId), JSON.stringify(currentSession));
+      }
     }
-  } else {
-    const publicSessionsList = await redis.get(PUBLIC_SESSIONS_LIST_KEY);
-    if (publicSessionsList) {
-      const publicSessions = JSON.parse(publicSessionsList) as string[];
-      const updatedSessions = publicSessions.filter(id => id !== sessionId);
-      await redis.set(PUBLIC_SESSIONS_LIST_KEY, JSON.stringify(updatedSessions));
-    }
-  }
+  }, 10000); // 10-second countdown
 
   return session;
 };
@@ -436,12 +436,12 @@ export const sessionStartGame = async ({
   
   // Assign a random dealer for this session if not already set
   if (!session.dealerId) {
-    session.dealerId = Math.floor(Math.random() * 8) + 1;
+    session.dealerId = Math.floor(Math.random() * 5) + 1;
   }
 
   // Update session
   await redis.set(getSessionKey(sessionId), JSON.stringify(session));
-
+  console.log('game started')
   return session;
 };
 
