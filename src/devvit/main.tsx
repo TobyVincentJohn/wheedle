@@ -6,6 +6,9 @@ import { defineConfig } from '@devvit/server';
 
 Devvit.configure({
   http: true,
+  redditAPI: true,  
+  redis: true,  
+  media: true,  
 });
 defineConfig({
   name: '[Bolt] Word Guesser',
@@ -45,7 +48,7 @@ export const Preview: Devvit.BlockComponent<{ text?: string }> = ({ text = 'Load
 // TODO: Remove this when defineConfig allows webhooks before post creation
 Devvit.addMenuItem({
   // Please update as you work on your idea!
-  label: '[Bolt Word Guesser]: New Post',
+  label: 'tobygameapp2',
   location: 'subreddit',
   forUserType: 'moderator',
   onPress: async (_event, context) => {

@@ -15,7 +15,7 @@ import {
   getUserCurrentSession
 } from './core/session';
 import { findSessionByCode } from './core/roomCodeSearch';
-import { createAIGameData, getAIGameData } from './core/aiService';
+import { getAIGameData } from './core/aiService';
 import { GetAIGameDataResponse } from '../shared/types/aiGame';
 import { 
   CreateSessionResponse, 
@@ -25,7 +25,6 @@ import {
   StartCountdownResponse 
 } from '../shared/types/session';
 
-import { Devvit } from '@devvit/public-api';
 
 const app = express();
 
@@ -57,6 +56,51 @@ router.get('/api/redis-data/sessions/all', async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching sessions data:', error);
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({ status: 'error', message });
+  }
+});
+
+router.get('/api/redis-data/dump', async (req, res) => {
+  const redis = getRedis();
+  try {
+    const allData: { [key: string]: any } = {};
+
+    const fetchAndParse = async (key: string) => {
+      const data = await redis.get(key);
+      if (data) {
+        try {
+          allData[key] = JSON.parse(data);
+        } catch (e) {
+          allData[key] = data; // Not JSON, store as raw string
+        }
+        return allData[key];
+      }
+      return null;
+    };
+
+    const publicSessionsList = await fetchAndParse('public_sessions_list') || [];
+    const privateSessionsList = await fetchAndParse('private_sessions_list') || [];
+    const activeUsersList = await fetchAndParse('active_users_list') || [];
+
+    const allSessionIds = [...new Set([...publicSessionsList, ...privateSessionsList])];
+
+    for (const sessionId of allSessionIds) {
+      await fetchAndParse(`session:${sessionId}`);
+      await fetchAndParse(`ai_game_data:${sessionId}`);
+    }
+
+    for (const userId of activeUsersList) {
+      await fetchAndParse(`user:${userId}`);
+      await fetchAndParse(`user_session:${userId}`);
+    }
+
+    res.json({
+      status: 'success',
+      data: allData,
+    });
+  } catch (error) {
+    console.error('Error fetching all redis data:', error);
     const message = error instanceof Error ? error.message : 'Unknown error';
     res.status(500).json({ status: 'error', message });
   }
@@ -198,8 +242,10 @@ router.post('/api/sessions', async (req, res): Promise<void> => {
 
     const session = await sessionCreate({
       redis,
-      hostUserId: userId,
-      hostUsername: redditUser.username,
+      host: {
+        userId: userId,
+        username: redditUser.username,
+      },
       maxPlayers: req.body.maxPlayers || 6,
       isPrivate: Boolean(req.body.isPrivate),
     });
@@ -286,34 +332,7 @@ router.post('/api/sessions/:sessionId/leave', async (req, res): Promise<void> =>
   }
 });
 
-router.post('/api/sessions/:sessionId/start-countdown', async (req, res): Promise<void> => {
-  const { sessionId } = req.params;
-  const { userId } = getContext();
-  const redis = getRedis();
-  
-  if (!userId) {
-    res.status(401).json({ status: 'error', message: 'Must be logged in' } as StartCountdownResponse);
-    return;
-  }
-
-  try {
-    const session = await sessionStartCountdown({ redis, sessionId });
-    // Asynchronously create AI game data when countdown starts
-    createAIGameData({ redis, sessionId }).catch(err => {
-      console.error('💥 UNHANDLED ERROR in createAIGameData:', err);
-    });
-
-    res.json({ status: 'success', data: session } as StartCountdownResponse);
-  } catch (error) {
-    console.error('Error starting countdown:', error);
-    res.status(500).json({ 
-      status: 'error', 
-      message: error instanceof Error ? error.message : 'Unknown error starting countdown'
-    } as StartCountdownResponse);
-  }
-});
-
-router.post('/api/sessions/:sessionId/start', async (req, res): Promise<void> => {
+router.post('/api/sessions/:sessionId/start-countdown', async (req, res) => {
   const { sessionId } = req.params;
   const { userId } = getContext();
   const redis = getRedis();
@@ -324,8 +343,30 @@ router.post('/api/sessions/:sessionId/start', async (req, res): Promise<void> =>
   }
 
   try {
-    const session = await sessionStartGame({ redis, sessionId });
-    res.json({ status: 'success', data: session });
+    const { session, aiGameData } = await sessionStartCountdown({ redis, sessionId });
+    res.json({ status: 'success', data: { session, aiGameData } });
+  } catch (error) {
+    console.error('Error starting countdown:', error);
+    res.status(500).json({ 
+      status: 'error', 
+      message: error instanceof Error ? error.message : 'Unknown error starting countdown'
+    });
+  }
+});
+
+router.post('/api/sessions/:sessionId/start', async (req, res) => {
+  const { sessionId } = req.params;
+  const { userId } = getContext();
+  const redis = getRedis();
+  
+  if (!userId) {
+    res.status(401).json({ status: 'error', message: 'Must be logged in' });
+    return;
+  }
+
+  try {
+    const { session, aiGameData } = await sessionStartGame({ redis, sessionId });
+    res.json({ status: 'success', data: { session, aiGameData } });
   } catch (error) {
     console.error('Error starting game:', error);
     res.status(500).json({ 
@@ -360,20 +401,31 @@ router.get('/api/sessions/current', async (_req, res): Promise<void> => {
 router.get('/api/ai-game-data/:sessionId', async (req, res): Promise<void> => {
   const { sessionId } = req.params;
   const redis = getRedis();
+  console.log('[AI DEBUG] Received request for sessionId:', sessionId);
+
+  if (!sessionId || typeof sessionId !== 'string') {
+    console.log('[AI DEBUG] Invalid sessionId:', sessionId);
+    return res.status(400).json({ status: 'error', message: 'Invalid sessionId' });
+  }
+
+  const key = `ai_game_data:${sessionId}`;
+  console.log('[AI DEBUG] Looking up Redis key:', key);
 
   try {
     const aiGameData = await getAIGameData({ redis, sessionId });
+    console.log('[AI DEBUG] getAIGameData result:', aiGameData);
     if (aiGameData) {
-      res.json({ status: 'success', data: aiGameData } as GetAIGameDataResponse);
+      res.json({ status: 'success', data: aiGameData });
     } else {
-      res.status(404).json({ status: 'error', message: 'AI game data not found yet.' });
+      console.log('[AI DEBUG] AI game data not found for key:', key);
+      res.status(404).json({ status: 'error', message: 'AI game data not found' });
     }
   } catch (error) {
-    console.error('Error fetching AI game data:', error);
-    res.status(500).json({ 
-      status: 'error', 
+    console.error('[AI DEBUG] Error fetching AI game data:', error);
+    res.status(500).json({
+      status: 'error',
       message: error instanceof Error ? error.message : 'Unknown error fetching AI game data'
-    } as GetAIGameDataResponse);
+    });
   }
 });
 

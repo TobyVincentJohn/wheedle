@@ -53,42 +53,50 @@ const GamePage: React.FC = () => {
       return;
     }
 
-    let attempts = 0;
-    const maxAttempts = 15; // 15 seconds timeout
-
-    const fetchAIGameData = async () => {
-      attempts++;
-      if (attempts > maxAttempts) {
-        console.error('Polling timed out after 15 seconds.');
-        console.log(session.sessionId);
-        clearInterval(poll);
-        // Optional: Redirect or show an error message
-        //navigate('/error', { state: { message: 'Failed to load game data.' } });
-        return;
-      }
-
+    const timeout = setTimeout(async () => {
       try {
+        console.log('[AI DEBUG] About to fetch Redis dump');
+        const redisResponse = await fetch('/api/redis-data/dump');
+        console.log('[AI DEBUG] Redis dump fetch status:', redisResponse.status);
+        if (redisResponse.ok) {
+          const redisData = await redisResponse.json();
+          console.log('[AI DEBUG] Redis Data:', redisData.data);
+        } else {
+          console.error('[AI DEBUG] Failed to fetch Redis data');
+        }
+
+        console.log('[AI DEBUG] About to fetch AI game data for sessionId:', session.sessionId);
         const response = await fetch(`/api/ai-game-data/${session.sessionId}`);
+        console.log('[AI DEBUG] AI game data fetch status:', response.status);
         if (response.ok) {
           const data = await response.json();
+          console.log('[AI DEBUG] AI game data response:', data);
           if (data.status === 'success' && data.data) {
-            console.log('✅ AI game data loaded successfully.');
+            console.log('[AI DEBUG] ✅ AI game data loaded successfully.');
             setAiGameData(data.data);
             setLoading(false);
             setIsInitialized(true);
-            return true; // Data found, stop polling
           }
+        } else {
+          let errorBody;
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            errorBody = await response.json();
+          } else {
+            errorBody = await response.text();
+          }
+          console.error(
+            `[AI DEBUG] Error fetching AI game data: status=${response.status}, body=`,
+            errorBody,
+            'sessionId:', session.sessionId
+          );
         }
-        return false; // Data not found yet, continue polling
       } catch (error) {
-        console.log('💥 Error fetching AI game data:', error);
-        return false; // Error occurred, continue polling
+        console.log('[AI DEBUG] 💥 Error fetching AI game data:', error);
       }
-    };
+    }, 2000); // 2 second delay
 
-    const poll = setInterval(fetchAIGameData, 1000); // Poll every second
-
-    return () => clearInterval(poll);
+    return () => clearTimeout(timeout);
   }, [session, navigate]);
 
   // Timer for clue progression

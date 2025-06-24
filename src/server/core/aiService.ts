@@ -1,26 +1,13 @@
 import { z } from 'zod';
 import { GoogleGenAI } from '@google/genai';
-import { Devvit } from '@devvit/public-api';
-
-export interface AIGameData {
-  aiPersona: string;
-  clues: [string, string, string];
-  userPersonas: [string, string, string];
-  sessionId: string;
-  createdAt: number;
-}
-
-const GeminiSchema = z.object({
-  aiPersona: z.string(),
-  clues: z.tuple([z.string(), z.string(), z.string()]),
-  userPersonas: z.tuple([z.string(), z.string(), z.string()])
-});
+import { RedisClient } from '@devvit/redis';
+import { AIGameData } from '../../shared/types/aiGame';
 
 const getAIGameDataKey = (sessionId: string) => `ai_game_data:${sessionId}` as const;
 
 export const generateAIGameData = async (): Promise<Omit<AIGameData, 'sessionId' | 'createdAt'>> => {
-  console.log('🤖 Starting AI game data generation...');
-
+  console.log('[AI DEBUG] Entered generateAIGameData');
+  const start = Date.now();
   const prompt = `
 You are an AI game master for a psychological guessing game.
 Generate:
@@ -45,102 +32,114 @@ Example format:
 
 Respond ONLY in valid JSON format:
   `.trim();
-  // const ai = new GoogleGenAI({ apiKey: "AIzaSyCJobF0XKy-KCeCwRkx8AyygPJmukEUw-o" });
-  // const result = await ai.models.generateContent({
-  //   model: 'gemini-2.0-flash',
-  //   contents: [{ parts: [{ text: prompt }] }],
-  // });
-  // const text = result.text ?? '';
-  // console.log('Raw AI response:', text);
+
   try {
-    const ai = new GoogleGenAI({ apiKey: "AIzaSyCJobF0XKy-KCeCwRkx8AyygPJmukEUw-o" });
+    if (!process.env.GOOGLE_API_KEY) {
+      console.error('[AI DEBUG] Missing Google API key!');
+      throw new Error('Missing Google API key');
+    }
+    console.log('[AI DEBUG] About to create GoogleGenAI client');
+    const ai = new GoogleGenAI({ apiKey: "AIzaSyCJobF0XKy-KCeCwRkx8AyygPJmukEUw-o"});
+    console.log('[AI DEBUG] GoogleGenAI client created. About to call generateContent...');
     const result = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-2.5-flash',
       contents: [{ parts: [{ text: prompt }] }],
+      config: {
+        thinkingConfig: {
+          thinkingBudget: 0,
+        },
+      }
     });
+    console.log('[AI DEBUG] generateContent finished, result:', result);
     const text = result.text ?? '';
-    console.log('Raw AI response:', text);
+    console.log('[AI DEBUG] Raw AI response:', text);
     const match = text.match(/\{[\s\S]*\}/);
     if (!match) {
-      console.error("❌ Failed to extract JSON from AI response.");
+      console.error('[AI DEBUG] Failed to extract JSON from AI response. Raw text:', text);
+      throw new Error('Malformed AI response: No JSON found');
     }
     const jsonString = match[0];
-    
+    let parsed;
     try {
-      const parsed = JSON.parse(jsonString);
-      console.log("✅ Parsed JSON:", parsed);
-      return parsed;
-      // Optional: validate it
-      // const validationResult = GeminiSchema.safeParse(parsed);
-      // console.log(validationResult.success ? '✅ Valid schema' : validationResult.error);
-    
+      parsed = JSON.parse(jsonString);
+    } catch (parseErr) {
+      console.error('[AI DEBUG] JSON.parse error:', parseErr, 'Raw string:', jsonString);
+      throw new Error('Malformed AI response: Invalid JSON');
     }
-    // const parsed = JSON.parse(text);
-    // const validationResult = GeminiSchema.safeParse(parsed);
-
-    // if (!validationResult.success) {
-    //   console.error('❌ Schema validation failed:', validationResult.error.message);
-    //   throw new Error(`Gemini response validation failed: ${validationResult.error.message}`);
-    // }
-
-    // console.log('🎉 AI game data generated successfully:', validationResult.data);
-    // return validationResult.data;
-
-  catch (error) {
-    console.log('💥 Error in generateAIGameData (SDK):', error);
-    // Fallback data
+    console.log('[AI DEBUG] ✅ Parsed JSON:', parsed);
+    console.log('[AI DEBUG] Exiting generateAIGameData, duration:', Date.now() - start, 'ms');
+    return parsed;
+  } catch (err) {
+    console.error('[AI DEBUG] Error in generateAIGameData:', err);
+    if (err instanceof Error) {
+      if (err.message.includes('quota') || err.message.includes('billing')) {
+        console.error('[AI DEBUG] Quota or billing error detected:', err.message);
+      } else if (err.message.includes('network') || err.message.includes('ENOTFOUND') || err.message.includes('ECONN')) {
+        console.error('[AI DEBUG] Network error detected:', err.message);
+      } else if (err.message.includes('API key')) {
+        console.error('[AI DEBUG] API key error detected:', err.message);
+      } else if (err.message.includes('Malformed AI response')) {
+        console.error('[AI DEBUG] Malformed AI response detected:', err.message);
+      } else {
+        console.error('[AI DEBUG] Unknown error type:', err.message);
+      }
+    } else {
+      console.error('[AI DEBUG] Non-Error thrown:', err);
+    }
+    console.log('[AI DEBUG] Triggering fallback AI game data due to error. Exiting generateAIGameData, duration:', Date.now() - start, 'ms');
     return {
-      aiPersona: "A fallback AI persona",
-      clues: ["fallback clue 1", "fallback clue 2", "fallback clue 3"],
-      userPersonas: ["fallback user 1", "fallback user 2", "fallback user 3"]
+      aiPersona: "A mysterious AI who seems to be having a bad day",
+      clues: ["My primary function is to generate content.", "Currently, I am unable to connect to my core programming.", "Everything is fine. Please proceed with the game."],
+      userPersonas: ["A patient technician", "An anxious game show host", "A confused contestant"]
     };
   }
-}
-catch (err) {
-  console.log('💥 Error in generateAIGameData (SDK):', err);
-  throw err;
-}
 };
 
 export const createAIGameData = async ({
   redis,
   sessionId,
 }: {
-  redis: any;
+  redis: RedisClient;
   sessionId: string;
 }): Promise<AIGameData> => {
-  console.log(`🎮 Creating AI game data for session: ${sessionId}`);
-  
-// const existing = await getAIGameData({ redis, sessionId });
-//   if (existing) {
-//     console.log('♻️ Found existing AI game data for session:', sessionId);
-//     return existing;
-//   }
-
-  console.log('🆕 Generating new AI game data...');
-  const gameData = await generateAIGameData();
-
-  if (!gameData) {
-    console.error('❌ AI game data generation returned null or undefined.');
-    throw new Error('Failed to generate AI game data.');
+  console.log('[AI DEBUG] Entered createAIGameData with sessionId:', sessionId);
+  const start = Date.now();
+  let gameData: Omit<AIGameData, 'sessionId' | 'createdAt'>;
+  try {
+    console.log('[AI DEBUG] About to call generateAIGameData');
+    gameData = await generateAIGameData();
+    console.log('[AI DEBUG] generateAIGameData finished, result:', gameData);
+  } catch (error) {
+    console.error('[AI DEBUG] Error in createAIGameData (generateAIGameData):', error);
+    gameData = {
+      aiPersona: "A mysterious AI who seems to be having a bad day",
+      clues: ["My primary function is to generate content.", "Currently, I am unable to connect to my core programming.", "Everything is fine. Please proceed with the game."],
+      userPersonas: ["A patient technician", "An anxious game show host", "A confused contestant"]
+    };
   }
-  console.log('📊 Generated game data:', gameData);
-
+  if (!gameData) {
+    console.error('[AI DEBUG] gameData is null or undefined in createAIGameData');
+    gameData = {
+      aiPersona: "A very forgetful AI",
+      clues: ["I was supposed to remember something...", "It was about... a game, I think?", "Oh well, I'm sure it wasn't important."],
+      userPersonas: ["Someone who knows what's going on", "Someone equally confused", "A cat that wandered in"]
+    };
+  }
+  console.log('[AI DEBUG] Storing AI game data in Redis with key:', getAIGameDataKey(sessionId));
   const aiGameData: AIGameData = {
     ...gameData,
     sessionId,
     createdAt: Date.now(),
   };
-
   try {
-    console.log('💾 Storing AI game data in Redis...');
+    console.log('[AI DEBUG] About to call redis.set for key:', getAIGameDataKey(sessionId));
     await redis.set(getAIGameDataKey(sessionId), JSON.stringify(aiGameData));
-    console.log('✅ AI game data created and stored successfully');
+    console.log('[AI DEBUG] Successfully stored AI game data in Redis');
   } catch (error) {
-    console.error('❌ Failed to store AI game data in Redis:', error);
-    throw error; // Re-throw the error to be caught by the caller
+    console.error('[AI DEBUG] Error storing AI game data in Redis:', error);
+    throw error;
   }
-  
+  console.log('[AI DEBUG] Exiting createAIGameData, duration:', Date.now() - start, 'ms');
   return aiGameData;
 };
 
@@ -148,39 +147,54 @@ export const getAIGameData = async ({
   redis,
   sessionId,
 }: {
-  redis: any;
+  redis: RedisClient;
   sessionId: string;
 }): Promise<AIGameData | null> => {
-  console.log(`🔍 Fetching AI game data for session: ${sessionId}`);
-  
-  const data = await redis.get(getAIGameDataKey(sessionId));
-  try{
-  if (data) {
-    console.log('✅ Found AI game data in Redis');
-    const parsed = JSON.parse(data);
-    console.log('📋 AI game data:', parsed);
-    const aiGameData: AIGameData = {
-      ...data,
-      sessionId,
-      createdAt: Date.now(),
-   };
-    return aiGameData;
-  }
-  }catch (err) {
-    console.log('❌ Failed to get AI game data from Redis:', err);
-    console.error(err.stack)
+  console.log('[AI DEBUG] Entered getAIGameData with sessionId:', sessionId);
+  const start = Date.now();
+  const key = getAIGameDataKey(sessionId);
+  console.log('[AI DEBUG] Fetching from Redis with key:', key);
+  let data;
+  try {
+    data = await redis.get(key);
+    console.log('[AI DEBUG] redis.get finished, data:', data);
+  } catch (error) {
+    console.error('[AI DEBUG] Error in redis.get:', error);
     return null;
-    //throw err; // Re-throw the error to be caught by the caller
+  }
+  if (!data) {
+    console.log('[AI DEBUG] No data found in Redis for key:', key);
+    console.log('[AI DEBUG] Exiting getAIGameData, duration:', Date.now() - start, 'ms');
+    return null;
+  }
+  try {
+    const parsed = JSON.parse(data);
+    console.log('[AI DEBUG] Successfully parsed AI game data:', parsed);
+    console.log('[AI DEBUG] Exiting getAIGameData, duration:', Date.now() - start, 'ms');
+    return parsed;
+  } catch (err) {
+    console.error('[AI DEBUG] Error parsing AI game data from Redis:', err);
+    console.log('[AI DEBUG] Exiting getAIGameData, duration:', Date.now() - start, 'ms');
+    return null;
   }
 };
+
 export const deleteAIGameData = async ({
   redis,
   sessionId,
 }: {
-  redis: any;
+  redis: RedisClient;
   sessionId: string;
 }): Promise<void> => {
-  console.log(`🗑️ Deleting AI game data for session: ${sessionId}`);
-  await redis.del(getAIGameDataKey(sessionId));
-  console.log('✅ AI game data deleted');
+  console.log('[AI DEBUG] Entered deleteAIGameData with sessionId:', sessionId);
+  const start = Date.now();
+  const key = getAIGameDataKey(sessionId);
+  console.log('[AI DEBUG] Deleting from Redis with key:', key);
+  try {
+    await redis.del(key);
+    console.log('[AI DEBUG] Successfully deleted AI game data from Redis');
+  } catch (error) {
+    console.error('[AI DEBUG] Error deleting AI game data from Redis:', error);
+  }
+  console.log('[AI DEBUG] Exiting deleteAIGameData, duration:', Date.now() - start, 'ms');
 };

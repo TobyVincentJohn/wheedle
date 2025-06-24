@@ -25,8 +25,13 @@ Respond ONLY in valid JSON format:
   `.trim();
   const ai = new GoogleGenAI({ apiKey: "AIzaSyCJobF0XKy-KCeCwRkx8AyygPJmukEUw-o" });
   const result = await ai.models.generateContent({
-    model: 'gemini-2.0-flash',
+    model: 'gemini-2.5-flash',
     contents: [{ parts: [{ text: prompt }] }],
+    config: {
+      thinkingConfig: {
+        thinkingBudget: 0, // Disables thinking
+      },
+    }
   });
   const text = result.text ?? '';
   console.log('Raw AI response:', text);
@@ -46,4 +51,19 @@ try {
 
 } catch (err) {
   console.error("💥 JSON parsing failed:", err);
+}
+
+try {
+  console.log("Inside the try block.");
+
+  setTimeout(() => {
+    // This code runs LATER, after the try...catch is finished.
+    throw new Error("💥 Async Error!"); // This error is uncaught and will crash the program.
+  }, 100);
+
+  console.log("Try block has finished its work.");
+
+} catch (error) {
+  // THIS WILL NEVER RUN
+  console.log("Caught an error:", error.message);
 }
