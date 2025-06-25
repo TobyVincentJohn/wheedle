@@ -4,8 +4,20 @@ import { GameSession } from '../../shared/types/session';
 import { AI_PERSONAS } from '../../shared/data/aiPersonas';
 import { USER_PERSONAS } from '../../shared/data/userPersonas';
 import { sessionGet } from './session';
+import { getSessionResponses } from './playerResponses';
+
+// Gemini API integration
+import { GoogleGenAI } from '@google/genai';
 
 const getAIGameDataKey = (sessionId: string) => `ai_game_data:${sessionId}` as const;
+
+// Helper to ensure clues is exactly 3 strings
+function toThreeClues(arr: any): [string, string, string] {
+  if (!Array.isArray(arr)) return ['Unknown', 'Unknown', 'Unknown'];
+  const safeArr = arr.map((v: any) => (typeof v === 'string' && v !== undefined) ? v : 'Unknown');
+  while (safeArr.length < 3) safeArr.push('Unknown');
+  return [safeArr[0] ?? 'Unknown', safeArr[1] ?? 'Unknown', safeArr[2] ?? 'Unknown'];
+}
 
 export const generateAIGameData = async (session: GameSession): Promise<Omit<AIGameData, 'sessionId' | 'createdAt'>> => {
   console.log('[AI DEBUG] Generating hardcoded AI game data');
@@ -15,17 +27,17 @@ export const generateAIGameData = async (session: GameSession): Promise<Omit<AIG
   try {
     // Select a random AI persona
     const randomAIIndex = Math.floor(Math.random() * AI_PERSONAS.length);
-    const selectedAIPersona = AI_PERSONAS[randomAIIndex];
+    const selectedAIPersona = (AI_PERSONAS[randomAIIndex] && typeof AI_PERSONAS[randomAIIndex] === 'object') ? AI_PERSONAS[randomAIIndex] : (AI_PERSONAS[0] && typeof AI_PERSONAS[0] === 'object' ? AI_PERSONAS[0] : { aiPersona: 'Unknown AI Persona', clues: ['Unknown', 'Unknown', 'Unknown'] });
     console.log('[AI DEBUG] 🎲 Selected AI persona index:', randomAIIndex, 'out of', AI_PERSONAS.length);
-    console.log('[AI DEBUG] 🤖 Selected AI persona:', selectedAIPersona.aiPersona);
+    console.log('[AI DEBUG] 🤖 Selected AI persona:', selectedAIPersona?.aiPersona);
     
     // Select corresponding user personas (same index to keep them thematically related)
-    const selectedUserPersonas = USER_PERSONAS[randomAIIndex];
+    const selectedUserPersonas = Array.isArray(USER_PERSONAS[randomAIIndex]) ? USER_PERSONAS[randomAIIndex] : (Array.isArray(USER_PERSONAS[0]) ? USER_PERSONAS[0] : ['Unknown', 'Unknown', 'Unknown']);
     console.log('[AI DEBUG] 👥 Available user personas for this theme:', selectedUserPersonas);
     
     // Assign unique personas to each player
     const playerPersonas: { [userId: string]: string } = {};
-    const availablePersonas = [...selectedUserPersonas]; // Create a copy
+    const availablePersonas = Array.isArray(selectedUserPersonas) ? [...selectedUserPersonas] : [];
     console.log('[AI DEBUG] 🔀 Original persona order:', availablePersonas);
     
     // Shuffle the available personas to randomize assignment
@@ -37,15 +49,19 @@ export const generateAIGameData = async (session: GameSession): Promise<Omit<AIG
     
     // Assign personas to players, cycling through if more players than personas
     session.players.forEach((player, index) => {
-      const personaIndex = index % availablePersonas.length;
-      playerPersonas[player.userId] = availablePersonas[personaIndex];
-      console.log('[AI DEBUG] 🎭 Assigned to player', player.username, '(', player.userId, '):', availablePersonas[personaIndex]);
+      const personaIndex = availablePersonas.length > 0 ? index % availablePersonas.length : 0;
+      const persona = availablePersonas[personaIndex];
+      playerPersonas[player.userId] = typeof persona === 'string' ? persona || 'Unknown Persona' : 'Unknown Persona';
+      console.log('[AI DEBUG] 🎭 Assigned to player', player.username, '(', player.userId, '):', typeof persona === 'string' ? persona || 'Unknown Persona' : 'Unknown Persona');
     });
     
+    // clues must always be 3 strings, userPersonas can be any length
+    const cluesArray = toThreeClues(selectedAIPersona.clues);
+    const userPersonasArray = Array.isArray(selectedUserPersonas) && selectedUserPersonas.every((c: any) => typeof c === 'string') ? selectedUserPersonas : [];
     const gameData = {
-      aiPersona: selectedAIPersona.aiPersona,
-      clues: selectedAIPersona.clues as [string, string, string],
-      userPersonas: selectedUserPersonas as [string, string, string],
+      aiPersona: typeof selectedAIPersona.aiPersona === 'string' && selectedAIPersona.aiPersona ? selectedAIPersona.aiPersona : 'Unknown AI Persona',
+      clues: cluesArray,
+      userPersonas: userPersonasArray,
       playerPersonas
     };
     
@@ -63,20 +79,24 @@ export const generateAIGameData = async (session: GameSession): Promise<Omit<AIG
     
     // Fallback persona assignment
     const fallbackPlayerPersonas: { [userId: string]: string } = {};
-    const fallbackPersonas = USER_PERSONAS[0];
+    const fallbackPersonas = Array.isArray(USER_PERSONAS[0]) ? USER_PERSONAS[0] : ['Unknown', 'Unknown', 'Unknown'];
     console.log('[AI DEBUG] 🔄 Using fallback personas:', fallbackPersonas);
     
     session.players.forEach((player, index) => {
-      const personaIndex = index % fallbackPersonas.length;
-      fallbackPlayerPersonas[player.userId] = fallbackPersonas[personaIndex];
-      console.log('[AI DEBUG] 🔄 Fallback assigned to', player.username, ':', fallbackPersonas[personaIndex]);
+      const personaIndex = Array.isArray(fallbackPersonas) && fallbackPersonas.length > 0 ? index % fallbackPersonas.length : 0;
+      const persona = Array.isArray(fallbackPersonas) && typeof fallbackPersonas[personaIndex] === 'string' ? fallbackPersonas[personaIndex] : 'Unknown Persona';
+      fallbackPlayerPersonas[player.userId] = persona;
+      console.log('[AI DEBUG] 🔄 Fallback assigned to', player.username, ':', persona);
     });
     
     // Fallback to the first persona set if something goes wrong
+    const fallbackAIPersona = (AI_PERSONAS[0] && typeof AI_PERSONAS[0].aiPersona === 'string') ? AI_PERSONAS[0].aiPersona : 'Unknown AI Persona';
+    const fallbackClues = toThreeClues(AI_PERSONAS[0]?.clues);
+    const fallbackUserPersonas = Array.isArray(USER_PERSONAS[0]) ? USER_PERSONAS[0] : [];
     return {
-      aiPersona: AI_PERSONAS[0].aiPersona,
-      clues: AI_PERSONAS[0].clues as [string, string, string],
-      userPersonas: USER_PERSONAS[0] as [string, string, string],
+      aiPersona: fallbackAIPersona,
+      clues: fallbackClues,
+      userPersonas: fallbackUserPersonas,
       playerPersonas: fallbackPlayerPersonas
     };
   }
@@ -122,11 +142,12 @@ export const createAIGameData = async ({
     
     // Fallback persona assignment
     const fallbackPlayerPersonas: { [userId: string]: string } = {};
-    const fallbackPersonas = USER_PERSONAS[0];
+    const fallbackPersonas = Array.isArray(USER_PERSONAS[0]) ? USER_PERSONAS[0] : ['Unknown', 'Unknown', 'Unknown'];
     session.players.forEach((player, index) => {
-      const personaIndex = index % fallbackPersonas.length;
-      fallbackPlayerPersonas[player.userId] = fallbackPersonas[personaIndex];
-      console.log('[AI DEBUG] 🔄 Fallback persona assigned - User:', player.username, 'Persona:', fallbackPersonas[personaIndex]);
+      const personaIndex = Array.isArray(fallbackPersonas) && fallbackPersonas.length > 0 ? index % fallbackPersonas.length : 0;
+      const persona = Array.isArray(fallbackPersonas) && typeof fallbackPersonas[personaIndex] === 'string' ? fallbackPersonas[personaIndex] : 'Unknown Persona';
+      fallbackPlayerPersonas[player.userId] = persona;
+      console.log('[AI DEBUG] 🔄 Fallback persona assigned - User:', player.username, 'Persona:', persona);
     });
     
     // Use fallback data
@@ -143,11 +164,12 @@ export const createAIGameData = async ({
     
     // Fallback persona assignment
     const fallbackPlayerPersonas: { [userId: string]: string } = {};
-    const fallbackPersonas = USER_PERSONAS[0];
+    const fallbackPersonas = Array.isArray(USER_PERSONAS[0]) ? USER_PERSONAS[0] : ['Unknown', 'Unknown', 'Unknown'];
     session.players.forEach((player, index) => {
-      const personaIndex = index % fallbackPersonas.length;
-      fallbackPlayerPersonas[player.userId] = fallbackPersonas[personaIndex];
-      console.log('[AI DEBUG] 🔄 Emergency fallback persona assigned - User:', player.username, 'Persona:', fallbackPersonas[personaIndex]);
+      const personaIndex = Array.isArray(fallbackPersonas) && fallbackPersonas.length > 0 ? index % fallbackPersonas.length : 0;
+      const persona = Array.isArray(fallbackPersonas) && typeof fallbackPersonas[personaIndex] === 'string' ? fallbackPersonas[personaIndex] : 'Unknown Persona';
+      fallbackPlayerPersonas[player.userId] = persona;
+      console.log('[AI DEBUG] 🔄 Emergency fallback persona assigned - User:', player.username, 'Persona:', persona);
     });
     
     gameData = {
@@ -308,4 +330,67 @@ export const deleteAIGameData = async ({
   }
   
   console.log('[AI DEBUG] Exiting deleteAIGameData, duration:', Date.now() - start, 'ms');
+};
+
+/**
+ * Send all user personas, AI persona, and user responses for a session to Gemini and return the result.
+ * @param redis Redis client
+ * @param sessionId Session ID
+ * @returns Gemini API response (text)
+ */
+export const sendSessionDataToGemini = async ({
+  redis,
+  sessionId,
+}: {
+  redis: RedisClient;
+  sessionId: string;
+}): Promise<string | null> => {
+  // Get all player responses for the session
+  const sessionResponses = await getSessionResponses({ redis, sessionId });
+  if (!sessionResponses) {
+    console.error('[GEMINI] No session responses found for session:', sessionId);
+    return null;
+  }
+
+  // Prepare the prompt for Gemini
+//   const prompt = `
+// Session AI Persona: ${sessionResponses.aiPersona}
+
+// Player Personas and Responses:
+// ${sessionResponses.playerResponses.map(r => `- ${r.username} (${r.persona}): ${r.response}`).join('\n')}
+
+// Given the above, provide an analysis, summary, or next action for the game.`;
+
+  // Call Gemini API
+  // try {
+    // const apiKey = 'AIzaSyCJobF0XKy-KCeCwRkx8AyygPJmukEUw-o';
+    // if (!apiKey) throw new Error('Missing Google API key');
+    // const ai = new GoogleGenAI({ apiKey:apiKey });
+    // const result = await ai.models.generateContent({
+    //   model: 'gemini-2.5-flash',
+    //   contents: "hello",//[{ parts: [{ text: prompt }] }],
+    //   config: {
+    //     thinkingConfig: {
+    //       thinkingBudget: 0,
+    //     },
+    //   }
+    // });
+    // console.log(result.text)
+    const url='https://example.com';
+    try{
+    fetch(url).then(response => {
+      if (response.ok) {
+        return response;
+      }
+      throw new Error('Something went wrong');
+    }).then(responseJson => {
+      console.log(responseJson)
+    }).catch(error => {
+      console.log(error)
+    });
+    
+  } catch (err) {
+    console.error('[GEMINI] Error calling Gemini API:', err);
+    return null;
+  }
 };

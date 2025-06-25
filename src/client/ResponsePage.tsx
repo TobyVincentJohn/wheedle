@@ -5,7 +5,7 @@ import { AIGameData } from '../shared/types/aiGame';
 import { useSession } from './hooks/useSession';
 import './ResponsePage.css';
 
-const RESPONSE_TIME_LIMIT = 60000; // 1 minute in milliseconds
+const RESPONSE_TIME_LIMIT = 10000; // 1 minute in milliseconds
 
 type PageState = 'responding' | 'waiting' | 'revealing';
 
@@ -213,7 +213,15 @@ const ResponsePage: React.FC = () => {
         console.log('[CLIENT RESPONSES] ===== END ALL RESPONSES DATA =====');
         
         setAllResponses(data.data.playerResponses);
-        
+        console.log('i reached after setting all the responses');
+        // Fetch and log the redis dump for debugging
+        try {
+          const redisDumpResponse = await fetch('/api/redis-data/dump');
+          const redisDump = await redisDumpResponse.json();
+          console.log('[REDIS DUMP] Browser-side:', redisDump);
+        } catch (err) {
+          console.error('[REDIS DUMP] Failed to fetch redis dump:', err);
+        }
         // Wait 3 seconds to show responses, then evaluate winner
         setTimeout(() => {
           evaluateResponsesAndDetermineWinner();
@@ -234,27 +242,34 @@ const ResponsePage: React.FC = () => {
 
   const evaluateResponsesAndDetermineWinner = async () => {
     console.log('[CLIENT WINNER] ===== STARTING WINNER EVALUATION =====');
-    console.log('[CLIENT WINNER] Moving to revealing state...');
-    setPageState('revealing');
-    
+    // Fetch Gemini analysis for winner reason FIRST
+    let geminiReason = '';
+    const response = await fetch(`/api/sessions/${session?.sessionId}/gemini-analysis`);
+    try {
+      const data = await response.json();
+      if (data.status === 'success' && data.data && data.data.geminiText) {
+        geminiReason = data.data.geminiText;
+      }
+    } catch (err) {
+      console.log(response)
+      console.error('Failed to fetch Gemini analysis:', err);
+    }
     // Mock winner determination - in real implementation, this would be an AI call
     const players = session?.players || [];
     console.log('[CLIENT WINNER] Available players for winner selection:', players.map(p => p.username));
     const randomWinner = players[Math.floor(Math.random() * players.length)];
     console.log('[CLIENT WINNER] Selected winner:', randomWinner?.username);
-    
     // Simulate evaluation delay
     console.log('[CLIENT WINNER] Simulating AI evaluation delay...');
     await new Promise(resolve => setTimeout(resolve, 2000));
-    
     const winnerUsername = randomWinner?.username || 'Unknown';
     const winnerId = randomWinner?.userId || '';
-    
-    console.log('[CLIENT WINNER] Setting winner state:', winnerUsername);
+    setWinnerReason(
+      geminiReason || `${winnerUsername} provided the most accurate guess about the AI's persona. Their response showed deep understanding of the theme and correctly identified key elements from the clues.`
+    );
     setWinner(winnerUsername);
-    setWinnerReason(`${winnerUsername} provided the most accurate guess about the AI's persona. Their response showed deep understanding of the theme and correctly identified key elements from the clues.`);
+    setPageState('revealing');
     console.log('[CLIENT WINNER] Winner page should now be visible');
-    
     // Mark session as completed with winner
     if (session && winnerId) {
       try {

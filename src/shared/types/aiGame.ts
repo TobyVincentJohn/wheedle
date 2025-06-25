@@ -1,7 +1,7 @@
 export interface AIGameData {
   aiPersona: string;
   clues: [string, string, string];
-  userPersonas: [string, string, string];
+  userPersonas: string[];
   sessionId: string;
   createdAt: number;
   playerPersonas?: { [userId: string]: string }; // Map of userId to assigned persona

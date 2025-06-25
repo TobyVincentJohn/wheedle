@@ -15,7 +15,7 @@ import {
   getUserCurrentSession
 } from './core/session';
 import { findSessionByCode } from './core/roomCodeSearch';
-import { getAIGameData } from './core/aiService';
+import { getAIGameData, sendSessionDataToGemini } from './core/aiService';
 import { GetAIGameDataResponse } from '../shared/types/aiGame';
 import { 
   CreateSessionResponse, 
@@ -624,6 +624,26 @@ router.post('/api/sessions/:sessionId/complete', async (req, res): Promise<void>
       status: 'error', 
       message: error instanceof Error ? error.message : 'Unknown error completing session'
     });
+  }
+});
+
+// Add after other session endpoints
+router.get('/api/sessions/:sessionId/gemini-analysis', async (req, res) => {
+  const { sessionId } = req.params;
+  const redis = getRedis();
+  if (!sessionId || typeof sessionId !== 'string') {
+    return res.status(400).json({ status: 'error', message: 'Invalid sessionId' });
+  }
+  try {
+    const geminiText = await sendSessionDataToGemini({ redis, sessionId });
+    if (geminiText) {
+      res.json({ status: 'success', data: { geminiText } });
+    } else {
+      res.status(404).json({ status: 'error', message: 'No Gemini response available' });
+    }
+  } catch (error) {
+    console.error('Error fetching Gemini analysis:', error);
+    res.status(500).json({ status: 'error', message: error instanceof Error ? error.message : 'Unknown error' });
   }
 });
 
