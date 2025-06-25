@@ -7,7 +7,7 @@ import './ResponsePage.css';
 
 const RESPONSE_TIME_LIMIT = 60000; // 1 minute in milliseconds
 
-type PageState = 'responding' | 'revealing';
+type PageState = 'responding' | 'waiting' | 'revealing';
 
 const ResponsePage: React.FC = () => {
   const location = useLocation();
@@ -22,6 +22,8 @@ const ResponsePage: React.FC = () => {
   const [responseStartTime, setResponseStartTime] = useState<number>(Date.now());
   const [isTimeUp, setIsTimeUp] = useState<boolean>(false);
   const [pageState, setPageState] = useState<PageState>('responding');
+  const [hasSubmitted, setHasSubmitted] = useState<boolean>(false);
+  const [allResponses, setAllResponses] = useState<any[]>([]);
   const [winner, setWinner] = useState<string>('');
   const [winnerReason, setWinnerReason] = useState<string>('');
 
@@ -33,7 +35,23 @@ const ResponsePage: React.FC = () => {
     if (sessionFromState) {
       setSession(sessionFromState);
       setAiGameData(aiGameDataFromState || null);
-      setUserPersona(userPersonaFromState || '');
+      
+      // If no persona provided in state, try to get it from AI game data
+      if (userPersonaFromState) {
+        setUserPersona(userPersonaFromState);
+      } else if (aiGameDataFromState && aiGameDataFromState.playerPersonas && currentSession?.players) {
+        // Find current user's persona from the AI game data
+        const currentPlayer = currentSession.players.find(p => p.userId === currentSession?.players[0]?.userId);
+        if (currentPlayer && aiGameDataFromState.playerPersonas[currentPlayer.userId]) {
+          setUserPersona(aiGameDataFromState.playerPersonas[currentPlayer.userId]);
+        } else {
+          // Fallback to a random persona
+          setUserPersona(aiGameDataFromState.userPersonas[Math.floor(Math.random() * 3)]);
+        }
+      } else {
+        setUserPersona('');
+      }
+      
       setResponseStartTime(Date.now());
       if (sessionFromState.dealerId) {
         setDealerId(sessionFromState.dealerId);
@@ -61,54 +79,186 @@ const ResponsePage: React.FC = () => {
 
       if (remaining === 0 && !isTimeUp) {
         setIsTimeUp(true);
-        handleSubmitResponse(true);
+        // If user hasn't submitted yet, auto-submit
+        if (!hasSubmitted) {
+          handleSubmitResponse(true);
+        } else {
+          // If user already submitted, move to waiting phase
+          setPageState('waiting');
+          fetchAllResponses();
+        }
       }
     }, 100);
 
     return () => clearInterval(interval);
-  }, [responseStartTime, isTimeUp, pageState]);
+  }, [responseStartTime, isTimeUp, pageState, hasSubmitted]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setUserInput(e.target.value);
   };
 
   const handleSubmitResponse = async (timeUp: boolean = false) => {
+    if (hasSubmitted) return; // Prevent double submission
     if ((!userInput.trim() && !timeUp) || !session || !aiGameData) return;
-    if (isTimeUp && !timeUp) return;
 
     try {
-      console.log('User response:', timeUp ? '(Time up - no response)' : userInput);
-      console.log('AI Persona:', aiGameData.aiPersona);
-      console.log('User Persona:', userPersona);
+      const responseText = timeUp ? '(Time up - no response)' : userInput;
       
-      // Simulate AI evaluation and winner determination
-      await evaluateResponsesAndDetermineWinner();
+      console.log('[CLIENT RESPONSE] ===== SUBMITTING PLAYER RESPONSE =====');
+      console.log('[CLIENT RESPONSE] User response:', responseText);
+      console.log('[CLIENT RESPONSE] AI Persona:', aiGameData.aiPersona);
+      console.log('[CLIENT RESPONSE] User Persona:', userPersona);
+      console.log('[CLIENT RESPONSE] Session ID:', session.sessionId);
+      console.log('[CLIENT RESPONSE] Time up:', timeUp);
+      
+      // Submit response to server (optional - for logging/storage)
+      try {
+        const response = await fetch(`/api/sessions/${session.sessionId}/submit-response`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            response: responseText,
+            persona: userPersona,
+            aiPersona: aiGameData.aiPersona,
+            isTimeUp: timeUp,
+          }),
+        });
+        
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+          console.log('[CLIENT RESPONSE] ✅ Response submitted successfully');
+          console.log('[CLIENT RESPONSE] Server returned session responses:', data.data);
+          setHasSubmitted(true);
+          
+          // If time is up, move to waiting phase immediately
+          if (timeUp || isTimeUp) {
+            console.log('[CLIENT RESPONSE] ⏰ Time is up, moving to waiting phase...');
+            setPageState('waiting');
+            console.log('[CLIENT TIMER] ⏰ Timer expired, auto-submitting...');
+            fetchAllResponses();
+          } else {
+            // If submitted early, wait for timer to finish
+            console.log('[CLIENT RESPONSE] 🕐 Response submitted early, waiting for timer...');
+          }
+        } else {
+          console.error('[CLIENT RESPONSE] ❌ Failed to submit response:', data.message);
+          // Even if submission failed, continue with the flow
+          setHasSubmitted(true);
+          if (timeUp || isTimeUp) {
+            console.log('[CLIENT TIMER] ⏰ Timer expired, user already submitted, moving to waiting...');
+            setPageState('waiting');
+            fetchAllResponses();
+          }
+        }
+      } catch (error) {
+        console.error('[CLIENT RESPONSE] ❌ Error submitting response to server:', error);
+        // Continue with the flow even if there's an error
+        setHasSubmitted(true);
+        console.log('[CLIENT RESPONSE] ⚠️ Error occurred but continuing to waiting phase...');
+        setPageState('waiting');
+        fetchAllResponses();
+      }
       
     } catch (error) {
       console.error('Error submitting response:', error);
     }
   };
 
+  const fetchAllResponses = async () => {
+    if (!session) return;
+    
+    try {
+      console.log('[CLIENT RESPONSES] 📊 Fetching all responses for session...');
+      const response = await fetch(`/api/sessions/${session.sessionId}/responses`);
+      const data = await response.json();
+      
+      if (data.status === 'success' && data.data) {
+        console.log('[CLIENT RESPONSES] ===== ALL PLAYER RESPONSES RECEIVED =====');
+        console.log('[CLIENT RESPONSES] All Responses Data:');
+        
+        // 🎯 DETAILED RESPONSE LOGGING - Like user data format
+        console.log('[CLIENT RESPONSES] Response Summary:', {
+          status: 'success',
+          data: {
+            sessionId: data.data.sessionId,
+            aiPersona: data.data.aiPersona,
+            totalResponses: data.data.playerResponses.length,
+            timestamp: new Date().toISOString()
+          }
+        });
+        
+        // 🎯 INDIVIDUAL RESPONSE LOGGING - Each response separately
+        console.log('[CLIENT RESPONSES] ===== INDIVIDUAL PLAYER RESPONSES =====');
+        data.data.playerResponses.forEach((response: any, index: number) => {
+          console.log(`[CLIENT RESPONSES] Player ${index + 1} Response:`, {
+            status: 'success',
+            data: {
+              userId: response.userId,
+              username: response.username,
+              persona: response.persona,
+              response: response.response,
+              submittedAt: new Date(response.submittedAt).toISOString(),
+              isTimeUp: response.isTimeUp,
+              responseLength: response.response.length
+            }
+          });
+        });
+        
+        // 🎯 COMPLETE DATA DUMP - Raw format
+        console.log('[CLIENT RESPONSES] ===== RAW RESPONSE DATA =====');
+        console.log('[CLIENT RESPONSES] Raw Server Response:', JSON.stringify(data.data, null, 2));
+        console.log('[CLIENT RESPONSES] ===== END ALL RESPONSES DATA =====');
+        
+        setAllResponses(data.data.playerResponses);
+        
+        // Wait 3 seconds to show responses, then evaluate winner
+        setTimeout(() => {
+          evaluateResponsesAndDetermineWinner();
+        }, 3000); // Show responses for 3 seconds before winner reveal
+      } else {
+        console.log('[CLIENT RESPONSES] No responses found, proceeding with winner evaluation');
+        setTimeout(() => {
+          evaluateResponsesAndDetermineWinner();
+        }, 1000);
+      }
+    } catch (error) {
+      console.error('[CLIENT RESPONSES] Error fetching responses:', error);
+      setTimeout(() => {
+        evaluateResponsesAndDetermineWinner();
+      }, 1000);
+    }
+  };
+
   const evaluateResponsesAndDetermineWinner = async () => {
-    // Simulate AI evaluation process
+    console.log('[CLIENT WINNER] ===== STARTING WINNER EVALUATION =====');
+    console.log('[CLIENT WINNER] Moving to revealing state...');
     setPageState('revealing');
     
     // Mock winner determination - in real implementation, this would be an AI call
     const players = session?.players || [];
+    console.log('[CLIENT WINNER] Available players for winner selection:', players.map(p => p.username));
     const randomWinner = players[Math.floor(Math.random() * players.length)];
+    console.log('[CLIENT WINNER] Selected winner:', randomWinner?.username);
     
     // Simulate evaluation delay
+    console.log('[CLIENT WINNER] Simulating AI evaluation delay...');
     await new Promise(resolve => setTimeout(resolve, 2000));
     
     const winnerUsername = randomWinner?.username || 'Unknown';
     const winnerId = randomWinner?.userId || '';
     
+    console.log('[CLIENT WINNER] Setting winner state:', winnerUsername);
     setWinner(winnerUsername);
     setWinnerReason(`${winnerUsername} provided the most accurate guess about the AI's persona. Their response showed deep understanding of the theme and correctly identified key elements from the clues.`);
+    console.log('[CLIENT WINNER] Winner page should now be visible');
     
     // Mark session as completed with winner
     if (session && winnerId) {
       try {
+        console.log('[CLIENT WINNER] Marking session as completed...');
         await fetch(`/api/sessions/${session.sessionId}/complete`, {
           method: 'POST',
           headers: {
@@ -124,6 +274,7 @@ const ResponsePage: React.FC = () => {
         console.error('❌ Failed to mark session as completed:', error);
       }
     }
+    console.log('[CLIENT WINNER] ===== WINNER EVALUATION COMPLETE =====');
   };
 
   const handleReturnToHome = () => {
@@ -144,6 +295,77 @@ const ResponsePage: React.FC = () => {
     const remainingSeconds = seconds % 60;
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
+
+  // Waiting state - show all responses
+  if (pageState === 'waiting') {
+    return (
+      <div className="response-page">
+        <div className="response-content">
+          <div style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            color: '#FFD700',
+            fontFamily: 'VT323, monospace',
+            fontSize: '24px',
+            textAlign: 'center',
+            maxWidth: '600px',
+            zIndex: 10,
+            background: 'rgba(0, 0, 0, 0.9)',
+            padding: '30px',
+            borderRadius: '12px',
+            border: '3px solid #FFD700',
+            maxHeight: '80vh',
+            overflowY: 'auto'
+          }}>
+            <div style={{ fontSize: '32px', marginBottom: '20px', color: '#4CAF50' }}>
+              📊 All Player Responses
+            </div>
+            
+            {allResponses.length > 0 ? (
+              <div style={{ textAlign: 'left', fontSize: '18px' }}>
+                {allResponses.map((response, index) => (
+                  <div key={response.userId} style={{ 
+                    marginBottom: '20px', 
+                    padding: '15px', 
+                    background: 'rgba(255, 255, 255, 0.1)', 
+                    borderRadius: '8px',
+                    border: '1px solid #FFD700'
+                  }}>
+                    <div style={{ color: '#4CAF50', fontWeight: 'bold', marginBottom: '5px' }}>
+                      u/{response.username}
+                    </div>
+                    <div style={{ color: '#ffffff', marginBottom: '5px', fontSize: '16px' }}>
+                      Role: {response.persona}
+                    </div>
+                    <div style={{ color: '#ffffff', fontSize: '16px' }}>
+                      Response: "{response.response}"
+                    </div>
+                    {response.isTimeUp && (
+                      <div style={{ color: '#ff6b6b', fontSize: '14px', marginTop: '5px' }}>
+                        (Time expired)
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ fontSize: '20px', color: '#ffffff' }}>
+                Collecting responses...
+              </div>
+            )}
+            
+            <div style={{ fontSize: '18px', marginTop: '20px', color: '#ffffff' }}>
+              Evaluating responses...
+            </div>
+          </div>
+          
+          <div className={`response-dealer response-dealer-${dealerId}`} />
+        </div>
+      </div>
+    );
+  }
 
   if (!session) {
     return (
@@ -313,25 +535,25 @@ const ResponsePage: React.FC = () => {
         
         <button
           onClick={() => handleSubmitResponse()}
-          disabled={(!userInput.trim() && !isTimeUp) || (isTimeUp && userInput.trim())}
+          disabled={(!userInput.trim() && !isTimeUp) || hasSubmitted}
           style={{
             position: 'absolute',
             bottom: '100px',
             left: '50%',
             transform: 'translateX(-50%)',
-            background: (userInput.trim() && !isTimeUp) ? '#4CAF50' : '#666',
+            background: hasSubmitted ? '#4CAF50' : (userInput.trim() && !isTimeUp) ? '#2196F3' : '#666',
             color: 'white',
             border: 'none',
             padding: '12px 24px',
             fontFamily: 'VT323, monospace',
             fontSize: '18px',
-            cursor: (userInput.trim() && !isTimeUp) ? 'pointer' : 'not-allowed',
+            cursor: hasSubmitted ? 'default' : (userInput.trim() && !isTimeUp) ? 'pointer' : 'not-allowed',
             borderRadius: '4px',
             transition: 'all 0.2s',
-            opacity: isTimeUp ? 0.6 : 1
+            opacity: (isTimeUp && !hasSubmitted) ? 0.6 : 1
           }}
         >
-          {isTimeUp ? 'Time Up' : 'Submit Guess (Ctrl+Enter)'}
+          {hasSubmitted ? '✅ Submitted' : isTimeUp ? 'Time Up' : 'Submit Guess (Ctrl+Enter)'}
         </button>
       </div>
     </div>

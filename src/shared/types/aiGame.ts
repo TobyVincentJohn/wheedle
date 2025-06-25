@@ -4,6 +4,7 @@ export interface AIGameData {
   userPersonas: [string, string, string];
   sessionId: string;
   createdAt: number;
+  playerPersonas?: { [userId: string]: string }; // Map of userId to assigned persona
 }
 
 export interface ClueDisplayState {

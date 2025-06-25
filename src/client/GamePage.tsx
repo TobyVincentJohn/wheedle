@@ -71,6 +71,29 @@ const GamePage: React.FC = () => {
         if (response.ok) {
           const data = await response.json();
           console.log('[AI DEBUG] AI game data response:', data);
+          
+          // 🎯 CONSOLIDATED CLIENT PERSONA LOGGING - Like user data format
+          console.log('[CLIENT PERSONAS] ===== RECEIVED PERSONA DATA FROM SERVER =====');
+          console.log('[CLIENT PERSONAS] Client Persona Response:');
+          console.log('[CLIENT PERSONAS]', {
+            status: data.status,
+            data: {
+              sessionId: data.data?.sessionId,
+              currentUserId: user?.userId,
+              currentUsername: user?.username,
+              aiPersona: data.data?.aiPersona,
+              totalPlayers: Object.keys(data.data?.playerPersonas || {}).length,
+              playerPersonas: data.data?.playerPersonas,
+              myAssignedPersona: data.data?.playerPersonas?.[user?.userId || ''] || 'Not assigned'
+            }
+          });
+          console.log('[CLIENT PERSONAS] ===== END CLIENT PERSONA DATA =====');
+          
+          console.log('[CLIENT DEBUG] 🎭 Received player personas:', data.data?.playerPersonas);
+          console.log('[CLIENT DEBUG] 👤 Current user would get persona for userId:', user?.userId);
+          if (data.data?.playerPersonas && user?.userId) {
+            console.log('[CLIENT DEBUG] 🎯 My assigned persona:', data.data.playerPersonas[user.userId]);
+          }
           if (data.status === 'success' && data.data) {
             console.log('[AI DEBUG] ✅ AI game data loaded successfully.');
             setAiGameData(data.data);
@@ -126,16 +149,20 @@ const GamePage: React.FC = () => {
   // Auto-navigate to response page after all clues are shown
   useEffect(() => {
     if (allCluesShown && session && aiGameData) {
-      // Navigate immediately after all clues are shown
+      // Get the user's assigned persona
+      const userPersona = user && aiGameData.playerPersonas 
+        ? aiGameData.playerPersonas[user.userId] 
+        : aiGameData.userPersonas[Math.floor(Math.random() * 3)];
+      
       navigate('/response', { 
         state: { 
           session, 
           aiGameData,
-          userPersona: aiGameData.userPersonas[Math.floor(Math.random() * 3)]
+          userPersona
         } 
       });
     }
-  }, [allCluesShown, session, aiGameData, navigate]);
+  }, [allCluesShown, session, aiGameData, navigate, user]);
 
   // Background polling for session changes
   useEffect(() => {

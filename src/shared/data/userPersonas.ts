@@ -1,0 +1,43 @@
+// Hardcoded user personas for players to roleplay
+export const USER_PERSONAS = [
+  [
+    "A skeptical scientist who doesn't believe in the paranormal",
+    "An enthusiastic paranormal investigator who believes everything",
+    "A local police officer who just wants to solve cases practically"
+  ],
+  [
+    "A food critic with very high standards",
+    "A home cook who loves trying new recipes",
+    "A restaurant owner worried about competition"
+  ],
+  [
+    "A carefree teenager who thinks security is overrated",
+    "A cybersecurity expert who appreciates good protection",
+    "A conspiracy theorist who thinks everything is connected"
+  ],
+  [
+    "A tech enthusiast who prefers digital books",
+    "An elderly person who misses the old days",
+    "A busy student who needs quick information"
+  ],
+  [
+    "A casual fan who watches games for fun",
+    "A professional athlete who understands the pressure",
+    "A sports betting enthusiast who follows the odds"
+  ],
+  [
+    "A traditional art collector who prefers classical works",
+    "A young digital native who loves experimental art",
+    "An art critic who analyzes everything technically"
+  ],
+  [
+    "A homebody who prefers staying in familiar places",
+    "A fellow travel enthusiast with endless wanderlust",
+    "A budget-conscious traveler who plans everything carefully"
+  ],
+  [
+    "A practical person who avoids deep conversations",
+    "Someone going through a major life transition",
+    "A philosophy student who loves intellectual debates"
+  ]
+];

@@ -2,6 +2,7 @@ import { RedisClient } from '@devvit/redis';
 import { GameSession, SessionPlayer } from '../../shared/types/session';
 import { registerRoomCode, unregisterRoomCode } from './roomCodeSearch';
 import { createAIGameData, deleteAIGameData } from './aiService';
+import { deleteSessionResponses } from './playerResponses';
 
 // Helper functions
 const getSessionKey = (sessionId: string) => `session:${sessionId}` as const;
@@ -161,12 +162,35 @@ export const sessionStartCountdown = async ({
   if (!session) throw new Error('Session not found');
   if (session.status !== 'waiting') throw new Error('Session is not in a waiting state');
 
+  console.log('[SESSION DEBUG] 🚀 Starting countdown for session:', sessionId);
+  console.log('[SESSION DEBUG] 👥 Players in session:', session.players.map(p => `${p.username} (${p.userId})`));
+
   session.status = 'countdown';
   session.countdownStartedAt = Date.now();
   await redis.set(getSessionKey(sessionId), JSON.stringify(session));
 
   // Generate AI game data synchronously
+  console.log('[SESSION DEBUG] 🎲 About to generate AI game data...');
   const aiGameData = await createAIGameData({ redis, sessionId });
+  console.log('[SESSION DEBUG] ✅ AI game data generation completed');
+  console.log('[SESSION DEBUG] 🎭 Generated personas for players:', Object.keys(aiGameData.playerPersonas || {}));
+  
+  // 🎯 CONSOLIDATED SESSION PERSONA LOGGING - Like user data format
+  console.log('[SESSION PERSONAS] ===== SESSION COUNTDOWN PERSONA ASSIGNMENT =====');
+  console.log('[SESSION PERSONAS] Session Persona Data:');
+  console.log('[SESSION PERSONAS]', {
+    status: 'success',
+    data: {
+      sessionId: sessionId,
+      sessionStatus: session.status,
+      totalPlayers: session.players.length,
+      playerList: session.players.map(p => ({ userId: p.userId, username: p.username })),
+      aiPersona: aiGameData.aiPersona,
+      playerPersonas: aiGameData.playerPersonas,
+      countdownStartedAt: session.countdownStartedAt
+    }
+  });
+  console.log('[SESSION PERSONAS] ===== END SESSION PERSONA DATA =====');
 
   (async () => {
     try {
@@ -201,12 +225,18 @@ export const sessionStartGame = async ({
   if (!session) throw new Error('Session not found');
   if (session.status !== 'countdown') throw new Error('Session is not in countdown state');
 
+  console.log('[SESSION DEBUG] 🎮 Starting game for session:', sessionId);
+  console.log('[SESSION DEBUG] 👥 Players in game:', session.players.map(p => `${p.username} (${p.userId})`));
+
   session.status = 'in-game';
   session.gameStartedAt = Date.now();
   await redis.set(getSessionKey(sessionId), JSON.stringify(session));
 
   // Generate AI game data synchronously
+  console.log('[SESSION DEBUG] 🎲 About to generate/retrieve AI game data...');
   const aiGameData = await createAIGameData({ redis, sessionId });
+  console.log('[SESSION DEBUG] ✅ AI game data ready for game');
+  console.log('[SESSION DEBUG] 🎭 Player personas ready:', Object.keys(aiGameData.playerPersonas || {}));
 
   return { session, aiGameData };
 };
@@ -246,6 +276,7 @@ export const sessionDelete = async ({
   if (session) {
     await unregisterRoomCode({ redis, sessionCode: session.sessionCode });
     await deleteAIGameData({ redis, sessionId });
+    await deleteSessionResponses({ redis, sessionId });
 
     for (const player of session.players) {
       await redis.del(USER_SESSION_KEY(player.userId));

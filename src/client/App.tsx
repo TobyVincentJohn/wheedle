@@ -13,9 +13,6 @@ import { useEffect } from 'react';
 
 const RedisDataLogger: React.FC = () => {
   const sessionsData = useSessionsRedisData();
-  useEffect(() => {
-    console.log('Active Sessions Data:', sessionsData);
-  }, [sessionsData]);
   return null;
 }
 

@@ -24,6 +24,7 @@ import {
   LeaveSessionResponse,
   StartCountdownResponse 
 } from '../shared/types/session';
+import { storePlayerResponse, getSessionResponses } from './core/playerResponses';
 
 
 const app = express();
@@ -88,6 +89,7 @@ router.get('/api/redis-data/dump', async (req, res) => {
     for (const sessionId of allSessionIds) {
       await fetchAndParse(`session:${sessionId}`);
       await fetchAndParse(`ai_game_data:${sessionId}`);
+      await fetchAndParse(`session_responses:${sessionId}`);
     }
 
     for (const userId of activeUsersList) {
@@ -95,6 +97,28 @@ router.get('/api/redis-data/dump', async (req, res) => {
       await fetchAndParse(`user_session:${userId}`);
     }
 
+    // 🎯 CONSOLIDATED REDIS DUMP LOGGING - Like user data format
+    console.log('[REDIS DUMP] ===== COMPLETE REDIS DATA DUMP =====');
+    console.log('[REDIS DUMP] Redis Data Summary:');
+    console.log('[REDIS DUMP]', {
+      status: 'success',
+      data: {
+        totalKeys: Object.keys(allData).length,
+        publicSessions: publicSessionsList.length,
+        privateSessions: privateSessionsList.length,
+        activeUsers: activeUsersList.length,
+        sessionData: allSessionIds.map(sessionId => ({
+          sessionId,
+          hasSession: !!allData[`session:${sessionId}`],
+          hasAIData: !!allData[`ai_game_data:${sessionId}`],
+          hasResponses: !!allData[`session_responses:${sessionId}`],
+          playerCount: allData[`session:${sessionId}`]?.players?.length || 0,
+          responseCount: allData[`session_responses:${sessionId}`]?.playerResponses?.length || 0
+        })),
+        allKeys: Object.keys(allData)
+      }
+    });
+    console.log('[REDIS DUMP] ===== END REDIS DATA DUMP =====');
     res.json({
       status: 'success',
       data: allData,
@@ -400,8 +424,11 @@ router.get('/api/sessions/current', async (_req, res): Promise<void> => {
 // AI Game Data Endpoints
 router.get('/api/ai-game-data/:sessionId', async (req, res): Promise<void> => {
   const { sessionId } = req.params;
+  const { userId } = getContext();
   const redis = getRedis();
   console.log('[AI DEBUG] Received request for sessionId:', sessionId);
+  console.log('[AI DEBUG] 🌐 API request from client for AI game data');
+  console.log('[AI DEBUG] 👤 Request from userId:', userId);
 
   if (!sessionId || typeof sessionId !== 'string') {
     console.log('[AI DEBUG] Invalid sessionId:', sessionId);
@@ -414,14 +441,45 @@ router.get('/api/ai-game-data/:sessionId', async (req, res): Promise<void> => {
   try {
     const aiGameData = await getAIGameData({ redis, sessionId });
     console.log('[AI DEBUG] getAIGameData result:', aiGameData);
+    
     if (aiGameData) {
+      // 🎯 CONSOLIDATED PERSONA LOGGING - Like user data format
+      console.log('[PERSONA DEBUG] ===== ALL PLAYER PERSONAS FOR SESSION =====');
+      console.log('[PERSONA DEBUG] Session ID:', sessionId);
+      console.log('[PERSONA DEBUG] Player Personas Response:');
+      console.log('[PERSONA DEBUG]', {
+        status: 'success',
+        data: {
+          sessionId: sessionId,
+          aiPersona: aiGameData.aiPersona,
+          totalPlayers: Object.keys(aiGameData.playerPersonas || {}).length,
+          playerPersonas: aiGameData.playerPersonas,
+          createdAt: aiGameData.createdAt,
+          timestamp: new Date(aiGameData.createdAt).toISOString()
+        }
+      });
+      console.log('[PERSONA DEBUG] ===== END PERSONA DATA =====');
+      
+      console.log('[AI DEBUG] ✅ Successfully returning AI game data to client');
+      console.log('[AI DEBUG] 📤 Response includes player personas for', Object.keys(aiGameData.playerPersonas || {}).length, 'players');
+      console.log('[AI DEBUG] 🎭 PERSONA ASSIGNMENTS FOR SESSION', sessionId, ':');
+      if (aiGameData.playerPersonas) {
+        Object.entries(aiGameData.playerPersonas).forEach(([playerId, persona]) => {
+          console.log('[AI DEBUG]   👤', playerId, '→', persona);
+        });
+      }
+      if (userId && aiGameData.playerPersonas && aiGameData.playerPersonas[userId]) {
+        console.log('[AI DEBUG] 🎯 REQUESTING USER', userId, 'GETS PERSONA:', aiGameData.playerPersonas[userId]);
+      }
       res.json({ status: 'success', data: aiGameData });
     } else {
       console.log('[AI DEBUG] AI game data not found for key:', key);
+      console.log('[AI DEBUG] ❌ Returning 404 to client - no AI game data found');
       res.status(404).json({ status: 'error', message: 'AI game data not found' });
     }
   } catch (error) {
     console.error('[AI DEBUG] Error fetching AI game data:', error);
+    console.error('[AI DEBUG] 💥 Returning 500 error to client');
     res.status(500).json({
       status: 'error',
       message: error instanceof Error ? error.message : 'Unknown error fetching AI game data'
@@ -467,6 +525,76 @@ router.get('/api/sessions/by-code/:sessionCode/:type', async (req, res): Promise
       message: error instanceof Error ? error.message : 'Unknown error fetching session'
     });
     return;
+  }
+});
+
+// Submit player response endpoint
+router.post('/api/sessions/:sessionId/submit-response', async (req, res): Promise<void> => {
+  const { sessionId } = req.params;
+  const { response, persona, aiPersona, isTimeUp } = req.body;
+  const { userId, reddit } = getContext();
+  const redis = getRedis();
+  
+  if (!userId) {
+    res.status(401).json({ status: 'error', message: 'Must be logged in' });
+    return;
+  }
+
+  try {
+    const redditUser = await reddit.getCurrentUser();
+    if (!redditUser) {
+      throw new Error('Could not fetch Reddit user');
+    }
+
+    console.log('[SUBMIT RESPONSE] ===== NEW PLAYER RESPONSE SUBMISSION =====');
+    console.log('[SUBMIT RESPONSE] Session ID:', sessionId);
+    console.log('[SUBMIT RESPONSE] User:', redditUser.username, '(', userId, ')');
+    console.log('[SUBMIT RESPONSE] Response:', response);
+    console.log('[SUBMIT RESPONSE] User Persona:', persona);
+    console.log('[SUBMIT RESPONSE] AI Persona:', aiPersona);
+    console.log('[SUBMIT RESPONSE] Time Up:', isTimeUp);
+
+    const sessionResponses = await storePlayerResponse({
+      redis,
+      sessionId,
+      userId,
+      username: redditUser.username,
+      response,
+      persona,
+      aiPersona,
+      isTimeUp: Boolean(isTimeUp),
+    });
+
+    res.json({ status: 'success', data: sessionResponses });
+  } catch (error) {
+    console.error('[SUBMIT RESPONSE] Error storing player response:', error);
+    res.status(500).json({ 
+      status: 'error', 
+      message: error instanceof Error ? error.message : 'Unknown error storing response'
+    });
+  }
+});
+
+// Get all responses for a session
+router.get('/api/sessions/:sessionId/responses', async (req, res): Promise<void> => {
+  const { sessionId } = req.params;
+  const redis = getRedis();
+  
+  try {
+    const sessionResponses = await getSessionResponses({ redis, sessionId });
+    
+    if (!sessionResponses) {
+      res.status(404).json({ status: 'error', message: 'No responses found for this session' });
+      return;
+    }
+
+    res.json({ status: 'success', data: sessionResponses });
+  } catch (error) {
+    console.error('Error fetching session responses:', error);
+    res.status(500).json({ 
+      status: 'error', 
+      message: error instanceof Error ? error.message : 'Unknown error fetching responses'
+    });
   }
 });
 
