@@ -10,8 +10,8 @@ const PublicRoom: React.FC = () => {
   const [publicSessions, setPublicSessions] = useState<GameSession[]>([]);
   const [searchCode, setSearchCode] = useState('');
   const [searchedSession, setSearchedSession] = useState<GameSession | null>(null);
-  const [loading, setLoading] = useState(true);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [backgroundError, setBackgroundError] = useState<string | null>(null);
   const { createSession, joinSession, currentSession } = useSession();
@@ -19,10 +19,6 @@ const PublicRoom: React.FC = () => {
 
   const fetchPublicSessions = async () => {
     try {
-      if (isInitialLoad) {
-        setLoading(true);
-        setError(null);
-      }
       console.log('🔍 Fetching public sessions...');
       const response = await fetch('/api/sessions/public');
       const data = await response.json();
@@ -31,15 +27,17 @@ const PublicRoom: React.FC = () => {
       if (data.status === 'success') {
         console.log(`✅ Found ${data.data?.length || 0} public sessions`);
         setPublicSessions(data.data || []);
-        if (isInitialLoad) {
-          setError(null);
-        }
+        setError(null);
         setBackgroundError(null);
+        
+        // Mark as loaded successfully
+        if (!hasLoadedOnce) {
+          setHasLoadedOnce(true);
+        }
       } else {
         console.log('❌ Failed to fetch sessions:', data.message);
         if (isInitialLoad) {
           setError(data.message || 'Failed to fetch sessions');
-          setPublicSessions([]);
         } else {
           setBackgroundError(data.message || 'Failed to fetch sessions');
         }
@@ -48,13 +46,11 @@ const PublicRoom: React.FC = () => {
       console.error('💥 Error fetching public sessions:', err);
       if (isInitialLoad) {
         setError('Failed to fetch public sessions');
-        setPublicSessions([]);
       } else {
         setBackgroundError('Failed to fetch public sessions');
       }
     } finally {
       if (isInitialLoad) {
-        setLoading(false);
         setIsInitialLoad(false);
       }
     }
@@ -213,10 +209,10 @@ const PublicRoom: React.FC = () => {
           </div>
         </div>
         
-        {loading ? (
-          <div className="loading-message">Loading sessions...</div>
-        ) : error ? (
+        {!hasLoadedOnce && error ? (
           <div className="error-message">{error}</div>
+        ) : !hasLoadedOnce ? (
+          <div className="loading-message">Loading sessions...</div>
         ) : (
           <>
             {backgroundError && (
