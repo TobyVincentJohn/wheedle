@@ -28,12 +28,13 @@ const GamePage: React.FC = () => {
   
   // Clue display state
   const [currentClueIndex, setCurrentClueIndex] = useState(0);
-  const [clueStartTime, setClueStartTime] = useState(Date.now());
   const [allCluesShown, setAllCluesShown] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState(3000); // 3 seconds after text completes
+  const [timeRemaining, setTimeRemaining] = useState(0);
   const [currentText, setCurrentText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [typingComplete, setTypingComplete] = useState(false);
+  const [waitingForNext, setWaitingForNext] = useState(false);
+  const [gamePhase, setGamePhase] = useState<'loading' | 'typing' | 'waiting' | 'complete'>('loading');
 
   useEffect(() => {
     const sessionFromState = location.state?.session;
@@ -115,64 +116,87 @@ const GamePage: React.FC = () => {
     return () => clearInterval(interval);
   }, [session]);
 
-  // Letter-by-letter typing animation
+  // Main clue progression logic
   useEffect(() => {
-    if (!aiGameData || allCluesShown) return;
+    if (!aiGameData || allCluesShown || gamePhase === 'complete') return;
     
-    // Reset states for new clue
-    setIsTyping(false);
-    setTypingComplete(false);
-    setCurrentText('');
-    setTimeRemaining(3000);
+    console.log(`[CLUE DEBUG] Starting clue ${currentClueIndex + 1} of 3`);
+    console.log(`[CLUE DEBUG] Game phase: ${gamePhase}`);
+    
+    if (currentClueIndex >= 3) {
+      console.log('[CLUE DEBUG] All clues completed, moving to response page');
+      setAllCluesShown(true);
+      setGamePhase('complete');
+      return;
+    }
 
     const currentClue = aiGameData.clues[currentClueIndex];
     if (!currentClue) return;
 
-    // Start typing after a brief delay
-    const startDelay = setTimeout(() => {
+    console.log(`[CLUE DEBUG] Processing clue: "${currentClue}"`);
+    
+    // Reset states for new clue
+    setCurrentText('');
+    setIsTyping(true);
+    setTypingComplete(false);
+    setWaitingForNext(false);
+    setTimeRemaining(0);
+    setGamePhase('typing');
+    
+    let charIndex = 0;
+    let typingTimer: NodeJS.Timeout;
+    
+    const typeNextCharacter = () => {
+      if (charIndex < currentClue.length) {
+        setCurrentText(currentClue.substring(0, charIndex + 1));
+        charIndex++;
+        typingTimer = setTimeout(typeNextCharacter, 150); // Slower typing: 150ms per character
+      } else {
+        // Typing complete
+        console.log(`[CLUE DEBUG] Typing complete for clue ${currentClueIndex + 1}`);
       setIsTyping(true);
-      
-      let charIndex = 0;
-      const typingInterval = setInterval(() => {
-        if (charIndex < currentClue.length) {
-          setCurrentText(currentClue.substring(0, charIndex + 1));
-          charIndex++;
-        } else {
-          clearInterval(typingInterval);
-          setIsTyping(false);
-          setTypingComplete(true);
-          setClueStartTime(Date.now()); // Start 3-second timer after typing completes
-        }
-      }, 100); // 100ms per character for slower, more readable typing
-
-      return () => clearInterval(typingInterval);
-    }, 500); // 500ms delay before starting to type
-
-    return () => clearTimeout(startDelay);
-  }, [aiGameData, currentClueIndex, allCluesShown]);
-
-  // Timer for clue progression (3 seconds after typing completes)
-  useEffect(() => {
-    if (!typingComplete || allCluesShown) return;
-
-    const interval = setInterval(() => {
-      const elapsed = Date.now() - clueStartTime;
-      const remaining = Math.max(0, 3000 - elapsed); // 3 seconds
-      setTimeRemaining(remaining);
-
-      if (remaining === 0) {
-        if (currentClueIndex < 2) { // We have exactly 3 clues (0, 1, 2)
-          // Move to next clue
-          setCurrentClueIndex(prev => prev + 1);
-        } else {
-          // All clues shown
-          setAllCluesShown(true);
+        setTypingComplete(true);
+        setWaitingForNext(true);
+        setGamePhase('waiting');
+        setTimeRemaining(3000); // 3 seconds
+        
+        // Start 3-second countdown
+        let remainingTime = 3000;
+        const countdownTimer = setInterval(() => {
+          remainingTime -= 100;
+          setTimeRemaining(Math.max(0, remainingTime));
+          
+          if (remainingTime <= 0) {
+            clearInterval(countdownTimer);
+            console.log(`[CLUE DEBUG] Wait complete for clue ${currentClueIndex + 1}`);
+            
+            if (currentClueIndex < 2) {
+              // Move to next clue
+              console.log(`[CLUE DEBUG] Moving to clue ${currentClueIndex + 2}`);
+              setCurrentClueIndex(prev => prev + 1);
+            } else {
+              // All clues shown
+              console.log('[CLUE DEBUG] All clues shown, completing');
+              setAllCluesShown(true);
+              setGamePhase('complete');
+            }
+          }
+        }, 100);
+        
+        return () => {
+          clearInterval(countdownTimer);
         }
       }
-    }, 100);
+    };
+    
+    // Start typing after a brief delay
+    const startDelay = setTimeout(typeNextCharacter, 500);
 
-    return () => clearInterval(interval);
-  }, [typingComplete, currentClueIndex, clueStartTime, allCluesShown]);
+    return () => {
+      clearTimeout(startDelay);
+      clearTimeout(typingTimer);
+    };
+  }, [aiGameData, currentClueIndex, allCluesShown, gamePhase]);
 
   // Auto-navigate to response page after all clues are shown
   useEffect(() => {
@@ -314,16 +338,18 @@ const GamePage: React.FC = () => {
   };
 
   const getCurrentClueText = () => {
-    if (!aiGameData) return 'Preparing clues...';
+    if (!aiGameData || gamePhase === 'loading') return 'Preparing clues...';
     
-    if (allCluesShown) {
+    if (allCluesShown || gamePhase === 'complete') {
       return 'All clues revealed! Time to make your guess.';
     }
     
-    if (isTyping || !typingComplete) {
+    if (gamePhase === 'typing') {
       return `Clue ${currentClueIndex + 1}: ${currentText}`;
-    } else {
+    } else if (gamePhase === 'waiting') {
       return `Clue ${currentClueIndex + 1}: ${currentText} (Next in ${formatTime(timeRemaining)})`;
+    } else {
+      return `Clue ${currentClueIndex + 1}: Loading...`;
     }
   };
 
