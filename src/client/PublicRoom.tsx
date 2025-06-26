@@ -181,31 +181,37 @@ const PublicRoom: React.FC = () => {
   return (
     <div className="public-room">
       <div className="public-room-content">
-        <div 
-          className="back-text" 
-          onClick={() => navigate('/')}
-        >
-          BACK
-        </div>
-        <div className="room-code-search">
-          <div className="room-code-search-label">ENTER CODE</div>
-          <div className="room-code-search-container">
-            <input
-              type="text"
-              className="room-code-search-input"
-              value={searchCode}
-              onChange={handleSearchCodeChange}
-              onKeyPress={handleKeyPress}
-              maxLength={5}
-              placeholder="XXXXX"
-            />
-            <button 
-              className="room-code-search-btn"
-              onClick={handleSearchSession}
-              disabled={searchCode.length !== 5}
-            >
-              🔍
-            </button>
+        <div className="top-bar">
+          <div 
+            className="back-text" 
+            onClick={() => navigate('/')}
+          >
+            BACK
+          </div>
+          <button 
+            className="create-room-button" 
+            onClick={handleCreateSession}
+          />
+          <div className="room-code-search">
+            <div className="room-code-search-label">ENTER CODE</div>
+            <div className="room-code-search-container">
+              <input
+                type="text"
+                className="room-code-search-input"
+                value={searchCode}
+                onChange={handleSearchCodeChange}
+                onKeyPress={handleKeyPress}
+                maxLength={5}
+                placeholder="XXXXX"
+              />
+              <button 
+                className="room-code-search-btn"
+                onClick={handleSearchSession}
+                disabled={searchCode.length !== 5}
+              >
+                🔍
+              </button>
+            </div>
           </div>
         </div>
         
@@ -214,7 +220,7 @@ const PublicRoom: React.FC = () => {
         ) : !hasLoadedOnce ? (
           <div className="loading-message">Loading sessions...</div>
         ) : (
-          <>
+          <div className="sessions-content">
             {backgroundError && (
               <div style={{
                 position: 'fixed',
@@ -231,89 +237,66 @@ const PublicRoom: React.FC = () => {
                 Connection issue
               </div>
             )}
-            <div className="sessions-header">
-              <h2>Public Sessions</h2>
-              <div style={{
-                fontSize: '12px',
-                color: '#888',
-                fontFamily: 'VT323, monospace',
-                textAlign: 'center',
-                marginBottom: '10px'
-              }}>
-                {publicSessions.length} public session(s) found
-                {process.env.NODE_ENV === 'development' && (
-                  <div style={{ color: '#ff6b6b', marginTop: '5px' }}>
-                    ⚠️ Local dev: Sessions only visible within this environment
-                  </div>
-                )}
-              </div>
-              <button className="create-session-btn" onClick={handleCreateSession}>
-                Create New Session
-              </button>
-            </div>
             
-            {publicSessions.length === 0 && !searchedSession ? (
-              <div className="no-sessions">
-                <p>No public sessions available</p>
-                <button className="create-first-session-btn" onClick={handleCreateSession}>
-                  Create the First Session
-                </button>
+            <h2 className="sessions-title">Public Sessions</h2>
+            
+            {(publicSessions.length === 0 && !searchedSession) ? (
+              <div className="no-sessions-message">
+                No public sessions found. Create one!
               </div>
             ) : (
               <div className="sessions-list">
                 {searchedSession && (
                   <div key={searchedSession.sessionId} className="session-tile searched-session">
-                    <div className="session-info">
+                    <div className="session-header">
                       <div className="session-host">
-                        Host: u/{searchedSession.hostUsername} (Found!)
-                      </div>
-                      <div className="session-players">
-                        {searchedSession.players.length}/{searchedSession.maxPlayers} players
-                      </div>
-                      <div className="session-time">
-                        Created {formatTimeAgo(searchedSession.createdAt)}
-                      </div>
-                      <div className="session-code">
-                        Code: {searchedSession.sessionCode}
+                        u/{searchedSession.hostUsername}
                       </div>
                     </div>
-                    <button 
-                      className="join-session-btn"
-                      onClick={() => handleJoinSession(searchedSession.sessionId)}
-                      disabled={searchedSession.players.length >= searchedSession.maxPlayers}
-                    >
-                      {searchedSession.players.length >= searchedSession.maxPlayers ? 'Full' : 'Join'}
-                    </button>
+                    <div className="session-details">
+                      <div className="session-players">
+                        {searchedSession.players.length}/{searchedSession.maxPlayers} Players
+                      </div>
+                      <div className="session-code">{searchedSession.sessionCode}</div>
+                    </div>
+                    <div className="session-actions">
+                      <button 
+                        className="join-session-btn"
+                        onClick={() => handleJoinSession(searchedSession.sessionId)}
+                        disabled={searchedSession.players.length >= searchedSession.maxPlayers}
+                      >
+                        {searchedSession.players.length >= searchedSession.maxPlayers ? 'Full' : 'Join'}
+                      </button>
+                    </div>
                   </div>
                 )}
                 {publicSessions.map((session) => (
                   <div key={session.sessionId} className="session-tile">
-                    <div className="session-info">
+                    <div className="session-header">
                       <div className="session-host">
-                        Host: u/{session.hostUsername}
-                      </div>
-                      <div className="session-players">
-                        {session.players.length}/{session.maxPlayers} players
-                      </div>
-                      <div className="session-time">
-                        Created {formatTimeAgo(session.createdAt)}
-                      </div>
-                      <div className="session-code">
-                        Code: {session.sessionCode}
+                        u/{session.hostUsername}
                       </div>
                     </div>
-                    <button 
-                      className="join-session-btn"
-                      onClick={() => handleJoinSession(session.sessionId)}
-                      disabled={session.players.length >= session.maxPlayers}
-                    >
-                      {session.players.length >= session.maxPlayers ? 'Full' : 'Join'}
-                    </button>
+                    <div className="session-details">
+                      <div className="session-players">
+                        {session.players.length}/{session.maxPlayers} Players
+                      </div>
+                      <div className="session-code">{session.sessionCode}</div>
+                    </div>
+                    <div className="session-actions">
+                      <button 
+                        className="join-session-btn"
+                        onClick={() => handleJoinSession(session.sessionId)}
+                        disabled={session.players.length >= session.maxPlayers}
+                      >
+                        {session.players.length >= session.maxPlayers ? 'Full' : 'Join'}
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
             )}
-          </>
+          </div>
         )}
       </div>
     </div>

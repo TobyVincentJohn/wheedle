@@ -487,6 +487,13 @@ const ResponsePage: React.FC = () => {
   return (
     <div className="response-page">
       <div className="response-content">
+        <div 
+          className="back-text" 
+          onClick={handleReturnToHome}
+        >
+          BACK
+        </div>
+        
         {/* Fixed User Persona at top */}
         {userPersona && (
           <div className="user-persona-display">
@@ -495,19 +502,11 @@ const ResponsePage: React.FC = () => {
         )}
         
         {/* Fixed Timer */}
-        <div style={{
-          position: 'absolute',
-          top: '80px',
-          left: '50%',
-          transform: 'translateX(-50%)',
+        <div className="timer-display" style={{
           color: timeRemaining < 10000 ? '#ff4444' : '#FFD700',
           fontFamily: 'VT323, monospace',
           fontSize: '24px',
           textAlign: 'center',
-          zIndex: 10,
-          background: 'rgba(0, 0, 0, 0.8)',
-          padding: '10px 20px',
-          borderRadius: '8px',
           border: `2px solid ${timeRemaining < 10000 ? '#ff4444' : '#FFD700'}`
         }}>
           Time Remaining: {formatTime(timeRemaining)}

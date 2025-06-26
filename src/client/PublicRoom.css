@@ -37,14 +37,22 @@
   padding: 20px;
 }
 
-.room-code-search {
+.top-bar {
   position: absolute;
   top: 20px;
+  left: 20px;
   right: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 10;
+}
+
+.room-code-search {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .room-code-search-label {
@@ -110,6 +118,24 @@
   opacity: 0.6;
 }
 
+.create-room-button {
+  width: 275px;
+  height: 125px;
+  background-image: url('../../assets/session_page/create_room.png');
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  cursor: pointer;
+  transition: transform 0.2s;
+  border: none;
+  background-color: transparent;
+}
+
+.create-room-button:hover {
+  transform: scale(1.05);
+}
+
 .searched-session {
   border: 3px solid #4CAF50 !important;
   background: rgba(76, 175, 80, 0.1) !important;
@@ -119,38 +145,28 @@
   color: #4CAF50 !important;
 }
 
-.sessions-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.sessions-content {
+  margin-top: 200px;
   width: 100%;
-  max-width: 600px;
-  margin-bottom: 30px;
-  margin-top: 50px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 30px;
 }
 
-.sessions-header h2 {
+.sessions-title {
   color: #FFD700;
   font-family: 'VT323', monospace;
-  font-size: 36px;
+  font-size: 42px;
   margin: 0;
+  text-align: center;
 }
 
-.create-session-btn, .create-first-session-btn {
-  background: #4CAF50;
-  color: white;
-  border: none;
-  padding: 12px 24px;
+.no-sessions-message {
+  color: #FFD700;
   font-family: 'VT323', monospace;
-  font-size: 18px;
-  cursor: pointer;
-  border-radius: 4px;
-  transition: all 0.2s;
-}
-
-.create-session-btn:hover, .create-first-session-btn:hover {
-  background: #45a049;
-  transform: scale(1.05);
+  font-size: 28px;
+  text-align: center;
 }
 
 .loading-message, .error-message {
@@ -165,18 +181,6 @@
   color: #ff6b6b;
 }
 
-.no-sessions {
-  text-align: center;
-  margin-top: 150px;
-}
-
-.no-sessions p {
-  color: #FFD700;
-  font-family: 'VT323', monospace;
-  font-size: 28px;
-  margin-bottom: 30px;
-}
-
 .sessions-list {
   width: 100%;
   max-width: 600px;
@@ -186,65 +190,72 @@
 }
 
 .session-tile {
-  background: rgba(0, 0, 0, 0.8);
-  border: 2px solid #FFD700;
+  background: #000000;
+  border: 3px solid #FFD700;
   border-radius: 8px;
   padding: 20px;
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
   align-items: center;
+  gap: 10px;
   transition: all 0.2s;
 }
 
 .session-tile:hover {
   border-color: #ffffff;
-  transform: translateY(-2px);
+  transform: scale(1.02);
 }
 
-.session-info {
-  flex: 1;
+.session-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
 }
 
 .session-host {
   color: #FFD700;
   font-family: 'VT323', monospace;
-  font-size: 20px;
+  font-size: 22px;
   font-weight: bold;
-  margin-bottom: 5px;
 }
 
-.session-players {
+.session-details {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.session-players, .session-code {
   color: #ffffff;
   font-family: 'VT323', monospace;
-  font-size: 16px;
-  margin-bottom: 5px;
-}
-
-.session-time {
-  color: #cccccc;
-  font-family: 'VT323', monospace;
-  font-size: 14px;
-  margin-bottom: 5px;
+  font-size: 18px;
 }
 
 .session-code {
   color: #4CAF50;
   font-family: 'VT323', monospace;
-  font-size: 16px;
   font-weight: bold;
+}
+
+.session-actions {
+  display: flex;
+  justify-content: center;
+  width: 100%;
 }
 
 .join-session-btn {
   background: #2196F3;
   color: white;
   border: none;
-  padding: 10px 20px;
+  padding: 12px 24px;
   font-family: 'VT323', monospace;
-  font-size: 16px;
+  font-size: 18px;
   cursor: pointer;
   border-radius: 4px;
   transition: all 0.2s;
-  min-width: 80px;
+  min-width: 100px;
 }
 
 .join-session-btn:hover:not(:disabled) {
@@ -256,6 +267,43 @@
   background: #666;
   cursor: not-allowed;
   opacity: 0.6;
+}
+
+.back-text {
+  color: #FFD700;
+  font-family: 'VT323', monospace;
+  font-size: 32px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.back-text:hover {
+  color: #ffffff;
+  transform: scale(1.05);
+}
+
+/* Remove old styles */
+.create-session-btn, .create-first-session-btn {
+  background: #2196F3;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  font-family: 'VT323', monospace;
+  font-size: 18px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s;
+  display: none; /* Hide these old buttons */
+}
+
+.create-session-btn:hover, .create-first-session-btn:hover {
+  background: #1976D2;
+  transform: scale(1.05);
+}
+
+.sessions-header {
+  display: none; /* Hide old header */
 }
 
 .back-button {
@@ -273,23 +321,13 @@
   transition: all 0.2s;
   z-index: 10;
 }
-
-.back-text {
-  position: absolute;
-  top: 20px;
-  left: 20px;
-  color: #4CAF50;
-  font-family: 'VT323', monospace;
-  font-size: 18px;
-  cursor: pointer;
-  transition: all 0.2s;
-  z-index: 10;
+.no-sessions {
+  display: none; /* Hide old no sessions */
   text-decoration: underline;
 }
 
-.back-text:hover {
-  color: #45a049;
-  transform: scale(1.05);
+.sessions-header h2 {
+  display: none; /* Hide old title */
 }
 
 .back-button:hover {
@@ -320,12 +358,12 @@
     padding: 2.7vmin;
   }
 
-  .room-code-search {
-    position: relative;
-    top: 0;
-    right: 0;
-    order: -1;
-    margin-bottom: 2vmin;
+  .top-bar {
+    top: 2.7vmin;
+    left: 2.7vmin;
+    right: 2.7vmin;
+    flex-direction: column;
+    gap: 2vmin;
   }
 
   .room-code-search-label {
@@ -349,35 +387,27 @@
     font-size: 2.1vmin;
   }
 
-  .sessions-header {
-    max-width: 80vmin;
-    margin-bottom: 4vmin;
-    margin-top: 6.7vmin;
-    flex-direction: column;
-    gap: 2vmin;
+  .create-room-button {
+    width: 36.7vmin;
+    height: 16.7vmin;
   }
 
-  .sessions-header h2 {
-    font-size: 4.8vmin;
+  .sessions-content {
+    margin-top: 26.7vmin;
+    gap: 4vmin;
   }
 
-  .create-session-btn, .create-first-session-btn {
-    padding: 1.6vmin 3.2vmin;
-    font-size: 2.4vmin;
+  .sessions-title {
+    font-size: 5.6vmin;
+  }
+
+  .no-sessions-message {
+    font-size: 3.7vmin;
   }
 
   .loading-message, .error-message {
     font-size: 3.2vmin;
     margin-top: 26.7vmin;
-  }
-
-  .no-sessions {
-    margin-top: 20vmin;
-  }
-
-  .no-sessions p {
-    font-size: 3.7vmin;
-    margin-bottom: 4vmin;
   }
 
   .sessions-list {
@@ -387,42 +417,25 @@
 
   .session-tile {
     padding: 2.7vmin;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 2vmin;
+    gap: 1.3vmin;
   }
 
   .session-host {
-    font-size: 2.7vmin;
-    margin-bottom: 0.7vmin;
+    font-size: 2.9vmin;
   }
 
-  .session-players {
-    font-size: 2.1vmin;
-    margin-bottom: 0.7vmin;
-  }
-
-  .session-time {
-    font-size: 1.9vmin;
-    margin-bottom: 0.7vmin;
-  }
-
-  .session-code {
-    font-size: 2.1vmin;
+  .session-players, .session-code {
+    font-size: 2.4vmin;
   }
 
   .join-session-btn {
-    padding: 1.3vmin 2.7vmin;
-    font-size: 2.1vmin;
-    align-self: center;
-    min-width: 10.7vmin;
+    padding: 1.6vmin 3.2vmin;
+    font-size: 2.4vmin;
+    min-width: 13.3vmin;
   }
 
-  .back-button {
-    top: 2.7vmin;
-    left: 2.7vmin;
-    padding: 1.1vmin 2.1vmin;
-    font-size: 2.1vmin;
+  .back-text {
+    font-size: 4.3vmin;
   }
 
   .back-text {
