@@ -487,9 +487,17 @@ const ResponsePage: React.FC = () => {
   return (
     <div className="response-page">
       <div className="response-content">
+        {/* Fixed User Persona at top */}
+        {userPersona && (
+          <div className="user-persona-display">
+            Your Role: {userPersona}
+          </div>
+        )}
+        
+        {/* Fixed Timer */}
         <div style={{
           position: 'absolute',
-          top: '20px',
+          top: '80px',
           left: '50%',
           transform: 'translateX(-50%)',
           color: timeRemaining < 10000 ? '#ff4444' : '#FFD700',
@@ -506,70 +514,40 @@ const ResponsePage: React.FC = () => {
           {isTimeUp && <div style={{ fontSize: '18px', marginTop: '5px' }}>Time's Up!</div>}
         </div>
         
-        {userPersona && (
-          <div style={{
-            position: 'absolute',
-            bottom: '150px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            color: '#FFD700',
-            fontFamily: 'VT323, monospace',
-            fontSize: '20px',
-            textAlign: 'center',
-            maxWidth: '600px',
-            zIndex: 10,
-            background: 'rgba(0, 0, 0, 0.8)',
-            padding: '10px 20px',
-            borderRadius: '8px',
-            border: '2px solid #FFD700'
-          }}>
-            Your Role: {userPersona}
-          </div>
-        )}
-        
+        {/* Fixed Dealer Position */}
         <div className={`response-dealer response-dealer-${dealerId}`} />
-        <div className="text-bubble">
-          <textarea
-            className="text-input"
-            value={userInput}
-            onChange={handleInputChange}
-            placeholder={isTimeUp ? "Time's up!" : "Who do you think the AI is? Make your guess..."}
-            maxLength={500}
-            disabled={isTimeUp}
-            style={{ 
-              opacity: isTimeUp ? 0.6 : 1,
-              cursor: isTimeUp ? 'not-allowed' : 'text'
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && e.ctrlKey && !isTimeUp) {
-                handleSubmitResponse();
-              }
-            }}
-          />
-        </div>
         
-        <button
-          onClick={() => handleSubmitResponse()}
-          disabled={(!userInput.trim() && !isTimeUp) || hasSubmitted}
-          style={{
-            position: 'absolute',
-            bottom: '100px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            background: hasSubmitted ? '#4CAF50' : (userInput.trim() && !isTimeUp) ? '#2196F3' : '#666',
-            color: 'white',
-            border: 'none',
-            padding: '12px 24px',
-            fontFamily: 'VT323, monospace',
-            fontSize: '18px',
-            cursor: hasSubmitted ? 'default' : (userInput.trim() && !isTimeUp) ? 'pointer' : 'not-allowed',
-            borderRadius: '4px',
-            transition: 'all 0.2s',
-            opacity: (isTimeUp && !hasSubmitted) ? 0.6 : 1
-          }}
-        >
-          {hasSubmitted ? '✅ Submitted' : isTimeUp ? 'Time Up' : 'Submit Guess (Ctrl+Enter)'}
-        </button>
+        {/* Text Input Area */}
+        <div className="text-input-container">
+          <div className="text-bubble">
+            <textarea
+              className="text-input"
+              value={userInput}
+              onChange={handleInputChange}
+              placeholder={isTimeUp ? "Time's up!" : "Who do you think the AI is? Make your guess..."}
+              maxLength={500}
+              disabled={isTimeUp}
+              style={{ 
+                opacity: isTimeUp ? 0.6 : 1,
+                cursor: isTimeUp ? 'not-allowed' : 'text'
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && e.ctrlKey && !isTimeUp) {
+                  handleSubmitResponse();
+                }
+              }}
+            />
+          </div>
+          
+          {/* Submit Button */}
+          <button
+            onClick={() => handleSubmitResponse()}
+            disabled={(!userInput.trim() && !isTimeUp) || hasSubmitted}
+            className="submit-button"
+          >
+            {hasSubmitted ? '✅ Submitted' : isTimeUp ? 'Time Up' : 'Submit Guess (Ctrl+Enter)'}
+          </button>
+        </div>
       </div>
     </div>
   );

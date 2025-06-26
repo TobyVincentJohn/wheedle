@@ -31,15 +31,32 @@
   height: 750px;
   overflow: hidden;
   z-index: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
 }
 
-/* Centered dealer */
+/* Fixed User Persona at top */
+.user-persona-display {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #FFD700;
+  font-family: 'VT323', monospace;
+  font-size: 20px;
+  text-align: center;
+  max-width: 600px;
+  z-index: 10;
+  background: rgba(0, 0, 0, 0.8);
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: 2px solid #FFD700;
+}
+
+/* Fixed dealer position */
 .response-dealer {
-  position: relative;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   width: 300px;
   height: 300px;
   background-size: contain;
@@ -48,11 +65,23 @@
   image-rendering: pixelated;
 }
 
-/* Text bubble below dealer */
+/* Text input container at bottom */
+.text-input-container {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+/* Larger text bubble */
 .text-bubble {
   position: relative;
-  width: 600px;
-  height: 250px;
+  width: 700px;
+  height: 300px;
   background-image: url('../../assets/player_text.png');
   background-size: contain;
   background-position: center;
@@ -61,16 +90,17 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  padding: 30px;
 }
 
+/* Larger text input */
 .text-input {
-  width: 85%;
-  max-width: 420px;
-  height: 150px;
+  width: 90%;
+  max-width: 500px;
+  height: 180px;
   background: rgba(255, 255, 255, 0);
-  padding: 10px 15px;
-  font-size: 24px;
+  padding: 15px 20px;
+  font-size: 26px;
   color: #333;
   outline: none;
   resize: none;
@@ -87,6 +117,35 @@
   font-style: italic;
   font-family: 'VT323', monospace;
   opacity: 0.8;
+}
+
+/* Submit button styling */
+.submit-button {
+  background: #2196F3;
+  color: white;
+  border: none;
+  padding: 15px 30px;
+  font-family: 'VT323', monospace;
+  font-size: 20px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s;
+  min-width: 200px;
+}
+
+.submit-button:disabled {
+  background: #666;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.submit-button:not(:disabled):hover {
+  background: #1976D2;
+  transform: scale(1.05);
+}
+
+.submit-button.submitted {
+  background: #4CAF50;
 }
 
 .loading-message {
@@ -122,23 +181,40 @@
     padding: 20px;
   }
 
+  .user-persona-display {
+    top: 2.7vmin;
+    font-size: 2.7vmin;
+    padding: 1.3vmin 2.7vmin;
+    max-width: 80vmin;
+  }
+
   .response-dealer {
     width: 40vmin; /* 300px / 750px * 100 */
     height: 40vmin;
   }
 
+  .text-input-container {
+    bottom: 2.7vmin;
+    gap: 2.7vmin;
+  }
+
   .text-bubble {
-    width: 80vmin; /* 600px / 750px * 100 */
-    height: 33.3vmin; /* 250px / 750px * 100 */
+    width: 93.3vmin; /* 700px / 750px * 100 */
+    height: 40vmin; /* 300px / 750px * 100 */
     padding: 2.7vmin;
-    margin-top: -2.7vmin; /* Adjust for mobile */
   }
 
   .text-input {
-    width: 80%;
-    height: 20vmin; /* 150px / 750px * 100 */
-    font-size: 3.2vmin;
-    padding: 1.3vmin 2vmin;
+    width: 90%;
+    height: 24vmin; /* 180px / 750px * 100 */
+    font-size: 3.5vmin;
+    padding: 2vmin 2.7vmin;
+  }
+
+  .submit-button {
+    padding: 2vmin 4vmin;
+    font-size: 2.7vmin;
+    min-width: 26.7vmin;
   }
 
   .loading-message {

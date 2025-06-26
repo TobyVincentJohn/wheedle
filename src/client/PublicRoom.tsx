@@ -13,6 +13,7 @@ const PublicRoom: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [backgroundError, setBackgroundError] = useState<string | null>(null);
   const { createSession, joinSession, currentSession } = useSession();
   const { refreshUser } = useUser();
 
@@ -20,6 +21,7 @@ const PublicRoom: React.FC = () => {
     try {
       if (isInitialLoad) {
         setLoading(true);
+        setError(null);
       }
       console.log('🔍 Fetching public sessions...');
       const response = await fetch('/api/sessions/public');
@@ -29,17 +31,26 @@ const PublicRoom: React.FC = () => {
       if (data.status === 'success') {
         console.log(`✅ Found ${data.data?.length || 0} public sessions`);
         setPublicSessions(data.data || []);
-        setError(null); // Clear any previous errors
+        if (isInitialLoad) {
+          setError(null);
+        }
+        setBackgroundError(null);
       } else {
         console.log('❌ Failed to fetch sessions:', data.message);
-        setError(data.message || 'Failed to fetch sessions');
-        setPublicSessions([]); // Clear sessions on error
+        if (isInitialLoad) {
+          setError(data.message || 'Failed to fetch sessions');
+          setPublicSessions([]);
+        } else {
+          setBackgroundError(data.message || 'Failed to fetch sessions');
+        }
       }
     } catch (err) {
       console.error('💥 Error fetching public sessions:', err);
       if (isInitialLoad) {
         setError('Failed to fetch public sessions');
-        setPublicSessions([]); // Clear sessions on error
+        setPublicSessions([]);
+      } else {
+        setBackgroundError('Failed to fetch public sessions');
       }
     } finally {
       if (isInitialLoad) {
@@ -208,6 +219,22 @@ const PublicRoom: React.FC = () => {
           <div className="error-message">{error}</div>
         ) : (
           <>
+            {backgroundError && (
+              <div style={{
+                position: 'fixed',
+                top: '10px',
+                right: '10px',
+                background: 'rgba(255, 68, 68, 0.9)',
+                color: 'white',
+                padding: '8px 12px',
+                borderRadius: '4px',
+                fontSize: '14px',
+                fontFamily: 'VT323, monospace',
+                zIndex: 1000
+              }}>
+                Connection issue
+              </div>
+            )}
             <div className="sessions-header">
               <h2>Public Sessions</h2>
               <div style={{
