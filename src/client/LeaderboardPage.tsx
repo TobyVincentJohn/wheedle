@@ -18,7 +18,7 @@ const LeaderboardPage: React.FC = () => {
         <div className="leaderboard-headers">
           <div className="header rank-header">RANK</div>
           <div className="header name-header">NAME</div>
-          <div className="header bankroll-header">BANKROLL</div>
+          <div className="header bankroll-header">VICTORIES</div>
         </div>
       </div>
     </div>
