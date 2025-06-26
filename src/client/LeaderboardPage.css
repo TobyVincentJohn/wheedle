@@ -73,15 +73,15 @@
   left: 20px;
   color: #4CAF50;
   font-family: 'VT323', monospace;
-  font-size: 18px;
+  font-size: 30px;
+  font-weight: bold;
   cursor: pointer;
   transition: all 0.2s;
   z-index: 10;
-  text-decoration: underline;
 }
 
 .back-text:hover {
-  color: #45a049;
+  color: yellow;
   transform: scale(1.05);
 }
 
