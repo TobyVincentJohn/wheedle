@@ -96,8 +96,8 @@ const LoadingScreen: React.FC = () => {
   useEffect(() => {
     if (!assetsLoaded || !session) return;
 
-    // Ensure minimum 3-second loading time for good UX
-    const minLoadingTime = 3000;
+    // Ensure minimum 4-second loading time for good UX and AI data preparation
+    const minLoadingTime = 4000;
     const startTime = Date.now();
     
     const navigateToGame = () => {
@@ -106,6 +106,19 @@ const LoadingScreen: React.FC = () => {
       
       setTimeout(() => {
         console.log('🎮 Assets loaded, navigating to game...');
+        
+        // Pre-fetch AI game data to ensure it's ready
+        fetch(`/api/ai-game-data/${session.sessionId}`)
+          .then(response => response.json())
+          .then(data => {
+            if (data.status === 'success') {
+              console.log('✅ AI game data pre-fetched successfully');
+            }
+          })
+          .catch(error => {
+            console.warn('⚠️ Failed to pre-fetch AI game data:', error);
+          });
+          
         navigate('/game', { state: { session } });
       }, remainingTime);
     };
