@@ -107,16 +107,6 @@ const PublicRoom: React.FC = () => {
     }
   };
 
-  const formatTimeAgo = (timestamp: number) => {
-    const now = Date.now();
-    const diff = now - timestamp;
-    const minutes = Math.floor(diff / 60000);
-    
-    if (minutes < 1) return 'Just now';
-    if (minutes === 1) return '1 minute ago';
-    return `${minutes} minutes ago`;
-  };
-
   const handleSearchCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.toUpperCase();
     if (value.length <= 5) {
@@ -188,12 +178,13 @@ const PublicRoom: React.FC = () => {
           >
             BACK
           </div>
-          <button 
-            className="create-room-button" 
-            onClick={handleCreateSession}
-          />
-          <div className="room-code-search">
-            <div className="room-code-search-label">ENTER CODE</div>
+          <div className="top-bar-center">
+            <button 
+              className="create-room-button" 
+              onClick={handleCreateSession}
+            />
+          </div>
+          <div className="top-bar-right">
             <div className="room-code-search-container">
               <input
                 type="text"
@@ -238,8 +229,6 @@ const PublicRoom: React.FC = () => {
               </div>
             )}
             
-            <h2 className="sessions-title">Public Sessions</h2>
-            
             {(publicSessions.length === 0 && !searchedSession) ? (
               <div className="no-sessions-message">
                 No public sessions found. Create one!
@@ -248,49 +237,51 @@ const PublicRoom: React.FC = () => {
               <div className="sessions-list">
                 {searchedSession && (
                   <div key={searchedSession.sessionId} className="session-tile searched-session">
-                    <div className="session-header">
+                    <div className="session-info">
                       <div className="session-host">
-                        u/{searchedSession.hostUsername}
+                        u/{searchedSession.host?.username || 'Unknown'}
+                      </div>
+                      <div className="session-details">
+                        <div className="session-players">
+                          {searchedSession.players.length}/{searchedSession.maxPlayers} Players
+                        </div>
+                        <div className="session-code">{searchedSession.sessionCode}</div>
                       </div>
                     </div>
-                    <div className="session-details">
-                      <div className="session-players">
-                        {searchedSession.players.length}/{searchedSession.maxPlayers} Players
-                      </div>
-                      <div className="session-code">{searchedSession.sessionCode}</div>
-                    </div>
-                    <div className="session-actions">
-                      <button 
-                        className="join-session-btn"
-                        onClick={() => handleJoinSession(searchedSession.sessionId)}
-                        disabled={searchedSession.players.length >= searchedSession.maxPlayers}
-                      >
-                        {searchedSession.players.length >= searchedSession.maxPlayers ? 'Full' : 'Join'}
-                      </button>
+                    <div 
+                      className={`join-session-text ${searchedSession.players.length >= searchedSession.maxPlayers ? 'disabled' : ''}`}
+                      onClick={() => {
+                        if (searchedSession.players.length < searchedSession.maxPlayers) {
+                          handleJoinSession(searchedSession.sessionId);
+                        }
+                      }}
+                    >
+                      {searchedSession.players.length >= searchedSession.maxPlayers ? 'FULL' : 'JOIN'}
                     </div>
                   </div>
                 )}
                 {publicSessions.map((session) => (
                   <div key={session.sessionId} className="session-tile">
-                    <div className="session-header">
+                    <div className="session-info">
                       <div className="session-host">
-                        u/{session.hostUsername}
+                        u/{session.host?.username || 'Unknown'}
+                      </div>
+                      <div className="session-details">
+                        <div className="session-players">
+                          {session.players.length}/{session.maxPlayers} Players
+                        </div>
+                        <div className="session-code">{session.sessionCode}</div>
                       </div>
                     </div>
-                    <div className="session-details">
-                      <div className="session-players">
-                        {session.players.length}/{session.maxPlayers} Players
-                      </div>
-                      <div className="session-code">{session.sessionCode}</div>
-                    </div>
-                    <div className="session-actions">
-                      <button 
-                        className="join-session-btn"
-                        onClick={() => handleJoinSession(session.sessionId)}
-                        disabled={session.players.length >= session.maxPlayers}
-                      >
-                        {session.players.length >= session.maxPlayers ? 'Full' : 'Join'}
-                      </button>
+                    <div 
+                      className={`join-session-text ${session.players.length >= session.maxPlayers ? 'disabled' : ''}`}
+                      onClick={() => {
+                        if (session.players.length < session.maxPlayers) {
+                          handleJoinSession(session.sessionId);
+                        }
+                      }}
+                    >
+                      {session.players.length >= session.maxPlayers ? 'FULL' : 'JOIN'}
                     </div>
                   </div>
                 ))}
