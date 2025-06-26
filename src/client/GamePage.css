@@ -333,14 +333,8 @@
   .dealer-text-bubble {
     width: 80vmin;
     height: 80vmin;
-    left: 14vmin;
-    top: -20vmin;
-  }
-
-  .dealer-text-bubble > div {
-    font-size: 2.1vmin !important;
-    max-width: 50.7vmin !important;
-    padding: 2vmin !important;
+    left: 16vmin;
+    top: -19.2vmin;
   }
 
   .loading-message {

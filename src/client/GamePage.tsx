@@ -28,13 +28,10 @@ const GamePage: React.FC = () => {
   
   // Clue display state
   const [currentClueIndex, setCurrentClueIndex] = useState(0);
+  const [clueStartTime, setClueStartTime] = useState(Date.now());
   const [allCluesShown, setAllCluesShown] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState(0);
-  const [currentText, setCurrentText] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
-  const [typingComplete, setTypingComplete] = useState(false);
-  const [waitingForNext, setWaitingForNext] = useState(false);
-  const [gamePhase, setGamePhase] = useState<'loading' | 'typing' | 'waiting' | 'complete'>('loading');
+  const [timeRemaining, setTimeRemaining] = useState(CLUE_DURATION);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const sessionFromState = location.state?.session;
@@ -50,14 +47,24 @@ const GamePage: React.FC = () => {
     }
   }, [location.state, navigate]);
 
-  // Poll for AI Game Data - should be ready immediately from loading screen
+  // Poll for AI Game Data
   useEffect(() => {
-    if (!session) {
+    if (!session || (session.status !== 'countdown' && session.status !== 'in-game')) {
       return;
     }
 
-    const fetchAIData = async () => {
+    const timeout = setTimeout(async () => {
       try {
+        console.log('[AI DEBUG] About to fetch Redis dump');
+        const redisResponse = await fetch('/api/redis-data/dump');
+        console.log('[AI DEBUG] Redis dump fetch status:', redisResponse.status);
+        if (redisResponse.ok) {
+          const redisData = await redisResponse.json();
+          console.log('[AI DEBUG] Redis Data:', redisData.data);
+        } else {
+          console.error('[AI DEBUG] Failed to fetch Redis data');
+        }
+
         console.log('[AI DEBUG] About to fetch AI game data for sessionId:', session.sessionId);
         const response = await fetch(`/api/ai-game-data/${session.sessionId}`);
         console.log('[AI DEBUG] AI game data fetch status:', response.status);
@@ -90,6 +97,8 @@ const GamePage: React.FC = () => {
           if (data.status === 'success' && data.data) {
             console.log('[AI DEBUG] ✅ AI game data loaded successfully.');
             setAiGameData(data.data);
+            setLoading(false);
+            setIsInitialized(true);
           }
         } else {
           let errorBody;
@@ -108,95 +117,34 @@ const GamePage: React.FC = () => {
       } catch (error) {
         console.log('[AI DEBUG] 💥 Error fetching AI game data:', error);
       }
-    };
+    }, 2000); // 2 second delay
 
-    // Try to fetch immediately, then retry if needed
-    fetchAIData();
-    const interval = setInterval(fetchAIData, 1000);
-    return () => clearInterval(interval);
-  }, [session]);
+    return () => clearTimeout(timeout);
+  }, [session, navigate]);
 
-  // Main clue progression logic
+  // Timer for clue progression
   useEffect(() => {
-    if (!aiGameData || allCluesShown || gamePhase === 'complete') return;
-    
-    console.log(`[CLUE DEBUG] Starting clue ${currentClueIndex + 1} of 3`);
-    console.log(`[CLUE DEBUG] Game phase: ${gamePhase}`);
-    
-    if (currentClueIndex >= 3) {
-      console.log('[CLUE DEBUG] All clues completed, moving to response page');
-      setAllCluesShown(true);
-      setGamePhase('complete');
-      return;
-    }
+    if (!aiGameData || allCluesShown || loading) return;
 
-    const currentClue = aiGameData.clues[currentClueIndex];
-    if (!currentClue) return;
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - clueStartTime;
+      const remaining = Math.max(0, CLUE_DURATION - elapsed);
+      setTimeRemaining(remaining);
 
-    console.log(`[CLUE DEBUG] Processing clue: "${currentClue}"`);
-    
-    // Reset states for new clue
-    setCurrentText('');
-    setIsTyping(true);
-    setTypingComplete(false);
-    setWaitingForNext(false);
-    setTimeRemaining(0);
-    setGamePhase('typing');
-    
-    let charIndex = 0;
-    let typingTimer: NodeJS.Timeout;
-    
-    const typeNextCharacter = () => {
-      if (charIndex < currentClue.length) {
-        setCurrentText(currentClue.substring(0, charIndex + 1));
-        charIndex++;
-        typingTimer = setTimeout(typeNextCharacter, 150); // Slower typing: 150ms per character
-      } else {
-        // Typing complete
-        console.log(`[CLUE DEBUG] Typing complete for clue ${currentClueIndex + 1}`);
-      setIsTyping(true);
-        setTypingComplete(true);
-        setWaitingForNext(true);
-        setGamePhase('waiting');
-        setTimeRemaining(3000); // 3 seconds
-        
-        // Start 3-second countdown
-        let remainingTime = 3000;
-        const countdownTimer = setInterval(() => {
-          remainingTime -= 100;
-          setTimeRemaining(Math.max(0, remainingTime));
-          
-          if (remainingTime <= 0) {
-            clearInterval(countdownTimer);
-            console.log(`[CLUE DEBUG] Wait complete for clue ${currentClueIndex + 1}`);
-            
-            if (currentClueIndex < 2) {
-              // Move to next clue
-              console.log(`[CLUE DEBUG] Moving to clue ${currentClueIndex + 2}`);
-              setCurrentClueIndex(prev => prev + 1);
-            } else {
-              // All clues shown
-              console.log('[CLUE DEBUG] All clues shown, completing');
-              setAllCluesShown(true);
-              setGamePhase('complete');
-            }
-          }
-        }, 100);
-        
-        return () => {
-          clearInterval(countdownTimer);
+      if (remaining === 0) {
+        if (currentClueIndex < 2) {
+          // Move to next clue
+          setCurrentClueIndex(prev => prev + 1);
+          setClueStartTime(Date.now());
+        } else {
+          // All clues shown
+          setAllCluesShown(true);
         }
       }
-    };
-    
-    // Start typing after a brief delay
-    const startDelay = setTimeout(typeNextCharacter, 500);
+    }, 100);
 
-    return () => {
-      clearTimeout(startDelay);
-      clearTimeout(typingTimer);
-    };
-  }, [aiGameData, currentClueIndex, allCluesShown, gamePhase]);
+    return () => clearInterval(interval);
+  }, [aiGameData, currentClueIndex, clueStartTime, allCluesShown, loading]);
 
   // Auto-navigate to response page after all clues are shown
   useEffect(() => {
@@ -218,7 +166,7 @@ const GamePage: React.FC = () => {
 
   // Background polling for session changes
   useEffect(() => {
-    if (!session) return;
+    if (!session || !isInitialized) return;
 
     let lastKnownSession = session;
     
@@ -273,7 +221,7 @@ const GamePage: React.FC = () => {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [session, user, dealerId]);
+  }, [session, isInitialized, user, dealerId]);
 
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -334,23 +282,17 @@ const GamePage: React.FC = () => {
 
   const formatTime = (ms: number) => {
     const seconds = Math.ceil(ms / 1000);
-    return `${seconds}s remaining`;
+    return `${seconds}s`;
   };
 
   const getCurrentClueText = () => {
-    if (!aiGameData || gamePhase === 'loading') return 'Preparing clues...';
+    if (!aiGameData) return 'Loading clues...';
     
-    if (allCluesShown || gamePhase === 'complete') {
-      return 'All clues revealed! Time to make your guess.';
+    if (allCluesShown) {
+      return 'All clues revealed! Click "Respond" to make your guess.';
     }
     
-    if (gamePhase === 'typing') {
-      return `Clue ${currentClueIndex + 1}: ${currentText}`;
-    } else if (gamePhase === 'waiting') {
-      return `Clue ${currentClueIndex + 1}: ${currentText} (Next in ${formatTime(timeRemaining)})`;
-    } else {
-      return `Clue ${currentClueIndex + 1}: Loading...`;
-    }
+    return `Clue ${currentClueIndex + 1}: ${aiGameData.clues[currentClueIndex]} (Next in ${formatTime(timeRemaining)})`;
   };
 
   if (!session) {
@@ -358,6 +300,16 @@ const GamePage: React.FC = () => {
       <div className="game-page">
         <div className="game-content">
           <div className="loading-message">Loading game...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="game-page">
+        <div className="game-content">
+          <div className="loading-message">Loading AI clues...</div>
         </div>
       </div>
     );
