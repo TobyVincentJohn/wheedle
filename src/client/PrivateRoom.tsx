@@ -119,12 +119,12 @@ const PrivateRoom: React.FC = () => {
   return (
     <div className="private-room">
       <div className="private-room-content">
-        <button 
-          className="back-button" 
+        <div 
+          className="back-text" 
           onClick={() => navigate('/')}
         >
-          Back to Home
-        </button>
+          BACK
+        </div>
         {error && (
           <div style={{
             position: 'absolute',

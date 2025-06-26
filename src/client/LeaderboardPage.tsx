@@ -8,12 +8,12 @@ const LeaderboardPage: React.FC = () => {
   return (
     <div className="leaderboard">
       <div className="leaderboard-content">
-        <button 
-          className="back-button" 
+        <div 
+          className="back-text" 
           onClick={() => navigate('/')}
         >
-          Back to Home
-        </button>
+          BACK
+        </div>
         <h1 className="leaderboard-title">HIGH ROLLERS</h1>
         <div className="leaderboard-headers">
           <div className="header rank-header">RANK</div>

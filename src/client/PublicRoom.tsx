@@ -11,13 +11,16 @@ const PublicRoom: React.FC = () => {
   const [searchCode, setSearchCode] = useState('');
   const [searchedSession, setSearchedSession] = useState<GameSession | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { createSession, joinSession, currentSession } = useSession();
   const { refreshUser } = useUser();
 
   const fetchPublicSessions = async () => {
     try {
-      setLoading(true);
+      if (isInitialLoad) {
+        setLoading(true);
+      }
       console.log('🔍 Fetching public sessions...');
       const response = await fetch('/api/sessions/public');
       const data = await response.json();
@@ -34,10 +37,15 @@ const PublicRoom: React.FC = () => {
       }
     } catch (err) {
       console.error('💥 Error fetching public sessions:', err);
-      setError('Failed to fetch public sessions');
-      setPublicSessions([]); // Clear sessions on error
+      if (isInitialLoad) {
+        setError('Failed to fetch public sessions');
+        setPublicSessions([]); // Clear sessions on error
+      }
     } finally {
-      setLoading(false);
+      if (isInitialLoad) {
+        setLoading(false);
+        setIsInitialLoad(false);
+      }
     }
   };
 
@@ -166,12 +174,12 @@ const PublicRoom: React.FC = () => {
   return (
     <div className="public-room">
       <div className="public-room-content">
-        <button 
-          className="back-button" 
+        <div 
+          className="back-text" 
           onClick={() => navigate('/')}
         >
-          Back to Home
-        </button>
+          BACK
+        </div>
         <div className="room-code-search">
           <div className="room-code-search-label">ENTER CODE</div>
           <div className="room-code-search-container">

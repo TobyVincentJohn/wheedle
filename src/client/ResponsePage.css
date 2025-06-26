@@ -40,8 +40,8 @@
 /* Centered dealer */
 .response-dealer {
   position: relative;
-  width: 400px;
-  height: 400px;
+  width: 300px;
+  height: 300px;
   background-size: contain;
   background-position: center;
   background-repeat: no-repeat;
@@ -51,8 +51,8 @@
 /* Text bubble below dealer */
 .text-bubble {
   position: relative;
-  width: 500px;
-  height: 200px;
+  width: 600px;
+  height: 250px;
   background-image: url('../../assets/player_text.png');
   background-size: contain;
   background-position: center;
@@ -65,9 +65,9 @@
 }
 
 .text-input {
-  width: 80%;
-  max-width: 320px;
-  height: 120px;
+  width: 85%;
+  max-width: 420px;
+  height: 150px;
   background: rgba(255, 255, 255, 0);
   padding: 10px 15px;
   font-size: 24px;
@@ -123,20 +123,20 @@
   }
 
   .response-dealer {
-    width: 53.3vmin; /* 400px / 750px * 100 */
-    height: 53.3vmin;
+    width: 40vmin; /* 300px / 750px * 100 */
+    height: 40vmin;
   }
 
   .text-bubble {
-    width: 66.7vmin; /* 500px / 750px * 100 */
-    height: 26.7vmin; /* 200px / 750px * 100 */
+    width: 80vmin; /* 600px / 750px * 100 */
+    height: 33.3vmin; /* 250px / 750px * 100 */
     padding: 2.7vmin;
     margin-top: -2.7vmin; /* Adjust for mobile */
   }
 
   .text-input {
     width: 80%;
-    height: 16vmin; /* 120px / 750px * 100 */
+    height: 20vmin; /* 150px / 750px * 100 */
     font-size: 3.2vmin;
     padding: 1.3vmin 2vmin;
   }
@@ -146,32 +146,28 @@
   }
 }
 
-.back-button {
+.back-text {
   position: absolute;
   top: 20px;
   left: 20px;
-  background: #4CAF50;
-  color: white;
-  border: none;
-  padding: 8px 16px;
+  color: #4CAF50;
   font-family: 'VT323', monospace;
-  font-size: 16px;
+  font-size: 18px;
   cursor: pointer;
-  border-radius: 4px;
   transition: all 0.2s;
   z-index: 10;
+  text-decoration: underline;
 }
 
-.back-button:hover {
-  background: #45a049;
+.back-text:hover {
+  color: #45a049;
   transform: scale(1.05);
 }
 
 @media screen and (max-width: 768px) {
-  .back-button {
+  .back-text {
     top: 2.7vmin;
     left: 2.7vmin;
-    padding: 1.1vmin 2.1vmin;
     font-size: 2.1vmin;
   }
 }
