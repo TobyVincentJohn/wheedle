@@ -30,7 +30,7 @@ const GamePage: React.FC = () => {
   const [currentClueIndex, setCurrentClueIndex] = useState(0);
   const [clueStartTime, setClueStartTime] = useState(Date.now());
   const [allCluesShown, setAllCluesShown] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState(4000); // 4 seconds after text completes
+  const [timeRemaining, setTimeRemaining] = useState(3000); // 3 seconds after text completes
   const [currentText, setCurrentText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [typingComplete, setTypingComplete] = useState(false);
@@ -117,45 +117,53 @@ const GamePage: React.FC = () => {
 
   // Letter-by-letter typing animation
   useEffect(() => {
-    if (!aiGameData || allCluesShown || currentClueIndex >= aiGameData.clues.length) return;
+    if (!aiGameData || allCluesShown) return;
+    
+    // Reset states for new clue
+    setIsTyping(false);
+    setTypingComplete(false);
+    setCurrentText('');
+    setTimeRemaining(3000);
 
     const currentClue = aiGameData.clues[currentClueIndex];
     if (!currentClue) return;
 
-    setIsTyping(true);
-    setTypingComplete(false);
-    setCurrentText('');
-    
-    let charIndex = 0;
-    const typingInterval = setInterval(() => {
-      if (charIndex < currentClue.length) {
-        setCurrentText(currentClue.substring(0, charIndex + 1));
-        charIndex++;
-      } else {
-        clearInterval(typingInterval);
-        setIsTyping(false);
-        setTypingComplete(true);
-        setClueStartTime(Date.now()); // Start 4-second timer after typing completes
-      }
-    }, 50); // 50ms per character for smooth typing
+    // Start typing after a brief delay
+    const startDelay = setTimeout(() => {
+      setIsTyping(true);
+      
+      let charIndex = 0;
+      const typingInterval = setInterval(() => {
+        if (charIndex < currentClue.length) {
+          setCurrentText(currentClue.substring(0, charIndex + 1));
+          charIndex++;
+        } else {
+          clearInterval(typingInterval);
+          setIsTyping(false);
+          setTypingComplete(true);
+          setClueStartTime(Date.now()); // Start 3-second timer after typing completes
+        }
+      }, 100); // 100ms per character for slower, more readable typing
 
-    return () => clearInterval(typingInterval);
+      return () => clearInterval(typingInterval);
+    }, 500); // 500ms delay before starting to type
+
+    return () => clearTimeout(startDelay);
   }, [aiGameData, currentClueIndex, allCluesShown]);
 
-  // Timer for clue progression (4 seconds after typing completes)
+  // Timer for clue progression (3 seconds after typing completes)
   useEffect(() => {
     if (!typingComplete || allCluesShown) return;
 
     const interval = setInterval(() => {
       const elapsed = Date.now() - clueStartTime;
-      const remaining = Math.max(0, 4000 - elapsed); // 4 seconds
+      const remaining = Math.max(0, 3000 - elapsed); // 3 seconds
       setTimeRemaining(remaining);
 
       if (remaining === 0) {
-        if (currentClueIndex < aiGameData.clues.length - 1) {
+        if (currentClueIndex < 2) { // We have exactly 3 clues (0, 1, 2)
           // Move to next clue
           setCurrentClueIndex(prev => prev + 1);
-          setTypingComplete(false);
         } else {
           // All clues shown
           setAllCluesShown(true);
@@ -164,7 +172,7 @@ const GamePage: React.FC = () => {
     }, 100);
 
     return () => clearInterval(interval);
-  }, [typingComplete, currentClueIndex, clueStartTime, allCluesShown, aiGameData]);
+  }, [typingComplete, currentClueIndex, clueStartTime, allCluesShown]);
 
   // Auto-navigate to response page after all clues are shown
   useEffect(() => {
@@ -315,7 +323,7 @@ const GamePage: React.FC = () => {
     if (isTyping || !typingComplete) {
       return `Clue ${currentClueIndex + 1}: ${currentText}`;
     } else {
-      return `Clue ${currentClueIndex + 1}: ${currentText} (${formatTime(timeRemaining)})`;
+      return `Clue ${currentClueIndex + 1}: ${currentText} (Next in ${formatTime(timeRemaining)})`;
     }
   };
 
