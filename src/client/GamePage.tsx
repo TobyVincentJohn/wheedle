@@ -31,7 +31,7 @@ const GamePage: React.FC = () => {
   const [clueStartTime, setClueStartTime] = useState(Date.now());
   const [allCluesShown, setAllCluesShown] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(CLUE_DURATION);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Assets already preloaded
 
   useEffect(() => {
     const sessionFromState = location.state?.session;
@@ -97,7 +97,6 @@ const GamePage: React.FC = () => {
           if (data.status === 'success' && data.data) {
             console.log('[AI DEBUG] ✅ AI game data loaded successfully.');
             setAiGameData(data.data);
-            setLoading(false);
             setIsInitialized(true);
           }
         } else {
@@ -124,7 +123,7 @@ const GamePage: React.FC = () => {
 
   // Timer for clue progression
   useEffect(() => {
-    if (!aiGameData || allCluesShown || loading) return;
+    if (!aiGameData || allCluesShown) return;
 
     const interval = setInterval(() => {
       const elapsed = Date.now() - clueStartTime;
@@ -144,7 +143,7 @@ const GamePage: React.FC = () => {
     }, 100);
 
     return () => clearInterval(interval);
-  }, [aiGameData, currentClueIndex, clueStartTime, allCluesShown, loading]);
+  }, [aiGameData, currentClueIndex, clueStartTime, allCluesShown]);
 
   // Auto-navigate to response page after all clues are shown
   useEffect(() => {
@@ -300,16 +299,6 @@ const GamePage: React.FC = () => {
       <div className="game-page">
         <div className="game-content">
           <div className="loading-message">Loading game...</div>
-        </div>
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="game-page">
-        <div className="game-content">
-          <div className="loading-message">Loading AI clues...</div>
         </div>
       </div>
     );
