@@ -30,8 +30,10 @@ const GamePage: React.FC = () => {
   const [currentClueIndex, setCurrentClueIndex] = useState(0);
   const [clueStartTime, setClueStartTime] = useState(Date.now());
   const [allCluesShown, setAllCluesShown] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState(CLUE_DURATION);
-  const [loading, setLoading] = useState(false); // Assets already preloaded
+  const [timeRemaining, setTimeRemaining] = useState(4000); // 4 seconds after text completes
+  const [currentText, setCurrentText] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const [typingComplete, setTypingComplete] = useState(false);
 
   useEffect(() => {
     const sessionFromState = location.state?.session;
@@ -47,24 +49,14 @@ const GamePage: React.FC = () => {
     }
   }, [location.state, navigate]);
 
-  // Poll for AI Game Data
+  // Poll for AI Game Data - should be ready immediately from loading screen
   useEffect(() => {
-    if (!session || (session.status !== 'countdown' && session.status !== 'in-game')) {
+    if (!session) {
       return;
     }
 
-    const timeout = setTimeout(async () => {
+    const fetchAIData = async () => {
       try {
-        console.log('[AI DEBUG] About to fetch Redis dump');
-        const redisResponse = await fetch('/api/redis-data/dump');
-        console.log('[AI DEBUG] Redis dump fetch status:', redisResponse.status);
-        if (redisResponse.ok) {
-          const redisData = await redisResponse.json();
-          console.log('[AI DEBUG] Redis Data:', redisData.data);
-        } else {
-          console.error('[AI DEBUG] Failed to fetch Redis data');
-        }
-
         console.log('[AI DEBUG] About to fetch AI game data for sessionId:', session.sessionId);
         const response = await fetch(`/api/ai-game-data/${session.sessionId}`);
         console.log('[AI DEBUG] AI game data fetch status:', response.status);
@@ -97,7 +89,6 @@ const GamePage: React.FC = () => {
           if (data.status === 'success' && data.data) {
             console.log('[AI DEBUG] ✅ AI game data loaded successfully.');
             setAiGameData(data.data);
-            setIsInitialized(true);
           }
         } else {
           let errorBody;
@@ -116,25 +107,55 @@ const GamePage: React.FC = () => {
       } catch (error) {
         console.log('[AI DEBUG] 💥 Error fetching AI game data:', error);
       }
-    }, 2000); // 2 second delay
+    };
 
-    return () => clearTimeout(timeout);
-  }, [session, navigate]);
+    // Try to fetch immediately, then retry if needed
+    fetchAIData();
+    const interval = setInterval(fetchAIData, 1000);
+    return () => clearInterval(interval);
+  }, [session]);
 
-  // Timer for clue progression
+  // Letter-by-letter typing animation
   useEffect(() => {
-    if (!aiGameData || allCluesShown) return;
+    if (!aiGameData || allCluesShown || currentClueIndex >= aiGameData.clues.length) return;
+
+    const currentClue = aiGameData.clues[currentClueIndex];
+    if (!currentClue) return;
+
+    setIsTyping(true);
+    setTypingComplete(false);
+    setCurrentText('');
+    
+    let charIndex = 0;
+    const typingInterval = setInterval(() => {
+      if (charIndex < currentClue.length) {
+        setCurrentText(currentClue.substring(0, charIndex + 1));
+        charIndex++;
+      } else {
+        clearInterval(typingInterval);
+        setIsTyping(false);
+        setTypingComplete(true);
+        setClueStartTime(Date.now()); // Start 4-second timer after typing completes
+      }
+    }, 50); // 50ms per character for smooth typing
+
+    return () => clearInterval(typingInterval);
+  }, [aiGameData, currentClueIndex, allCluesShown]);
+
+  // Timer for clue progression (4 seconds after typing completes)
+  useEffect(() => {
+    if (!typingComplete || allCluesShown) return;
 
     const interval = setInterval(() => {
       const elapsed = Date.now() - clueStartTime;
-      const remaining = Math.max(0, CLUE_DURATION - elapsed);
+      const remaining = Math.max(0, 4000 - elapsed); // 4 seconds
       setTimeRemaining(remaining);
 
       if (remaining === 0) {
-        if (currentClueIndex < 2) {
+        if (currentClueIndex < aiGameData.clues.length - 1) {
           // Move to next clue
           setCurrentClueIndex(prev => prev + 1);
-          setClueStartTime(Date.now());
+          setTypingComplete(false);
         } else {
           // All clues shown
           setAllCluesShown(true);
@@ -143,7 +164,7 @@ const GamePage: React.FC = () => {
     }, 100);
 
     return () => clearInterval(interval);
-  }, [aiGameData, currentClueIndex, clueStartTime, allCluesShown]);
+  }, [typingComplete, currentClueIndex, clueStartTime, allCluesShown, aiGameData]);
 
   // Auto-navigate to response page after all clues are shown
   useEffect(() => {
@@ -165,7 +186,7 @@ const GamePage: React.FC = () => {
 
   // Background polling for session changes
   useEffect(() => {
-    if (!session || !isInitialized) return;
+    if (!session) return;
 
     let lastKnownSession = session;
     
@@ -220,7 +241,7 @@ const GamePage: React.FC = () => {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [session, isInitialized, user, dealerId]);
+  }, [session, user, dealerId]);
 
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -281,17 +302,21 @@ const GamePage: React.FC = () => {
 
   const formatTime = (ms: number) => {
     const seconds = Math.ceil(ms / 1000);
-    return `${seconds}s`;
+    return `${seconds}s remaining`;
   };
 
   const getCurrentClueText = () => {
-    if (!aiGameData) return 'Loading clues...';
+    if (!aiGameData) return 'Preparing clues...';
     
     if (allCluesShown) {
-      return 'All clues revealed! Click "Respond" to make your guess.';
+      return 'All clues revealed! Time to make your guess.';
     }
     
-    return `Clue ${currentClueIndex + 1}: ${aiGameData.clues[currentClueIndex]} (Next in ${formatTime(timeRemaining)})`;
+    if (isTyping || !typingComplete) {
+      return `Clue ${currentClueIndex + 1}: ${currentText}`;
+    } else {
+      return `Clue ${currentClueIndex + 1}: ${currentText} (${formatTime(timeRemaining)})`;
+    }
   };
 
   if (!session) {
