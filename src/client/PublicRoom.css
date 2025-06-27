@@ -54,7 +54,8 @@
   transition: all 0.2s;
   text-decoration: none;
   text-transform: uppercase;
-  flex: 1;
+  width: fit-content;
+  flex-shrink: 0;
 }
 
 .public-back-text:hover {
@@ -62,8 +63,8 @@
 }
 
 .public-create-room-button {
-  width: 120px;
-  height: 70px;
+  width: 140px;
+  height: 80px;
   background-image: url('../../assets/session_page/create_room.png');
   background-size: contain;
   background-position: center;
@@ -74,28 +75,31 @@
   border: none;
   background-color: transparent;
   padding: 0;
-  margin: 0 auto;
-  flex: 1;
-  display: flex;
-  justify-content: center;
+  margin: 0;
+  flex-shrink: 0;
 }
 
 .public-create-room-button:hover {
   transform: scale(1.05);
 }
 
+.public-room-code-search-container {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+
 .public-room-code-container {
   display: flex;
   align-items: center;
-  justify-content: center;
-  flex: 1;
-  justify-content: flex-end;
   position: relative;
+  gap: 8px;
 }
 
 .public-room-code-input {
-  width: 120px;
-  height: 35px;
+  width: 140px;
+  height: 40px;
   background-image: url('../../assets/waiting_room/name_tag.png');
   background-size: contain;
   background-position: center;
@@ -106,7 +110,7 @@
   justify-content: center;
   color: #ffffff;
   font-family: 'VT323', monospace;
-  font-size: 14px;
+  font-size: 16px;
   border: none;
   outline: none;
   padding: 0;
@@ -122,8 +126,8 @@
 
 
 .public-next-button {
-  width: 25px;
-  height: 25px;
+  width: 30px;
+  height: 30px;
   background-image: url('../../assets/session_page/next_button.png');
   background-size: contain;
   background-position: center;
@@ -133,8 +137,6 @@
   transition: transform 0.2s;
   border: none;
   background-color: transparent;
-  position: absolute;
-  right: -35px;
   padding: 0;
   margin: 0;
 }
