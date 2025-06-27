@@ -276,7 +276,7 @@
 }
 
 .public-session-code {
-  color: #4CAF50;
+  color: #ffffff;
   font-family: 'VT323', monospace;
   font-size: 20px;
   font-weight: bold;
@@ -292,7 +292,7 @@
   text-transform: uppercase;
   background: none;
   border: none;
-  padding: 8px 16px;
+  padding: 6px 16px;
   border: 1px solid #FFD700;
   border-radius: 4px;
   flex-shrink: 0; /* Prevent button from shrinking */
@@ -302,15 +302,6 @@
   color: #000000;
   background: #FFD700;
   transform: scale(1.05);
-}
-
-.public-join-session-text.disabled {
-  color: #666;
-  border-color: #666;
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
 @font-face {
   font-family: 'VT323';
   src: url('../../assets/fonts/VT323-Regular.ttf') format('truetype');
@@ -420,6 +411,6 @@
 
   .public-join-session-text {
     font-size: 2.7vmin; /* 20px / 750px * 100 */
-    padding: 1.1vmin 2.1vmin; /* 8px 16px / 750px * 100 */
+    padding: 0.8vmin 2.1vmin; /* 6px 16px / 750px * 100 */
   }
 }

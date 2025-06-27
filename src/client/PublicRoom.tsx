@@ -293,35 +293,7 @@ const PublicRoom: React.FC = () => {
             ) : (
               <div className="public-sessions-list">
                 {searchedSession && (
-                  <div 
-                    key={searchedSession.sessionId} 
-                    className="public-session-tile searched-session"
-                    style={{ 
-                      animationDelay: '0s'
-                    }}
-                  >
-                    <div className="public-session-info">
-                      <div className="public-session-host">
-                        u/{searchedSession.host?.username || 'Unknown'}
-                      </div>
-                      <div className="public-session-details">
-                        <div className="public-session-players">
-                          {searchedSession.players.length}/{searchedSession.maxPlayers} Players
-                        </div>
-                        <div className="public-session-code">{searchedSession.sessionCode}</div>
-                      </div>
-                    </div>
-                    <div 
-                      className={`public-join-session-text ${searchedSession.players.length >= searchedSession.maxPlayers ? 'disabled' : ''}`}
-                      onClick={() => {
-                        if (searchedSession.players.length < searchedSession.maxPlayers) {
-                          handleJoinSession(searchedSession.sessionId);
-                        }
-                      }}
-                    >
-                      {searchedSession.players.length >= searchedSession.maxPlayers ? 'FULL' : 'JOIN'}
-                    </div>
-                  </div>
+                  renderSessionTile(searchedSession)
                 )}
                 {(publicSessions.length > 0 || searchedSession) && isRoomTileLoaded && (
                   <div className="active-sessions-title">Active Sessions</div>
