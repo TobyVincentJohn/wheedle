@@ -220,23 +220,23 @@ const PublicRoom: React.FC = () => {
             onMouseEnter={() => getSoundState() && playHoverSound()}
           />
           <div className="public-room-code-search-container">
+          <div className="public-room-code-container">
             <input
               type="text"
-              className="public-room-code-search-input"
+              className="public-room-code-input"
               value={searchCode}
               onChange={handleSearchCodeChange}
               onKeyPress={handleKeyPress}
               maxLength={5}
               placeholder="XXXXX"
+              disabled={false}
             />
             <button 
-              className="public-room-code-search-btn"
+              className="public-next-button"
               onClick={() => handleButtonClick(handleSearchSession)}
               onMouseEnter={() => getSoundState() && playHoverSound()}
               disabled={searchCode.length !== 5}
-            >
-              🔍
-            </button>
+            />
           </div>
         </div>
         
@@ -278,8 +278,6 @@ const PublicRoom: React.FC = () => {
                       <div className="public-session-details">
                         <div className="public-session-players">
                           {searchedSession.players.length}/{searchedSession.maxPlayers} Players
-                        </div>
-                        <div className="public-session-code">{searchedSession.sessionCode}</div>
                       </div>
                     </div>
                     <div 
