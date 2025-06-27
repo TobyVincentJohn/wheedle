@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { GameSession } from '../shared/types/session';
 import { AIGameData } from '../shared/types/aiGame';
 import { useSession } from './hooks/useSession';
 import { useUser } from './hooks/useUser';
+import { playHoverSound, playClickSound, getSoundState } from './utils/sound';
 import './GamePage.css';
 
 interface PlayerLeftNotification {
@@ -13,6 +14,8 @@ interface PlayerLeftNotification {
 }
 
 const CLUE_DURATION = 10000; // 10 seconds per clue
+const TYPING_SPEED = 100; // 100ms per character
+const POST_TYPING_DELAY = 3000; // 3 seconds after typing finishes
 
 const GamePage: React.FC = () => {
   const location = useLocation();
@@ -32,6 +35,9 @@ const GamePage: React.FC = () => {
   const [allCluesShown, setAllCluesShown] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(CLUE_DURATION);
   const [loading, setLoading] = useState(true);
+  const [typedText, setTypedText] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const [typingComplete, setTypingComplete] = useState(false);
 
   useEffect(() => {
     const sessionFromState = location.state?.session;
@@ -122,29 +128,60 @@ const GamePage: React.FC = () => {
     return () => clearTimeout(timeout);
   }, [session, navigate]);
 
-  // Timer for clue progression
+  // Effect to handle typing animation and clue progression
   useEffect(() => {
     if (!aiGameData || allCluesShown || loading) return;
 
-    const interval = setInterval(() => {
-      const elapsed = Date.now() - clueStartTime;
-      const remaining = Math.max(0, CLUE_DURATION - elapsed);
-      setTimeRemaining(remaining);
+    const currentClue = aiGameData.clues[currentClueIndex];
+    if (!currentClue) return;
 
-      if (remaining === 0) {
-        if (currentClueIndex < 2) {
-          // Move to next clue
-          setCurrentClueIndex(prev => prev + 1);
-          setClueStartTime(Date.now());
+    let currentIndex = 0;
+    let typingInterval: NodeJS.Timeout | null = null;
+    let progressTimeout: NodeJS.Timeout | null = null;
+    
+    // Start typing the current clue
+    const startTyping = () => {
+      setTypedText('');
+      setIsTyping(true);
+      setTypingComplete(false);
+      
+      typingInterval = setInterval(() => {
+        if (currentIndex < currentClue.length) {
+          setTypedText(currentClue.substring(0, currentIndex + 1));
+          currentIndex++;
         } else {
-          // All clues shown
+          // Typing is complete
+          if (typingInterval) {
+            clearInterval(typingInterval);
+            typingInterval = null;
+          }
+          setIsTyping(false);
+          setTypingComplete(true);
+          
+          // Set up timeout for next clue
+          progressTimeout = setTimeout(() => {
+            if (currentClueIndex < 2) {
+              setCurrentClueIndex(prev => prev + 1);
+            } else {
           setAllCluesShown(true);
         }
+          }, POST_TYPING_DELAY);
       }
-    }, 100);
+      }, TYPING_SPEED);
+    };
 
-    return () => clearInterval(interval);
-  }, [aiGameData, currentClueIndex, clueStartTime, allCluesShown, loading]);
+    startTyping();
+
+    // Cleanup function
+    return () => {
+      if (typingInterval) {
+        clearInterval(typingInterval);
+      }
+      if (progressTimeout) {
+        clearTimeout(progressTimeout);
+      }
+    };
+  }, [aiGameData, currentClueIndex, allCluesShown, loading]);
 
   // Auto-navigate to response page after all clues are shown
   useEffect(() => {
@@ -249,17 +286,21 @@ const GamePage: React.FC = () => {
     };
   }, [session, leaveSession, navigate]);
 
+  const handleButtonClick = (action: () => void) => {
+    if (getSoundState()) {
+      playClickSound();
+    }
+    action();
+  };
+
   const handleLeaveGame = async () => {
     if (session) {
       try {
-        const response = await fetch(`/api/sessions/${session.sessionId}/leave`, {
-          method: 'POST',
-        });
-        
+        await leaveSession(session.sessionId);
         navigate('/');
       } catch (error) {
-        console.error('Failed to leave session:', error);
-        navigate('/'); // Navigate anyway
+        console.error('Failed to leave game:', error);
+        navigate('/');
       }
     } else {
       navigate('/');
@@ -292,7 +333,7 @@ const GamePage: React.FC = () => {
       return 'All clues revealed! Click "Respond" to make your guess.';
     }
     
-    return `Clue ${currentClueIndex + 1}: ${aiGameData.clues[currentClueIndex]} (Next in ${formatTime(timeRemaining)})`;
+    return `Clue ${currentClueIndex + 1}: ${typedText}`;
   };
 
   if (!session) {
@@ -305,28 +346,21 @@ const GamePage: React.FC = () => {
     );
   }
 
-  if (loading) {
-    return (
-      <div className="game-page">
-        <div className="game-content">
-          <div className="loading-message">Loading AI clues...</div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="game-page">
       <div className="game-content">
         <div className="game-header">
           <div className="session-info">
-            <span>Players: {session.players.length}</span>
+            <div>Room Code: {session?.sessionCode}</div>
+            <div>Players: {session?.players.length}/6</div>
           </div>
-          <div className="header-buttons">
-            <button className="leave-game-btn" onClick={handleLeaveGame}>
-              Leave Game
-            </button>
-          </div>
+          <button 
+            className="leave-game-btn"
+            onClick={() => handleButtonClick(handleLeaveGame)}
+            onMouseEnter={() => getSoundState() && playHoverSound()}
+          >
+            Leave Game
+          </button>
         </div>
         
         <div className="game-notifications">
@@ -338,20 +372,10 @@ const GamePage: React.FC = () => {
         </div>
         
         <div className="dealer-text-bubble">
-          <div style={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            color: '#333',
-            fontFamily: 'VT323, monospace',
-            fontSize: '18px',
-            textAlign: 'center',
-            maxWidth: '400px',
-            lineHeight: '1.4',
-            padding: '20px'
-          }}>
-            {getCurrentClueText()}
+          <div className="dealer-text-content">
+            <span className="typing-text">
+              {!aiGameData ? 'Loading clues...' : getCurrentClueText()}
+            </span>
           </div>
         </div>
         <div className={`dealer dealer-${dealerId}`} />
@@ -361,9 +385,16 @@ const GamePage: React.FC = () => {
         <div className="all-players-left-modal">
           <div className="modal-content">
             <div className="modal-title">Game Ended</div>
-            <div className="modal-message">All party members have left.</div>
-            <button className="modal-button" onClick={handleAllPlayersLeftModalClose}>
-              Return to Home
+            <div className="modal-message">All other players have left the game.</div>
+            <button 
+              className="modal-button"
+              onClick={() => handleButtonClick(() => {
+                handleAllPlayersLeftModalClose();
+                navigate('/');
+              })}
+              onMouseEnter={() => getSoundState() && playHoverSound()}
+            >
+              Return Home
             </button>
           </div>
         </div>

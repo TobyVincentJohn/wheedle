@@ -53,10 +53,10 @@
 
 /* Fixed dealer position - always centered */
 .response-dealer {
-  position: fixed;
-  top: 50%;
+  position: absolute;
+  top: 180px;
   left: 50%;
-  transform: translate(-50%, -50%);
+  transform: translateX(-50%);
   width: 280px;
   height: 280px;
   background-size: contain;
@@ -68,8 +68,8 @@
 
 /* Text input container at bottom */
 .text-input-container {
-  position: fixed;
-  bottom: 20px;
+  position: absolute;
+  top: 400px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -82,8 +82,8 @@
 /* Larger text bubble */
 .text-bubble {
   position: relative;
-  width: 800px;
-  height: 350px;
+  width: 600px;
+  height: 250px;
   background-image: url('../../assets/player_text.png');
   background-size: contain;
   background-position: center;
@@ -98,8 +98,8 @@
 /* Larger text input */
 .text-input {
   width: 90%;
-  max-width: 550px;
-  height: 200px;
+  max-width: 450px;
+  height: 150px;
   background: rgba(255, 255, 255, 0);
   padding: 20px 25px;
   font-size: 28px;
@@ -123,32 +123,34 @@
 
 /* Submit button styling - closer to text box */
 .submit-button {
-  background: #2196F3;
+  background: #780903;
   color: white;
-  border: none;
+  border: 2px solid #FFD700;
   padding: 15px 30px;
   font-family: 'VT323', monospace;
   font-size: 20px;
   cursor: pointer;
-  border-radius: 6px;
+  border-radius: 0;
   transition: all 0.2s;
   min-width: 200px;
   margin-top: -10px;
 }
 
 .submit-button:disabled {
-  background: #666;
+  background: #4a0602;
   cursor: not-allowed;
   opacity: 0.6;
+  border-color: #997a00;
 }
 
 .submit-button:not(:disabled):hover {
-  background: #1976D2;
+  background: #8f0b04;
   transform: scale(1.05);
 }
 
 .submit-button.submitted {
   background: #4CAF50;
+  border-color: #45a049;
 }
 
 .loading-message {
@@ -221,33 +223,34 @@
   }
 
   .response-dealer {
-    width: 37.3vmin; /* 280px / 750px * 100 */
+    top: 24vmin;
+    width: 37.3vmin;
     height: 37.3vmin;
   }
 
   .text-input-container {
-    bottom: 2.7vmin;
-    gap: 2vmin;
+    top: 53.3vmin;
+    width: 100%;
   }
 
   .text-bubble {
-    width: 106.7vmin; /* 800px / 750px * 100 */
-    height: 46.7vmin; /* 350px / 750px * 100 */
+    width: 80vmin;
+    height: 33.3vmin;
     padding: 5.3vmin;
   }
 
   .text-input {
     width: 90%;
-    height: 26.7vmin; /* 200px / 750px * 100 */
+    max-width: 60vmin;
+    height: 20vmin;
     font-size: 3.7vmin;
     padding: 2.7vmin 3.3vmin;
   }
 
   .submit-button {
-    padding: 2vmin 4vmin;
-    font-size: 2.7vmin;
     min-width: 26.7vmin;
-    margin-top: -1.3vmin;
+    font-size: 2.7vmin;
+    padding: 2vmin 4vmin;
   }
 
   .loading-message {

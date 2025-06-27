@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { GameSession } from '../shared/types/session';
 import { useSession } from './hooks/useSession';
 import { useUser } from './hooks/useUser';
+import { playHoverSound, playClickSound, getSoundState } from './utils/sound';
 import './WaitingRoom.css';
 
 const WaitingRoom: React.FC = () => {
@@ -14,6 +15,13 @@ const WaitingRoom: React.FC = () => {
   const [isHost, setIsHost] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const [isCountingDown, setIsCountingDown] = useState(false);
+
+  const handleButtonClick = (action: () => void) => {
+    if (getSoundState()) {
+      playClickSound();
+    }
+    action();
+  };
 
   useEffect(() => {
     // Get session from location state or current session
@@ -186,7 +194,11 @@ const WaitingRoom: React.FC = () => {
         
         <div className="waiting-bottom-container">
           {!isCountingDown && (
-            <button className="waiting-quit-button" onClick={handleQuit} />
+            <button 
+              className="waiting-quit-button" 
+              onClick={() => handleButtonClick(handleQuit)}
+              onMouseEnter={() => getSoundState() && playHoverSound()}
+            />
           )}
           {isCountingDown && (
             <div className="waiting-for-host">
@@ -199,12 +211,13 @@ const WaitingRoom: React.FC = () => {
           </div>
           {showWaitingForPlayers ? (
             <div className="waiting-for-host">
-              <div className="waiting-for-host-text">WAITING FOR PLAYERS</div>
+              <div className="waiting-for-host-text">WAITING FOR MORE PLAYERS...</div>
             </div>
           ) : canStart ? (
             <button 
               className="waiting-start-button" 
-              onClick={handleStart}
+              onClick={() => handleButtonClick(handleStart)}
+              onMouseEnter={() => getSoundState() && playHoverSound()}
             />
           ) : !isHost && session.status === 'waiting' ? (
             <div className="waiting-for-host">

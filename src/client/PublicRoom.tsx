@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { GameSession } from '../shared/types/session';
 import { useSession } from './hooks/useSession';
 import { useUser } from './hooks/useUser';
+import { playHoverSound, playClickSound, getSoundState } from './utils/sound';
 import './PublicRoom.css';
 
 const PublicRoom: React.FC = () => {
@@ -168,41 +169,74 @@ const PublicRoom: React.FC = () => {
     }
   };
 
+  const handleButtonClick = (action: () => void) => {
+    if (getSoundState()) {
+      playClickSound();
+    }
+    action();
+  };
+
+  const renderSessionTile = (session: GameSession) => (
+    <div key={session.sessionId} className="public-session-tile">
+      <div className="public-session-info">
+        <div className="public-session-host">
+          u/{session.host?.username || 'Unknown'}
+        </div>
+        <div className="public-session-details">
+          <div className="public-session-players">
+            {session.players.length}/{session.maxPlayers} Players
+          </div>
+          <div className="public-session-code">{session.sessionCode}</div>
+        </div>
+      </div>
+      <div 
+        className={`public-join-session-text ${session.players.length >= session.maxPlayers ? 'disabled' : ''}`}
+        onClick={() => {
+          if (session.players.length < session.maxPlayers) {
+            handleButtonClick(() => handleJoinSession(session.sessionId));
+          }
+        }}
+        onMouseEnter={() => getSoundState() && playHoverSound()}
+      >
+        {session.players.length >= session.maxPlayers ? 'FULL' : 'JOIN'}
+      </div>
+    </div>
+  );
+
   return (
     <div className="public-room">
       <div className="public-room-content">
-        <div className="top-bar">
+        <div className="public-top-bar">
           <div 
-            className="back-text" 
-            onClick={() => navigate('/')}
+            className="public-back-text" 
+            onClick={() => handleButtonClick(() => navigate('/'))}
+            onMouseEnter={() => getSoundState() && playHoverSound()}
           >
             BACK
           </div>
-          <div className="top-bar-center">
-            <button 
-              className="create-room-button" 
-              onClick={handleCreateSession}
+          <button 
+            className="public-create-room-button" 
+            onClick={() => handleButtonClick(handleCreateSession)}
+            onMouseEnter={() => getSoundState() && playHoverSound()}
+          />
+          <div className="public-room-code-search-container">
+            <input
+              type="text"
+              className="public-room-code-search-input"
+              value={searchCode}
+              onChange={handleSearchCodeChange}
+              onKeyPress={handleKeyPress}
+              maxLength={5}
+              placeholder="XXXXX"
             />
-          </div>
-          <div className="top-bar-right">
-            <div className="room-code-search-container">
-              <input
-                type="text"
-                className="room-code-search-input"
-                value={searchCode}
-                onChange={handleSearchCodeChange}
-                onKeyPress={handleKeyPress}
-                maxLength={5}
-                placeholder="XXXXX"
-              />
-              <button 
-                className="room-code-search-btn"
-                onClick={handleSearchSession}
-                disabled={searchCode.length !== 5}
-              >
-                🔍
-              </button>
-            </div>
+            <button 
+              className="public-room-code-search-btn"
+              onClick={() => handleButtonClick(handleSearchSession)}
+              onMouseEnter={() => getSoundState() && playHoverSound()}
+              disabled={searchCode.length !== 5}
+            >
+              🔍
+            </button>
           </div>
         </div>
         
@@ -211,7 +245,7 @@ const PublicRoom: React.FC = () => {
         ) : !hasLoadedOnce ? (
           <div className="loading-message">Loading sessions...</div>
         ) : (
-          <div className="sessions-content">
+          <div className="public-sessions-content">
             {backgroundError && (
               <div style={{
                 position: 'fixed',
@@ -234,22 +268,22 @@ const PublicRoom: React.FC = () => {
                 No public sessions found. Create one!
               </div>
             ) : (
-              <div className="sessions-list">
+              <div className="public-sessions-list">
                 {searchedSession && (
-                  <div key={searchedSession.sessionId} className="session-tile searched-session">
-                    <div className="session-info">
-                      <div className="session-host">
+                  <div key={searchedSession.sessionId} className="public-session-tile searched-session">
+                    <div className="public-session-info">
+                      <div className="public-session-host">
                         u/{searchedSession.host?.username || 'Unknown'}
                       </div>
-                      <div className="session-details">
-                        <div className="session-players">
+                      <div className="public-session-details">
+                        <div className="public-session-players">
                           {searchedSession.players.length}/{searchedSession.maxPlayers} Players
                         </div>
-                        <div className="session-code">{searchedSession.sessionCode}</div>
+                        <div className="public-session-code">{searchedSession.sessionCode}</div>
                       </div>
                     </div>
                     <div 
-                      className={`join-session-text ${searchedSession.players.length >= searchedSession.maxPlayers ? 'disabled' : ''}`}
+                      className={`public-join-session-text ${searchedSession.players.length >= searchedSession.maxPlayers ? 'disabled' : ''}`}
                       onClick={() => {
                         if (searchedSession.players.length < searchedSession.maxPlayers) {
                           handleJoinSession(searchedSession.sessionId);
@@ -260,31 +294,10 @@ const PublicRoom: React.FC = () => {
                     </div>
                   </div>
                 )}
-                {publicSessions.map((session) => (
-                  <div key={session.sessionId} className="session-tile">
-                    <div className="session-info">
-                      <div className="session-host">
-                        u/{session.host?.username || 'Unknown'}
-                      </div>
-                      <div className="session-details">
-                        <div className="session-players">
-                          {session.players.length}/{session.maxPlayers} Players
-                        </div>
-                        <div className="session-code">{session.sessionCode}</div>
-                      </div>
-                    </div>
-                    <div 
-                      className={`join-session-text ${session.players.length >= session.maxPlayers ? 'disabled' : ''}`}
-                      onClick={() => {
-                        if (session.players.length < session.maxPlayers) {
-                          handleJoinSession(session.sessionId);
-                        }
-                      }}
-                    >
-                      {session.players.length >= session.maxPlayers ? 'FULL' : 'JOIN'}
-                    </div>
-                  </div>
-                ))}
+                {(publicSessions.length > 0 || searchedSession) && (
+                  <div className="active-sessions-title">Active Sessions</div>
+                )}
+                {publicSessions.map(renderSessionTile)}
               </div>
             )}
           </div>

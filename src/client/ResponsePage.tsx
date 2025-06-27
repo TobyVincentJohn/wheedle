@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { GameSession } from '../shared/types/session';
 import { AIGameData } from '../shared/types/aiGame';
 import { useSession } from './hooks/useSession';
+import { playHoverSound, playClickSound, getSoundState } from './utils/sound';
 import './ResponsePage.css';
 
 const RESPONSE_TIME_LIMIT = 10000; // 1 minute in milliseconds
@@ -311,6 +312,13 @@ const ResponsePage: React.FC = () => {
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
+  const handleButtonClick = (action: () => void) => {
+    if (getSoundState()) {
+      playClickSound();
+    }
+    action();
+  };
+
   // Waiting state - show all responses
   if (pageState === 'waiting') {
     return (
@@ -431,7 +439,7 @@ const ResponsePage: React.FC = () => {
                   Congratulations!
                 </div>
                 <button
-                  onClick={handleReturnToHome}
+                  onClick={() => handleButtonClick(() => navigate('/'))}
                   style={{
                     background: '#4CAF50',
                     color: 'white',
@@ -489,7 +497,8 @@ const ResponsePage: React.FC = () => {
       <div className="response-content">
         <div 
           className="back-text" 
-          onClick={handleReturnToHome}
+          onClick={() => handleButtonClick(() => navigate('/'))}
+          onMouseEnter={() => getSoundState() && playHoverSound()}
         >
           BACK
         </div>
@@ -516,7 +525,7 @@ const ResponsePage: React.FC = () => {
         {/* Fixed Dealer Position */}
         <div className={`response-dealer response-dealer-${dealerId}`} />
         
-        {/* Text Input Area */}
+        <div style={{marginBottom: '10px',marginTop: '10px'}}></div>
         <div className="text-input-container">
           <div className="text-bubble">
             <textarea
@@ -540,7 +549,7 @@ const ResponsePage: React.FC = () => {
           
           {/* Submit Button */}
           <button
-            onClick={() => handleSubmitResponse()}
+            onClick={() => handleButtonClick(() => handleSubmitResponse())}
             disabled={(!userInput.trim() && !isTimeUp) || hasSubmitted}
             className="submit-button"
           >

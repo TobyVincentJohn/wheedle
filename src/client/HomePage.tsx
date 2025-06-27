@@ -1,20 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { playHoverSound, playClickSound, toggleSound, disableSound } from './utils/sound';
+import { playHoverSound, playClickSound, toggleSound, getSoundState } from './utils/sound';
 import { useUser } from './hooks/useUser';
 import './HomePage.css';
 
 const HomePage: React.FC = () => {
   const navigate = useNavigate();
-  const [isSoundOn, setIsSoundOn] = useState(false);
+  const [isSoundOn, setIsSoundOn] = useState(getSoundState());
   const { user, logout } = useUser();
   
-
-  // Initialize with sound disabled
-  useEffect(() => {
-    disableSound();
-    setIsSoundOn(false);
-  }, []);
 
   const handleButtonClick = (action: () => void) => {
     if (isSoundOn) {

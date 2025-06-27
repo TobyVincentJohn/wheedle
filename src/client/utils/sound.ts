@@ -17,11 +17,12 @@ const initSounds = () => {
   }
 };
 
-// Sound state management - start with sound disabled
-let isSoundEnabled = false;
+// Sound state management - get initial state from localStorage or default to false
+let isSoundEnabled = localStorage.getItem('wheedle_sound_enabled') === 'true';
 
 export const toggleSound = () => {
   isSoundEnabled = !isSoundEnabled;
+  localStorage.setItem('wheedle_sound_enabled', isSoundEnabled.toString());
   return isSoundEnabled;
 };
 
@@ -29,11 +30,13 @@ export const getSoundState = () => isSoundEnabled;
 
 export const enableSound = () => {
   isSoundEnabled = true;
+  localStorage.setItem('wheedle_sound_enabled', 'true');
   return isSoundEnabled;
 };
 
 export const disableSound = () => {
   isSoundEnabled = false;
+  localStorage.setItem('wheedle_sound_enabled', 'false');
   return isSoundEnabled;
 };
 

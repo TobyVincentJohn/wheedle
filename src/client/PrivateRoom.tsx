@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSession } from './hooks/useSession';
 import { useUser } from './hooks/useUser';
 import { useEffect } from 'react';
+import { playHoverSound, playClickSound, getSoundState } from './utils/sound';
 import './PrivateRoom.css';
 
 const PrivateRoom: React.FC = () => {
@@ -24,6 +25,13 @@ const PrivateRoom: React.FC = () => {
       });
     }
   }, [currentSession, navigate]);
+
+  const handleButtonClick = (action: () => void) => {
+    if (getSoundState()) {
+      playClickSound();
+    }
+    action();
+  };
 
   const handleRoomCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.toUpperCase();
@@ -121,7 +129,8 @@ const PrivateRoom: React.FC = () => {
       <div className="private-room-content">
         <div 
           className="back-text" 
-          onClick={() => navigate('/')}
+          onClick={() => handleButtonClick(() => navigate('/'))}
+          onMouseEnter={() => getSoundState() && playHoverSound()}
         >
           BACK
         </div>
@@ -156,7 +165,8 @@ const PrivateRoom: React.FC = () => {
             />
             <button 
               className="next-button"
-              onClick={handleJoinRoom}
+              onClick={() => !isJoining && handleButtonClick(handleJoinRoom)}
+              onMouseEnter={() => !isJoining && getSoundState() && playHoverSound()}
               disabled={roomCode.length !== 5 || isJoining}
               style={{ opacity: isJoining ? 0.5 : 1 }}
             />
@@ -165,7 +175,8 @@ const PrivateRoom: React.FC = () => {
         <div className="divider" />
         <button 
           className="create-room-button" 
-          onClick={handleCreateRoom}
+          onClick={() => !isJoining && handleButtonClick(handleCreateRoom)}
+          onMouseEnter={() => !isJoining && getSoundState() && playHoverSound()}
           disabled={isJoining}
           style={{ opacity: isJoining ? 0.5 : 1 }}
         />
