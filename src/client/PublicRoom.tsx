@@ -6,6 +6,16 @@ import { useUser } from './hooks/useUser';
 import { playHoverSound, playClickSound, getSoundState } from './utils/sound';
 import './PublicRoom.css';
 
+// Preload the room tile image
+const preloadRoomTileImage = () => {
+  const img = new Image();
+  img.src = new URL('../../assets/session_page/room_tile.png', import.meta.url).href;
+  return new Promise<void>((resolve) => {
+    img.onload = () => resolve();
+    img.onerror = () => resolve(); // Continue even if image fails to load
+  });
+};
+
 const PublicRoom: React.FC = () => {
   const navigate = useNavigate();
   const [publicSessions, setPublicSessions] = useState<GameSession[]>([]);
@@ -15,6 +25,7 @@ const PublicRoom: React.FC = () => {
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [backgroundError, setBackgroundError] = useState<string | null>(null);
+  const [isRoomTileLoaded, setIsRoomTileLoaded] = useState(false);
   const { createSession, joinSession, currentSession } = useSession();
   const { refreshUser } = useUser();
 
@@ -58,6 +69,11 @@ const PublicRoom: React.FC = () => {
   };
 
   useEffect(() => {
+    // Preload the room tile image
+    preloadRoomTileImage().then(() => {
+      setIsRoomTileLoaded(true);
+    });
+    
     fetchPublicSessions();
     
     // Refresh sessions every 3 seconds
@@ -177,7 +193,13 @@ const PublicRoom: React.FC = () => {
   };
 
   const renderSessionTile = (session: GameSession) => (
-    <div key={session.sessionId} className="public-session-tile">
+    <div 
+      key={session.sessionId} 
+      className="public-session-tile"
+      style={{ 
+        animationDelay: `${Math.random() * 0.2}s` // Slight stagger for multiple tiles
+      }}
+    >
       <div className="public-session-info">
         <div className="public-session-host">
           u/{session.host?.username || 'Unknown'}
@@ -271,7 +293,13 @@ const PublicRoom: React.FC = () => {
             ) : (
               <div className="public-sessions-list">
                 {searchedSession && (
-                  <div key={searchedSession.sessionId} className="public-session-tile searched-session">
+                  <div 
+                    key={searchedSession.sessionId} 
+                    className="public-session-tile searched-session"
+                    style={{ 
+                      animationDelay: '0s'
+                    }}
+                  >
                     <div className="public-session-info">
                       <div className="public-session-host">
                         u/{searchedSession.host?.username || 'Unknown'}
@@ -295,10 +323,10 @@ const PublicRoom: React.FC = () => {
                     </div>
                   </div>
                 )}
-                {(publicSessions.length > 0 || searchedSession) && (
+                {(publicSessions.length > 0 || searchedSession) && isRoomTileLoaded && (
                   <div className="active-sessions-title">Active Sessions</div>
                 )}
-                {publicSessions.map(renderSessionTile)}
+                {isRoomTileLoaded && publicSessions.map(renderSessionTile)}
               </div>
             )}
           </div>
