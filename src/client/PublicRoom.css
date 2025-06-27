@@ -40,7 +40,6 @@
   transform: translateX(-50%);
   width: 670px; /* Fixed width for desktop */
   display: flex;
-  justify-content: space-between;
   align-items: center;
   z-index: 10;
 }
@@ -55,7 +54,8 @@
   text-decoration: none;
   text-transform: uppercase;
   width: fit-content;
-  flex-shrink: 0;
+  flex: 0 0 auto;
+  margin-right: auto;
 }
 
 .public-back-text:hover {
@@ -76,7 +76,9 @@
   background-color: transparent;
   padding: 0;
   margin: 0;
-  flex-shrink: 0;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .public-create-room-button:hover {
@@ -86,8 +88,8 @@
 .public-room-code-search-container {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  flex-shrink: 0;
+  flex: 0 0 auto;
+  margin-left: auto;
 }
 
 .public-room-code-container {
