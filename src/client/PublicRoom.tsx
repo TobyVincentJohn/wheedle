@@ -280,6 +280,7 @@ const PublicRoom: React.FC = () => {
                         <div className="public-session-players">
                           {searchedSession.players.length}/{searchedSession.maxPlayers} Players
                         </div>
+                        <div className="public-session-code">{searchedSession.sessionCode}</div>
                       </div>
                     </div>
                     <div 

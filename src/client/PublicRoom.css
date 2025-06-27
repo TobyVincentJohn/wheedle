@@ -206,7 +206,7 @@
 
 .public-sessions-list {
   width: 100%;
-  max-width: 500px;
+  max-width: 400px;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -214,23 +214,22 @@
 }
 
 .public-session-tile {
-  background: #780903;
-  border: 2px solid #FFD700;
-  border-radius: 0;
-  padding: 12px 20px;
+  width: 400px;
+  height: 80px;
+  background-image: url('../../assets/session_page/room_tile.png');
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 0 25px;
   transition: all 0.2s;
-  height: 50px;
-  width: 500px;
-  image-rendering: pixelated;
-  image-rendering: -moz-crisp-edges;
-  image-rendering: -webkit-crisp-edges;
+  position: relative;
 }
 
 .public-session-tile:hover {
-  border-color: #ffffff;
   transform: scale(1.02);
 }
 
@@ -239,47 +238,59 @@
   justify-content: space-between;
   align-items: center;
   flex: 1;
-  padding: 0 10px;
+  padding: 0;
 }
 
 .public-session-host {
   color: #FFD700;
   font-family: 'VT323', monospace;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: bold;
 }
 
 .public-session-details {
   display: flex;
   align-items: center;
+  gap: 15px;
 }
 
 .public-session-players {
   color: #ffffff;
   font-family: 'VT323', monospace;
-  font-size: 16px;
+  font-size: 14px;
+}
+
+.public-session-code {
+  color: #4CAF50;
+  font-family: 'VT323', monospace;
+  font-size: 14px;
+  font-weight: bold;
 }
 
 .public-join-session-text {
   color: #FFD700;
   font-family: 'VT323', monospace;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: bold;
   cursor: pointer;
   transition: all 0.2s;
   text-transform: uppercase;
   background: none;
   border: none;
-  padding: 4px 8px;
+  padding: 6px 12px;
+  border: 1px solid #FFD700;
+  border-radius: 4px;
 }
 
 .public-join-session-text:hover:not(.disabled) {
-  color: #ffffff;
+  color: #000000;
+  background: #FFD700;
   transform: scale(1.05);
 }
 
 .public-join-session-text.disabled {
   color: #666;
+  border-color: #666;
   cursor: not-allowed;
   opacity: 0.6;
 }
@@ -359,35 +370,38 @@
   }
 
   .public-sessions-list {
-    max-width: 66.7vmin; /* 500px / 750px * 100 */
+    max-width: 53.3vmin; /* 400px / 750px * 100 */
     gap: 1.3vmin; /* 10px / 750px * 100 */
   }
 
   .public-session-tile {
-    height: 6.7vmin;
-    width: 66.7vmin;
-    padding: 1.6vmin 2.7vmin;
-    border-width: 0.27vmin;
+    width: 53.3vmin; /* 400px / 750px * 100 */
+    height: 10.7vmin; /* 80px / 750px * 100 */
+    padding: 0 3.3vmin; /* 25px / 750px * 100 */
   }
 
   .public-session-info {
-    padding: 0 1.3vmin; /* 10px / 750px * 100 */
+    padding: 0;
   }
 
   .public-session-host {
-    font-size: 2.4vmin;
+    font-size: 2.1vmin; /* 16px / 750px * 100 */
   }
 
   .public-session-details {
-    gap: 0;
+    gap: 2vmin; /* 15px / 750px * 100 */
   }
 
   .public-session-players {
-    font-size: 2.1vmin;
+    font-size: 1.9vmin; /* 14px / 750px * 100 */
+  }
+
+  .public-session-code {
+    font-size: 1.9vmin; /* 14px / 750px * 100 */
   }
 
   .public-join-session-text {
-    font-size: 2.1vmin;
-    padding: 0.5vmin 1.1vmin;
+    font-size: 1.9vmin; /* 14px / 750px * 100 */
+    padding: 0.8vmin 1.6vmin; /* 6px 12px / 750px * 100 */
   }
 }
