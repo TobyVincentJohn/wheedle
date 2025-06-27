@@ -302,6 +302,8 @@
   color: #000000;
   background: #FFD700;
   transform: scale(1.05);
+}
+
 @font-face {
   font-family: 'VT323';
   src: url('../../assets/fonts/VT323-Regular.ttf') format('truetype');
