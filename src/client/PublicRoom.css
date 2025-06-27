@@ -96,7 +96,7 @@
   display: flex;
   align-items: center;
   position: relative;
-  gap: 3px;
+  gap: -2px;
 }
 
 .public-room-code-input {
@@ -119,6 +119,7 @@
   margin: 0;
   background-color: transparent;
   text-align: center;
+  margin-right: -5px;
 }
 
 .public-room-code-input::placeholder {
@@ -128,8 +129,8 @@
 
 
 .public-next-button {
-  width: 35px;
-  height: 35px;
+  width: 25px;
+  height: 25px;
   background-image: url('../../assets/session_page/next_button.png');
   background-size: contain;
   background-position: center;
@@ -320,7 +321,11 @@
   }
 
   .public-room-code-container {
-    gap: 0.4vmin;
+    gap: -0.3vmin;
+  }
+
+  .public-room-code-input {
+    margin-right: -0.7vmin;
   }
 
   .public-room-code-input {
@@ -330,8 +335,8 @@
   }
 
   .public-next-button {
-    width: 4.7vmin;
-    height: 4.7vmin;
+    width: 3.3vmin;
+    height: 3.3vmin;
   }
 
   .public-sessions-content {
