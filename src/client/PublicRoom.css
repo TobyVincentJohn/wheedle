@@ -21,7 +21,7 @@
   background-size: 100% 100%;
   background-position: center;
   background-repeat: no-repeat;
-  filter: blur(8px) brightness(0.4);
+  filter: blur(3px) brightness(0.9);
   z-index: 0;
 }
 
@@ -316,7 +316,7 @@
   .public-room::before {
     width: 100vmin;
     height: 100vmin;
-    filter: blur(8px) brightness(0.4);
+    filter: blur(3px) brightness(0.9);
   }
 
   .public-room-content {
