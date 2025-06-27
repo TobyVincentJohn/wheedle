@@ -119,7 +119,7 @@
   margin: 0;
   background-color: transparent;
   text-align: center;
-  margin-right: -5px;
+  margin-right: -15px;
 }
 
 .public-room-code-input::placeholder {
