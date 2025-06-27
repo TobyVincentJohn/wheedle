@@ -96,12 +96,12 @@
   display: flex;
   align-items: center;
   position: relative;
-  gap: 8px;
+  gap: 3px;
 }
 
 .public-room-code-input {
-  width: 140px;
-  height: 40px;
+  width: 160px;
+  height: 45px;
   background-image: url('../../assets/waiting_room/name_tag.png');
   background-size: contain;
   background-position: center;
@@ -112,7 +112,7 @@
   justify-content: center;
   color: #ffffff;
   font-family: 'VT323', monospace;
-  font-size: 16px;
+  font-size: 18px;
   border: none;
   outline: none;
   padding: 0;
@@ -128,8 +128,8 @@
 
 
 .public-next-button {
-  width: 30px;
-  height: 30px;
+  width: 35px;
+  height: 35px;
   background-image: url('../../assets/session_page/next_button.png');
   background-size: contain;
   background-position: center;
@@ -320,15 +320,14 @@
   }
 
   .public-room-code-input {
-    width: 16vmin;
-    height: 4.7vmin;
-    font-size: 1.9vmin;
+    width: 21.3vmin;
+    height: 6vmin;
+    font-size: 2.4vmin;
   }
 
   .public-next-button {
-    width: 3.3vmin;
-    height: 3.3vmin;
-    right: -4.7vmin;
+    width: 4.7vmin;
+    height: 4.7vmin;
   }
 
   .public-sessions-content {
