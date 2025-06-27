@@ -82,7 +82,7 @@
 }
 
 .public-create-room-button:hover {
-  transform: scale(1.05);
+  transform: translateX(-50%) scale(1.05);
 }
 
 .public-room-code-search-container {
