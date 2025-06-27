@@ -63,8 +63,8 @@
 }
 
 .public-create-room-button {
-  width: 140px;
-  height: 80px;
+  width: 160px;
+  height: 90px;
   background-image: url('../../assets/session_page/create_room.png');
   background-size: contain;
   background-position: center;
@@ -163,7 +163,7 @@
 }
 
 .public-sessions-content {
-  margin-top: 160px;
+  margin-top: 140px;
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -177,8 +177,8 @@
   font-size: 28px;
   text-align: center;
   text-shadow: 2px 2px 0px rgba(0, 0, 0, 0.5);
-  margin-bottom: 4px;
-  margin-top: -20px;
+  margin-bottom: 8px;
+  margin-top: 8px;
 }
 
 .no-sessions-message {
@@ -336,8 +336,8 @@
   }
 
   .public-create-room-button {
-    width: 16vmin;
-    height: 9.3vmin;
+    width: 21.3vmin;
+    height: 12vmin;
   }
 
   .public-room-code-container {
@@ -360,14 +360,14 @@
   }
 
   .public-sessions-content {
-    margin-top: 21.3vmin; /* 160px / 750px * 100 */
+    margin-top: 18.7vmin; /* 140px / 750px * 100 */
     gap: 1.3vmin; /* 10px / 750px * 100 */
   }
 
   .active-sessions-title {
     font-size: 3.7vmin;  /* 28px / 750px * 100 */
-    margin-bottom: 0.5vmin;  /* 4px / 750px * 100 */
-    margin-top: 0.5vmin;  /* 4px / 750px * 100 */
+    margin-bottom: 1.1vmin;  /* 8px / 750px * 100 */
+    margin-top: 1.1vmin;  /* 8px / 750px * 100 */
   }
 
   .no-sessions-message {
