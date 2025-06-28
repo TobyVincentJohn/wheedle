@@ -8,7 +8,7 @@ const requestBody = {
     {
       parts: [
         {
-          text: prompt
+          text: "hi"
         }
       ]
     }
