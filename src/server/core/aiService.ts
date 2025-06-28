@@ -518,3 +518,6 @@ Respond ONLY with valid JSON, no additional text.`;
       reason: evaluationResult.reason,
       evaluation: evaluationResult.evaluation || evaluationResult
     };
+
+  }
+}
