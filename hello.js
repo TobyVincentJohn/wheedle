@@ -38,17 +38,30 @@
 
 // console.log(response);
 
+// fetch('https://example.com')
+//   .then(response => {
+//     if (!response.ok) {
+//       throw new Error(`HTTP error! Status: ${response.status}`);
+//     }
+//     console.log(typeof response.text())
+  //   // return response.text(); // or response.json() if expecting JSON
+  // })
+  // .then(data => {
+  //   console.log('Fetched data:', data);
+  // })
+  // .catch(error => {
+  //   console.error('Fetch error:', error);
+  // });
+
+const fetch = require('node-fetch'); // only needed if Node < 18
+
 fetch('https://example.com')
-  .then(response => {
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
-    }
-    console.log(typeof response.text())
-    return response.text(); // or response.json() if expecting JSON
-  })
+  .then(response => response.text())
   .then(data => {
-    console.log('Fetched data:', data);
+    console.log('Type of data:', typeof data); // should log: string
+    console.log('First 100 chars:', data.slice(0, 100));
   })
   .catch(error => {
     console.error('Fetch error:', error);
   });
+
