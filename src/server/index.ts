@@ -25,7 +25,6 @@ import {
   StartCountdownResponse 
 } from '../shared/types/session';
 import { storePlayerResponse, getSessionResponses } from './core/playerResponses';
-import { getContext as getDevvitContext } from '@devvit/public-api';
 
 
 const app = express();
