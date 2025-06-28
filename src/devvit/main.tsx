@@ -12,7 +12,7 @@ Devvit.configure({
   redis: true,  
   media: true,  
 });
-defineConfig({
+
 // Add scheduled job for Gemini evaluation
 Devvit.addSchedulerJob({
   name: 'evaluate-game-winner',
@@ -67,6 +67,7 @@ Devvit.addSchedulerJob({
   },
 });
 
+defineConfig({
   name: '[Bolt] Word Guesser',
   entry: 'index.html',
   height: 'tall',
