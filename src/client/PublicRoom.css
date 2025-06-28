@@ -245,7 +245,11 @@
 }
 
 .public-session-tile:hover {
-  transform: scale(1.02);
+  transform: scale(1.05);
+}
+
+.public-session-tile:hover:not(.disabled) {
+  transform: scale(1.05);
 }
 
 .public-session-tile.disabled {
@@ -287,7 +291,6 @@
   color: #ffffff;
   font-family: 'VT323', monospace;
   font-size: 20px;
-  font-weight: bold;
 }
 
 
