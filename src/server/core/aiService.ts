@@ -348,7 +348,6 @@ export const sendSessionDataToGemini = async ({
   setTimeout(() => {
     console.log('Waited 2 seconds');
   }, 2000);
-  return "hello";
   // Get all player responses for the session
   const sessionResponses = await getSessionResponses({ redis, sessionId });
   if (!sessionResponses) {
