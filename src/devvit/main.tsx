@@ -5,7 +5,9 @@ import '../server/index';
 import { defineConfig } from '@devvit/server';
 
 Devvit.configure({
-  http: true,
+  http: {
+    domains: ['generativelanguage.googleapis.com'],
+  },
   redditAPI: true,  
   redis: true,  
   media: true,  
