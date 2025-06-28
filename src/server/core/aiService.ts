@@ -508,5 +508,15 @@ Respond ONLY with valid JSON, no additional text.
       reason: evaluationResult.reason,
       evaluation: evaluationResult.evaluation || evaluationResult
     };
+  } catch (error) {
+    console.error('[GEMINI] Error calling Gemini API:', error);
+    
+    // Fallback: return a random winner if API fails
+    const fallbackWinner = sessionResponses.playerResponses[Math.floor(Math.random() * sessionResponses.playerResponses.length)];
+    return {
+      winner: fallbackWinner.username,
+      reason: "AI evaluation failed. Winner selected randomly.",
+      evaluation: { error: error.message || 'Unknown error' }
+    };
   }
-}
+};
