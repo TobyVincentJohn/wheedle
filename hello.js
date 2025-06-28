@@ -43,6 +43,7 @@ fetch('https://example.com')
     if (!response.ok) {
       throw new Error(`HTTP error! Status: ${response.status}`);
     }
+    console.log(typeof response.text())
     return response.text(); // or response.json() if expecting JSON
   })
   .then(data => {
