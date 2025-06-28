@@ -230,6 +230,7 @@
   position: relative;
   opacity: 0;
   animation: fadeInTile 0.3s ease-in-out forwards;
+  cursor: pointer;
 }
 
 @keyframes fadeInTile {
@@ -247,6 +248,14 @@
   transform: scale(1.02);
 }
 
+.public-session-tile.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.public-session-tile.disabled:hover {
+  transform: none;
+}
 .public-session-info {
   display: flex;
   justify-content: space-between;
@@ -266,7 +275,6 @@
   display: flex;
   align-items: center;
   gap: 30px;
-  margin-right: 30px; /* More space from join button */
 }
 
 .public-session-players {
@@ -282,32 +290,6 @@
   font-weight: bold;
 }
 
-.public-join-session-text {
-  width: 30px;
-  height: 30px;
-  background-image: url('../../assets/session_page/next_button_yellow.png');
-  background-size: contain;
-  background-position: center;
-  background-repeat: no-repeat;
-  image-rendering: pixelated;
-  border: none;
-  background-color: transparent;
-  cursor: pointer;
-  transition: all 0.2s;
-  flex-shrink: 0; /* Prevent button from shrinking */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.public-join-session-text:hover:not(.disabled) {
-  transform: scale(1.05);
-}
-
-.public-join-session-text.disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
 
 @font-face {
   font-family: 'VT323';
@@ -405,7 +387,6 @@
 
   .public-session-details {
     gap: 4vmin; /* 30px / 750px * 100 */
-    margin-right: 4vmin; /* 30px / 750px * 100 */
   }
 
   .public-session-players {
@@ -414,10 +395,5 @@
 
   .public-session-code {
     font-size: 2.7vmin; /* 20px / 750px * 100 */
-  }
-
-  .public-join-session-text {
-    width: 4vmin; /* 30px / 750px * 100 */
-    height: 4vmin; /* 30px / 750px * 100 */
   }
 }

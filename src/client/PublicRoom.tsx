@@ -195,10 +195,16 @@ const PublicRoom: React.FC = () => {
   const renderSessionTile = (session: GameSession) => (
     <div 
       key={session.sessionId} 
-      className="public-session-tile"
+      className={`public-session-tile ${session.players.length >= session.maxPlayers ? 'disabled' : ''}`}
       style={{ 
         animationDelay: `${Math.random() * 0.2}s` // Slight stagger for multiple tiles
       }}
+      onClick={() => {
+        if (session.players.length < session.maxPlayers) {
+          handleButtonClick(() => handleJoinSession(session.sessionId));
+        }
+      }}
+      onMouseEnter={() => getSoundState() && playHoverSound()}
     >
       <div className="public-session-info">
         <div className="public-session-host">
@@ -208,18 +214,9 @@ const PublicRoom: React.FC = () => {
           <div className="public-session-players">
             {session.players.length}/{session.maxPlayers} Players
           </div>
-          <div className="public-session-code">{session.sessionCode}</div>
+          <div className="public-session-code">CODE: {session.sessionCode}</div>
         </div>
       </div>
-      <div 
-        className={`public-join-session-text ${session.players.length >= session.maxPlayers ? 'disabled' : ''}`}
-        onClick={() => {
-          if (session.players.length < session.maxPlayers) {
-            handleButtonClick(() => handleJoinSession(session.sessionId));
-          }
-        }}
-        onMouseEnter={() => getSoundState() && playHoverSound()}
-      />
     </div>
   );
 
