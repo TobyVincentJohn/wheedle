@@ -305,10 +305,10 @@ const PublicRoom: React.FC = () => {
                 {searchedSession && (
                   renderSessionTile(searchedSession)
                 )}
-                {(publicSessions.length > 0 || searchedSession) && isRoomTileLoaded && (
+                {(publicSessions.length > 0 || searchedSession) && areSessionAssetsLoaded && (
                   <div className="active-sessions-title">Active Sessions</div>
                 )}
-                {isRoomTileLoaded && publicSessions.map(renderSessionTile)}
+                {areSessionAssetsLoaded && publicSessions.map(renderSessionTile)}
               </div>
             )}
           </div>
