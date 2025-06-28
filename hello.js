@@ -35,3 +35,5 @@ const response = await fetch(url, {
   },
   body: JSON.stringify(requestBody),
 });
+
+console.log(response)
