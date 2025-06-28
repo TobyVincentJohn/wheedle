@@ -6,9 +6,6 @@ import { USER_PERSONAS } from '../../shared/data/userPersonas';
 import { sessionGet } from './session';
 import { getSessionResponses } from './playerResponses';
 
-// Gemini API integration
-import { GoogleGenAI } from '@google/genai';
-
 const getAIGameDataKey = (sessionId: string) => `ai_game_data:${sessionId}` as const;
 
 // Helper to ensure clues is exactly 3 strings
@@ -333,10 +330,10 @@ export const deleteAIGameData = async ({
 };
 
 /**
- * Send all user personas, AI persona, and user responses for a session to Gemini and return the result.
+ * Send all user personas, AI persona, and user responses for a session to Gemini and return the winner evaluation.
  * @param redis Redis client
  * @param sessionId Session ID
- * @returns Gemini API response (text)
+ * @returns Gemini API response with winner evaluation
  */
 export const sendSessionDataToGemini = async ({
   redis,
@@ -344,7 +341,10 @@ export const sendSessionDataToGemini = async ({
 }: {
   redis: RedisClient;
   sessionId: string;
-}): Promise<string | null> => {
+}): Promise<{ winner: string; reason: string; evaluation: any } | null> => {
+  console.log('[GEMINI] ===== STARTING GEMINI WINNER EVALUATION =====');
+  console.log('[GEMINI] Session ID:', sessionId);
+  
   // Get all player responses for the session
   const sessionResponses = await getSessionResponses({ redis, sessionId });
   if (!sessionResponses) {
@@ -352,45 +352,169 @@ export const sendSessionDataToGemini = async ({
     return null;
   }
 
+  console.log('[GEMINI] Found', sessionResponses.playerResponses.length, 'player responses');
+  console.log('[GEMINI] AI Persona:', sessionResponses.aiPersona);
+
   // Prepare the prompt for Gemini
-//   const prompt = `
-// Session AI Persona: ${sessionResponses.aiPersona}
-
-// Player Personas and Responses:
-// ${sessionResponses.playerResponses.map(r => `- ${r.username} (${r.persona}): ${r.response}`).join('\n')}
-
-// Given the above, provide an analysis, summary, or next action for the game.`;
-
-  // Call Gemini API
-  // try {
-    // const apiKey = 'AIzaSyCJobF0XKy-KCeCwRkx8AyygPJmukEUw-o';
-    // if (!apiKey) throw new Error('Missing Google API key');
-    // const ai = new GoogleGenAI({ apiKey:apiKey });
-    // const result = await ai.models.generateContent({
-    //   model: 'gemini-2.5-flash',
-    //   contents: "hello",//[{ parts: [{ text: prompt }] }],
-    //   config: {
-    //     thinkingConfig: {
-    //       thinkingBudget: 0,
-    //     },
-    //   }
-    // });
-    // console.log(result.text)
-    const url='https://example.com';
-    try{
-    fetch(url).then(response => {
-      if (response.ok) {
-        return response;
-      }
-      throw new Error('Something went wrong');
-    }).then(responseJson => {
-      console.log(responseJson)
-    }).catch(error => {
-      console.log(error)
-    });
-    
+  const prompt = `You are judging a persuasion game where players try to convince an AI persona that they deserve prize money more than other players.
   } catch (err) {
     console.error('[GEMINI] Error calling Gemini API:', err);
-    return null;
+    
+    // Fallback to random selection if Gemini fails
+    const fallbackWinner = sessionResponses.playerResponses[Math.floor(Math.random() * sessionResponses.playerResponses.length)];
+    return {
+      winner: fallbackWinner.username,
+      reason: "AI evaluation service was unavailable. Winner selected randomly among participants.",
+      evaluation: { error: err instanceof Error ? err.message : 'Unknown error' }
+    };
   }
 };
+
+**Game Context:**
+AI Persona: ${sessionResponses.aiPersona}
+
+**Player Responses:**
+${sessionResponses.playerResponses.map(r => `
+Player: ${r.username}
+Assigned Persona: ${r.persona}
+Response: "${r.response}"
+${r.isTimeUp ? '(Note: This player ran out of time)' : ''}
+`).join('\n')}
+
+**Evaluation Criteria:**
+1. How well does the response align with their assigned persona?
+2. How convincing is their argument for deserving the prize money?
+3. How well do they understand and appeal to the AI persona?
+4. Creativity and persuasiveness of their approach
+
+**Instructions:**
+- Evaluate each player's response based on the criteria above
+- Choose ONE winner who best convinced the AI persona
+- Provide a clear reason for your choice
+- Return your response in this exact JSON format:
+
+{
+  "winner": "exact_username_here",
+  "reason": "Detailed explanation of why this player won, mentioning how they stayed in character and made the most convincing argument",
+  "evaluation": {
+    "player_scores": [
+      {
+        "username": "player1",
+        "persona_alignment": "score_out_of_10",
+        "persuasiveness": "score_out_of_10", 
+        "ai_understanding": "score_out_of_10",
+        "creativity": "score_out_of_10",
+        "total_score": "total_out_of_40",
+        "notes": "brief evaluation notes"
+      }
+    ],
+    "winner_justification": "Why the winner stood out above others"
+  }
+}
+
+Respond ONLY with valid JSON, no additional text.`;
+
+  console.log('[GEMINI] Prepared prompt for evaluation');
+  console.log('[GEMINI] Prompt length:', prompt.length, 'characters');
+
+  // Call Gemini API directly using fetch
+  try {
+    // You'll need to set this as an environment variable or configure it securely
+    const apiKey = process.env.GEMINI_API_KEY || 'AIzaSyCJobF0XKy-KCeCwRkx8AyygPJmukEUw-o';
+    if (!apiKey) {
+      console.error('[GEMINI] Missing GEMINI_API_KEY environment variable');
+      throw new Error('Missing Google API key');
+    }
+
+    const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent';
+    
+    const requestBody = {
+      contents: [
+        {
+          parts: [
+            {
+              text: prompt
+            }
+          ]
+        }
+      ],
+      generationConfig: {
+        thinkingConfig: {
+          thinkingBudget: 1024
+        },
+        temperature: 0.7,
+        maxOutputTokens: 2048
+      }
+    };
+
+    console.log('[GEMINI] Making API call to:', url);
+    console.log('[GEMINI] Request body prepared');
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'x-goog-api-key': apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    console.log('[GEMINI] API response status:', response.status);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[GEMINI] API error response:', errorText);
+      throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
+    }
+
+    const responseData = await response.json();
+    console.log('[GEMINI] Raw API response:', JSON.stringify(responseData, null, 2));
+
+    // Extract the generated text from Gemini response
+    const generatedText = responseData.candidates?.[0]?.content?.parts?.[0]?.text;
+    
+    if (!generatedText) {
+      console.error('[GEMINI] No generated text in response:', responseData);
+      throw new Error('No generated text in Gemini response');
+    }
+
+    console.log('[GEMINI] Generated text:', generatedText);
+
+    // Parse the JSON response from Gemini
+    let evaluationResult;
+    try {
+      evaluationResult = JSON.parse(generatedText);
+      console.log('[GEMINI] Parsed evaluation result:', evaluationResult);
+    } catch (parseError) {
+      console.error('[GEMINI] Failed to parse JSON response:', parseError);
+      console.error('[GEMINI] Raw text that failed to parse:', generatedText);
+      
+      // Fallback: try to extract winner from text if JSON parsing fails
+      const fallbackWinner = sessionResponses.playerResponses[Math.floor(Math.random() * sessionResponses.playerResponses.length)];
+      return {
+        winner: fallbackWinner.username,
+        reason: "AI evaluation was inconclusive. Winner selected randomly.",
+        evaluation: { error: "Failed to parse AI response", rawResponse: generatedText }
+      };
+    }
+
+    // Validate the response structure
+    if (!evaluationResult.winner || !evaluationResult.reason) {
+      console.error('[GEMINI] Invalid response structure:', evaluationResult);
+      const fallbackWinner = sessionResponses.playerResponses[Math.floor(Math.random() * sessionResponses.playerResponses.length)];
+      return {
+        winner: fallbackWinner.username,
+        reason: "AI evaluation format was invalid. Winner selected randomly.",
+        evaluation: evaluationResult
+      };
+    }
+
+    console.log('[GEMINI] ===== EVALUATION COMPLETE =====');
+    console.log('[GEMINI] Winner:', evaluationResult.winner);
+    console.log('[GEMINI] Reason:', evaluationResult.reason);
+
+    return {
+      winner: evaluationResult.winner,
+      reason: evaluationResult.reason,
+      evaluation: evaluationResult.evaluation || evaluationResult
+    };

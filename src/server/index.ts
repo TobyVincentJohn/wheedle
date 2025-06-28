@@ -631,14 +631,36 @@ router.post('/api/sessions/:sessionId/complete', async (req, res): Promise<void>
 router.get('/api/sessions/:sessionId/gemini-analysis', async (req, res) => {
   const { sessionId } = req.params;
   const redis = getRedis();
+  
+  console.log('[GEMINI ENDPOINT] Received request for Gemini analysis, session:', sessionId);
+  
   if (!sessionId || typeof sessionId !== 'string') {
+    console.error('[GEMINI ENDPOINT] Invalid sessionId provided');
     return res.status(400).json({ status: 'error', message: 'Invalid sessionId' });
   }
+  
   try {
-    const geminiText = await sendSessionDataToGemini({ redis, sessionId });
-    if (geminiText) {
-      res.json({ status: 'success', data: { geminiText } });
+    console.log('[GEMINI ENDPOINT] Calling sendSessionDataToGemini...');
+    const geminiResult = await sendSessionDataToGemini({ redis, sessionId });
+    
+    if (geminiResult) {
+      console.log('[GEMINI ENDPOINT] ===== GEMINI EVALUATION RESULT =====');
+      console.log('[GEMINI ENDPOINT] Winner:', geminiResult.winner);
+      console.log('[GEMINI ENDPOINT] Reason:', geminiResult.reason);
+      console.log('[GEMINI ENDPOINT] Full Evaluation:', JSON.stringify(geminiResult.evaluation, null, 2));
+      console.log('[GEMINI ENDPOINT] ===== END EVALUATION RESULT =====');
+      
+      res.json({ 
+        status: 'success', 
+        data: { 
+          winner: geminiResult.winner,
+          reason: geminiResult.reason,
+          evaluation: geminiResult.evaluation,
+          geminiText: geminiResult.reason // For backward compatibility
+        } 
+      });
     } else {
+      console.error('[GEMINI ENDPOINT] No result returned from Gemini');
       res.status(404).json({ status: 'error', message: 'No Gemini response available' });
     }
   } catch (error) {

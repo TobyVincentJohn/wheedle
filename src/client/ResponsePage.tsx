@@ -27,6 +27,7 @@ const ResponsePage: React.FC = () => {
   const [allResponses, setAllResponses] = useState<any[]>([]);
   const [winner, setWinner] = useState<string>('');
   const [winnerReason, setWinnerReason] = useState<string>('');
+  const [geminiEvaluation, setGeminiEvaluation] = useState<any>(null);
 
   useEffect(() => {
     const sessionFromState = location.state?.session;
@@ -243,36 +244,77 @@ const ResponsePage: React.FC = () => {
 
   const evaluateResponsesAndDetermineWinner = async () => {
     console.log('[CLIENT WINNER] ===== STARTING WINNER EVALUATION =====');
-    // Fetch Gemini analysis for winner reason FIRST
-    let geminiReason = '';
-    const response = await fetch(`/api/sessions/${session?.sessionId}/gemini-analysis`);
+    console.log('[CLIENT WINNER] Calling Gemini API for winner evaluation...');
+    
+    // Fetch Gemini analysis for winner evaluation
+    let geminiResult = null;
     try {
+      const response = await fetch(`/api/sessions/${session?.sessionId}/gemini-analysis`);
       const data = await response.json();
-      if (data.status === 'success' && data.data && data.data.geminiText) {
-        geminiReason = data.data.geminiText;
+      
+      if (data.status === 'success' && data.data) {
+        geminiResult = data.data;
+        console.log('[CLIENT WINNER] ===== GEMINI EVALUATION RECEIVED =====');
+        console.log('[CLIENT WINNER] Gemini Winner:', geminiResult.winner);
+        console.log('[CLIENT WINNER] Gemini Reason:', geminiResult.reason);
+        console.log('[CLIENT WINNER] Full Evaluation:', geminiResult.evaluation);
+        console.log('[CLIENT WINNER] ===== END GEMINI EVALUATION =====');
+        
+        // Log to browser console for debugging
+        console.log('🤖 GEMINI GAME EVALUATION RESULT:', {
+          winner: geminiResult.winner,
+          reason: geminiResult.reason,
+          fullEvaluation: geminiResult.evaluation,
+          timestamp: new Date().toISOString()
+        });
       }
     } catch (err) {
-      console.log(response)
-      console.error('Failed to fetch Gemini analysis:', err);
+      console.error('[CLIENT WINNER] Failed to fetch Gemini analysis:', err);
+      console.error('🤖 GEMINI EVALUATION ERROR:', err);
     }
-    // Mock winner determination - in real implementation, this would be an AI call
-    const players = session?.players || [];
-    console.log('[CLIENT WINNER] Available players for winner selection:', players.map(p => p.username));
-    const randomWinner = players[Math.floor(Math.random() * players.length)];
-    console.log('[CLIENT WINNER] Selected winner:', randomWinner?.username);
+    
     // Simulate evaluation delay
     console.log('[CLIENT WINNER] Simulating AI evaluation delay...');
     await new Promise(resolve => setTimeout(resolve, 2000));
-    const winnerUsername = randomWinner?.username || 'Unknown';
-    const winnerId = randomWinner?.userId || '';
-    setWinnerReason(
-      geminiReason || `${winnerUsername} provided the most accurate guess about the AI's persona. Their response showed deep understanding of the theme and correctly identified key elements from the clues.`
-    );
-    setWinner(winnerUsername);
+    
+    // Use Gemini result if available, otherwise fallback to random selection
+    let finalWinner, finalReason, finalWinnerId;
+    
+    if (geminiResult && geminiResult.winner) {
+      // Find the player object for the Gemini-selected winner
+      const players = session?.players || [];
+      const geminiWinnerPlayer = players.find(p => p.username === geminiResult.winner);
+      
+      if (geminiWinnerPlayer) {
+        finalWinner = geminiResult.winner;
+        finalReason = geminiResult.reason;
+        finalWinnerId = geminiWinnerPlayer.userId;
+        setGeminiEvaluation(geminiResult.evaluation);
+        console.log('[CLIENT WINNER] Using Gemini-selected winner:', finalWinner);
+      } else {
+        console.warn('[CLIENT WINNER] Gemini winner not found in player list, falling back to random');
+        const randomWinner = players[Math.floor(Math.random() * players.length)];
+        finalWinner = randomWinner?.username || 'Unknown';
+        finalWinnerId = randomWinner?.userId || '';
+        finalReason = `AI selected ${geminiResult.winner} but they were not found in the game. ${finalWinner} wins by default.`;
+      }
+    } else {
+      // Fallback to random selection
+      console.log('[CLIENT WINNER] No Gemini result, falling back to random selection');
+      const players = session?.players || [];
+      const randomWinner = players[Math.floor(Math.random() * players.length)];
+      finalWinner = randomWinner?.username || 'Unknown';
+      finalWinnerId = randomWinner?.userId || '';
+      finalReason = `${finalWinner} provided the most accurate guess about the AI's persona. Their response showed deep understanding of the theme and correctly identified key elements from the clues.`;
+    }
+    
+    setWinner(finalWinner);
+    setWinnerReason(finalReason);
     setPageState('revealing');
     console.log('[CLIENT WINNER] Winner page should now be visible');
+    
     // Mark session as completed with winner
-    if (session && winnerId) {
+    if (session && finalWinnerId) {
       try {
         console.log('[CLIENT WINNER] Marking session as completed...');
         await fetch(`/api/sessions/${session.sessionId}/complete`, {
@@ -281,8 +323,8 @@ const ResponsePage: React.FC = () => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            winnerId,
-            winnerUsername,
+            winnerId: finalWinnerId,
+            winnerUsername: finalWinner,
           }),
         });
         console.log('✅ Session marked as completed with winner');
@@ -435,6 +477,35 @@ const ResponsePage: React.FC = () => {
                 <div style={{ fontSize: '18px', lineHeight: '1.4', color: '#ffffff', marginBottom: '30px' }}>
                   {winnerReason}
                 </div>
+                {geminiEvaluation && (
+                  <details style={{ 
+                    fontSize: '14px', 
+                    color: '#cccccc', 
+                    marginBottom: '20px',
+                    cursor: 'pointer'
+                  }}>
+                    <summary style={{ color: '#FFD700', marginBottom: '10px' }}>
+                      View Detailed AI Evaluation
+                    </summary>
+                    <div style={{ 
+                      background: 'rgba(0, 0, 0, 0.5)', 
+                      padding: '15px', 
+                      borderRadius: '8px',
+                      textAlign: 'left',
+                      maxHeight: '200px',
+                      overflowY: 'auto'
+                    }}>
+                      <pre style={{ 
+                        whiteSpace: 'pre-wrap', 
+                        fontSize: '12px',
+                        margin: 0,
+                        fontFamily: 'VT323, monospace'
+                      }}>
+                        {JSON.stringify(geminiEvaluation, null, 2)}
+                      </pre>
+                    </div>
+                  </details>
+                )}
                 <div style={{ fontSize: '20px', marginBottom: '20px', color: '#4CAF50' }}>
                   Congratulations!
                 </div>
