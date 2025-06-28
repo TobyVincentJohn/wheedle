@@ -409,11 +409,18 @@ Respond ONLY with valid JSON, no additional text.
 
   // Call Gemini API directly using fetch
   try {
-    // You'll need to set this as an environment variable or configure it securely
-    const apiKey = process.env.GEMINI_API_KEY || 'AIzaSyCJobF0XKy-KCeCwRkx8AyygPJmukEUw-o';
+    // For development, you can hardcode the API key here temporarily
+    // In production, this should be an environment variable
+    const apiKey = process.env.GEMINI_API_KEY || 'YOUR_GEMINI_API_KEY_HERE';
+    
     if (!apiKey) {
       console.error('[GEMINI] Missing GEMINI_API_KEY environment variable');
       throw new Error('Missing Google API key');
+    }
+    
+    if (apiKey === 'YOUR_GEMINI_API_KEY_HERE') {
+      console.error('[GEMINI] Please replace YOUR_GEMINI_API_KEY_HERE with your actual Gemini API key');
+      throw new Error('Please configure your Gemini API key');
     }
 
     const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent';
@@ -433,32 +440,56 @@ Respond ONLY with valid JSON, no additional text.
           thinkingBudget: 1024
         },
         temperature: 0.7,
-        maxOutputTokens: 2048
+        maxOutputTokens: 2048,
+        topP: 0.8,
+        topK: 40
       }
     };
 
     console.log('[GEMINI] Making API call to:', url);
-    console.log('[GEMINI] Request body prepared');
+    console.log('[GEMINI] Using API key (first 10 chars):', apiKey.substring(0, 10) + '...');
 
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         'x-goog-api-key': apiKey,
         'Content-Type': 'application/json',
+        'User-Agent': 'Wheedle-Game/1.0'
       },
       body: JSON.stringify(requestBody),
     });
 
     console.log('[GEMINI] API response status:', response.status);
+    console.log('[GEMINI] API response headers:', Object.fromEntries(response.headers.entries()));
 
     if (!response.ok) {
       const errorText = await response.text();
       console.error('[GEMINI] API error response:', errorText);
-      throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
+      
+      // Try to parse error details
+      let errorDetails = errorText;
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorDetails = errorJson.error?.message || errorText;
+        console.error('[GEMINI] Parsed error details:', errorJson);
+      } catch (e) {
+        console.error('[GEMINI] Could not parse error response as JSON');
+      }
+      
+      throw new Error(`Gemini API error: ${response.status} - ${errorDetails}`);
     }
 
     const responseData = await response.json();
-    console.log('[GEMINI] Raw API response:', JSON.stringify(responseData, null, 2));
+    console.log('[GEMINI] API response received successfully');
+    
+    // Log response structure without full content for debugging
+    console.log('[GEMINI] Response structure:', {
+      hasCandidates: !!responseData.candidates,
+      candidatesLength: responseData.candidates?.length || 0,
+      hasContent: !!responseData.candidates?.[0]?.content,
+      hasParts: !!responseData.candidates?.[0]?.content?.parts,
+      partsLength: responseData.candidates?.[0]?.content?.parts?.length || 0
+    });
 
     // Extract the generated text from Gemini response
     const generatedText = responseData.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -510,13 +541,22 @@ Respond ONLY with valid JSON, no additional text.
     };
   } catch (error) {
     console.error('[GEMINI] Error calling Gemini API:', error);
+    console.error('[GEMINI] Error details:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack
+    });
     
     // Fallback: return a random winner if API fails
     const fallbackWinner = sessionResponses.playerResponses[Math.floor(Math.random() * sessionResponses.playerResponses.length)];
     return {
       winner: fallbackWinner.username,
-      reason: "AI evaluation failed. Winner selected randomly.",
-      evaluation: { error: error.message || 'Unknown error' }
+      reason: `AI evaluation failed (${error.message}). Winner selected randomly.`,
+      evaluation: { 
+        error: error.message || 'Unknown error',
+        fallback: true,
+        timestamp: new Date().toISOString()
+      }
     };
   }
 };

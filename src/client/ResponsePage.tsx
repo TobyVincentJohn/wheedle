@@ -271,6 +271,15 @@ const ResponsePage: React.FC = () => {
     } catch (err) {
       console.error('[CLIENT WINNER] Failed to fetch Gemini analysis:', err);
       console.error('🤖 GEMINI EVALUATION ERROR:', err);
+      
+      // Log more detailed error information
+      if (err instanceof Error) {
+        console.error('🤖 GEMINI ERROR DETAILS:', {
+          name: err.name,
+          message: err.message,
+          stack: err.stack
+        });
+      }
     }
     
     // Simulate evaluation delay
