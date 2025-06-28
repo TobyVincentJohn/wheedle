@@ -423,7 +423,8 @@ Respond ONLY with valid JSON, no additional text.
       throw new Error('Please configure your Gemini API key');
     }
 
-    const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent';
+    // Use query parameter for API key instead of header to avoid proxy issues
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
     
     const requestBody = {
       contents: [
@@ -436,9 +437,6 @@ Respond ONLY with valid JSON, no additional text.
         }
       ],
       generationConfig: {
-        thinkingConfig: {
-          thinkingBudget: 0
-        },
         temperature: 0.7,
         maxOutputTokens: 2048,
         topP: 0.8,
@@ -447,12 +445,10 @@ Respond ONLY with valid JSON, no additional text.
     };
 
     console.log('[GEMINI] Making API call to:', url);
-    console.log('[GEMINI] Using API key (first 10 chars):', apiKey.substring(0, 10) + '...');
 
     const response = await fetch(url, {
       method: 'POST',
       headers: {
-        'x-goog-api-key': apiKey,
         'Content-Type': 'application/json',
         'User-Agent': 'Wheedle-Game/1.0'
       },
