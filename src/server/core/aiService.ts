@@ -345,7 +345,9 @@ export const sendSessionDataToGemini = async ({
   console.log('[GEMINI] ===== STARTING GEMINI WINNER EVALUATION =====');
   console.log('[GEMINI] Session ID:', sessionId);
 
-  await sleep(2000);  
+  setTimeout(() => {
+    console.log('Waited 2 seconds');
+  }, 2000);
   return "hello";
   // Get all player responses for the session
   const sessionResponses = await getSessionResponses({ redis, sessionId });
