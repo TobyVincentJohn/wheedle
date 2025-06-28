@@ -424,7 +424,7 @@ Respond ONLY with valid JSON, no additional text.
     }
 
     // Use query parameter for API key instead of header to avoid proxy issues
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`;
     
     const requestBody = {
       contents: [
@@ -436,7 +436,16 @@ Respond ONLY with valid JSON, no additional text.
           ]
         }
       ],
-      generationConfig: {
+
+    "generationConfig": {
+        "thinkingConfig": {
+              "thinkingBudget": 1024
+              # Thinking off:
+              # "thinkingBudget": 0
+              # Turn on dynamic thinking:
+              # "thinkingBudget": -1
+        }
+      }
         temperature: 0.7,
         maxOutputTokens: 2048,
         topP: 0.8,
