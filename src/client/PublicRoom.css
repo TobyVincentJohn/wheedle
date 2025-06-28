@@ -296,12 +296,20 @@
   border: 1px solid #FFD700;
   border-radius: 4px;
   flex-shrink: 0; /* Prevent button from shrinking */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 
 .public-join-session-text:hover:not(.disabled) {
   color: #000000;
   background: #FFD700;
   transform: scale(1.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 
 @font-face {
