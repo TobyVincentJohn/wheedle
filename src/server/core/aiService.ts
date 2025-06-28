@@ -437,7 +437,7 @@ Respond ONLY with valid JSON, no additional text.
       ],
       generationConfig: {
         thinkingConfig: {
-          thinkingBudget: 1024
+          thinkingBudget: 0
         },
         temperature: 0.7,
         maxOutputTokens: 2048,
