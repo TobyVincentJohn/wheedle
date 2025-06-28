@@ -219,9 +219,7 @@ const PublicRoom: React.FC = () => {
           }
         }}
         onMouseEnter={() => getSoundState() && playHoverSound()}
-      >
-        {session.players.length >= session.maxPlayers ? 'FULL' : 'JOIN'}
-      </div>
+      />
     </div>
   );
 
