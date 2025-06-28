@@ -437,15 +437,10 @@ Respond ONLY with valid JSON, no additional text.
         }
       ],
 
-    "generationConfig": {
-        "thinkingConfig": {
-              "thinkingBudget": 1024
-              # Thinking off:
-              # "thinkingBudget": 0
-              # Turn on dynamic thinking:
-              # "thinkingBudget": -1
-        }
-      }
+      generationConfig: {
+        thinkingConfig: {
+          thinkingBudget: 0
+        },
         temperature: 0.7,
         maxOutputTokens: 2048,
         topP: 0.8,
