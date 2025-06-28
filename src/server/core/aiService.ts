@@ -356,19 +356,8 @@ export const sendSessionDataToGemini = async ({
   console.log('[GEMINI] AI Persona:', sessionResponses.aiPersona);
 
   // Prepare the prompt for Gemini
-  const prompt = `You are judging a persuasion game where players try to convince an AI persona that they deserve prize money more than other players.
-  } catch (err) {
-    console.error('[GEMINI] Error calling Gemini API:', err);
-    
-    // Fallback to random selection if Gemini fails
-    const fallbackWinner = sessionResponses.playerResponses[Math.floor(Math.random() * sessionResponses.playerResponses.length)];
-    return {
-      winner: fallbackWinner.username,
-      reason: "AI evaluation service was unavailable. Winner selected randomly among participants.",
-      evaluation: { error: err instanceof Error ? err.message : 'Unknown error' }
-    };
-  }
-};
+  const prompt = `
+You are judging a persuasion game where players try to convince an AI persona that they deserve prize money more than other players.
 
 **Game Context:**
 AI Persona: ${sessionResponses.aiPersona}
@@ -412,7 +401,8 @@ ${r.isTimeUp ? '(Note: This player ran out of time)' : ''}
   }
 }
 
-Respond ONLY with valid JSON, no additional text.`;
+Respond ONLY with valid JSON, no additional text.
+`;
 
   console.log('[GEMINI] Prepared prompt for evaluation');
   console.log('[GEMINI] Prompt length:', prompt.length, 'characters');
@@ -517,7 +507,13 @@ Respond ONLY with valid JSON, no additional text.`;
       winner: evaluationResult.winner,
       reason: evaluationResult.reason,
       evaluation: evaluationResult.evaluation || evaluationResult
+  } catch (err) {
+    console.error('[GEMINI] ❌ Unexpected error during Gemini evaluation:', err);
+    const fallbackWinner = sessionResponses.playerResponses[Math.floor(Math.random() * sessionResponses.playerResponses.length)];
+    return {
+      winner: fallbackWinner.username,
+      reason: "An unexpected error occurred. Winner selected randomly.",
+      evaluation: { error: err.message || 'Unknown error' }
     };
-
   }
-}
+};
