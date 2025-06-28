@@ -246,27 +246,44 @@ const ResponsePage: React.FC = () => {
     console.log('[CLIENT WINNER] ===== STARTING WINNER EVALUATION =====');
     console.log('[CLIENT WINNER] Calling Gemini API for winner evaluation...');
     
-    // Fetch Gemini analysis for winner evaluation
+    // Start Gemini analysis and poll for results
     let geminiResult = null;
+    let attempts = 0;
+    const maxAttempts = 30; // Poll for up to 30 attempts (about 1 minute)
+    
     try {
-      const response = await fetch(`/api/sessions/${session?.sessionId}/gemini-analysis`);
-      const data = await response.json();
-      
-      if (data.status === 'success' && data.data) {
-        geminiResult = data.data;
-        console.log('[CLIENT WINNER] ===== GEMINI EVALUATION RECEIVED =====');
-        console.log('[CLIENT WINNER] Gemini Winner:', geminiResult.winner);
-        console.log('[CLIENT WINNER] Gemini Reason:', geminiResult.reason);
-        console.log('[CLIENT WINNER] Full Evaluation:', geminiResult.evaluation);
-        console.log('[CLIENT WINNER] ===== END GEMINI EVALUATION =====');
+      while (attempts < maxAttempts) {
+        const response = await fetch(`/api/sessions/${session?.sessionId}/gemini-analysis`);
+        const data = await response.json();
         
-        // Log to browser console for debugging
-        console.log('🤖 GEMINI GAME EVALUATION RESULT:', {
-          winner: geminiResult.winner,
-          reason: geminiResult.reason,
-          fullEvaluation: geminiResult.evaluation,
-          timestamp: new Date().toISOString()
-        });
+        if (data.status === 'success' && data.data) {
+          geminiResult = data.data;
+          console.log('[CLIENT WINNER] ===== GEMINI EVALUATION RECEIVED =====');
+          console.log('[CLIENT WINNER] Gemini Winner:', geminiResult.winner);
+          console.log('[CLIENT WINNER] Gemini Reason:', geminiResult.reason);
+          console.log('[CLIENT WINNER] Full Evaluation:', geminiResult.evaluation);
+          console.log('[CLIENT WINNER] ===== END GEMINI EVALUATION =====');
+          
+          // Log to browser console for debugging
+          console.log('🤖 GEMINI GAME EVALUATION RESULT:', {
+            winner: geminiResult.winner,
+            reason: geminiResult.reason,
+            fullEvaluation: geminiResult.evaluation,
+            timestamp: new Date().toISOString()
+          });
+          break; // Success, exit the polling loop
+        } else if (data.status === 'pending') {
+          console.log('[CLIENT WINNER] Evaluation in progress, waiting...');
+          attempts++;
+          await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds before next attempt
+        } else {
+          console.error('[CLIENT WINNER] Error from Gemini API:', data.message);
+          break; // Error, exit the polling loop
+        }
+      }
+      
+      if (attempts >= maxAttempts) {
+        console.warn('[CLIENT WINNER] Polling timeout - evaluation took too long');
       }
     } catch (err) {
       console.error('[CLIENT WINNER] Failed to fetch Gemini analysis:', err);

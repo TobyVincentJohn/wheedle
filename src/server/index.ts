@@ -25,6 +25,7 @@ import {
   StartCountdownResponse 
 } from '../shared/types/session';
 import { storePlayerResponse, getSessionResponses } from './core/playerResponses';
+import { getContext as getDevvitContext } from '@devvit/public-api';
 
 
 const app = express();
@@ -627,7 +628,7 @@ router.post('/api/sessions/:sessionId/complete', async (req, res): Promise<void>
   }
 });
 
-// Add after other session endpoints
+// Updated Gemini analysis endpoint - now triggers scheduled job and polls for results
 router.get('/api/sessions/:sessionId/gemini-analysis', async (req, res) => {
   const { sessionId } = req.params;
   const redis = getRedis();
@@ -639,30 +640,119 @@ router.get('/api/sessions/:sessionId/gemini-analysis', async (req, res) => {
     return res.status(400).json({ status: 'error', message: 'Invalid sessionId' });
   }
   
+  const resultKey = `gemini_result:${sessionId}`;
+  
   try {
-    console.log('[GEMINI ENDPOINT] Calling sendSessionDataToGemini...');
-    const geminiResult = await sendSessionDataToGemini({ redis, sessionId });
+    // Check if we already have a result
+    const existingResult = await redis.get(resultKey);
     
-    if (geminiResult) {
-      console.log('[GEMINI ENDPOINT] ===== GEMINI EVALUATION RESULT =====');
-      console.log('[GEMINI ENDPOINT] Winner:', geminiResult.winner);
-      console.log('[GEMINI ENDPOINT] Reason:', geminiResult.reason);
-      console.log('[GEMINI ENDPOINT] Full Evaluation:', JSON.stringify(geminiResult.evaluation, null, 2));
-      console.log('[GEMINI ENDPOINT] ===== END EVALUATION RESULT =====');
+    if (existingResult) {
+      const result = JSON.parse(existingResult);
+      console.log('[GEMINI ENDPOINT] Found existing result for session:', sessionId);
       
-      res.json({ 
-        status: 'success', 
-        data: { 
-          winner: geminiResult.winner,
-          reason: geminiResult.reason,
-          evaluation: geminiResult.evaluation,
-          geminiText: geminiResult.reason // For backward compatibility
-        } 
-      });
-    } else {
-      console.error('[GEMINI ENDPOINT] No result returned from Gemini');
-      res.status(404).json({ status: 'error', message: 'No Gemini response available' });
+      if (result.status === 'completed') {
+        return res.json({ 
+          status: 'success', 
+          data: { 
+            winner: result.winner,
+            reason: result.reason,
+            evaluation: result.evaluation
+          } 
+        });
+      } else if (result.status === 'error') {
+        return res.status(500).json({ 
+          status: 'error', 
+          message: result.error || 'Gemini evaluation failed' 
+        });
+      }
     }
+    
+    // Check if job is already running
+    const jobStatusKey = `gemini_job_status:${sessionId}`;
+    const jobStatus = await redis.get(jobStatusKey);
+    
+    if (!jobStatus) {
+      // Start the scheduled job
+      console.log('[GEMINI ENDPOINT] Starting scheduled job for session:', sessionId);
+      
+      // Mark job as started
+      await redis.set(jobStatusKey, JSON.stringify({
+        status: 'running',
+        startedAt: Date.now()
+      }));
+      
+      // Get Devvit context to access scheduler
+      try {
+        const devvitContext = getDevvitContext();
+        if (devvitContext && devvitContext.scheduler) {
+          await devvitContext.scheduler.runJob({
+            name: 'evaluate-game-winner',
+            data: { sessionId },
+            runAt: new Date(Date.now() + 1000) // Run in 1 second
+          });
+          
+          console.log('[GEMINI ENDPOINT] Scheduled job started for session:', sessionId);
+        } else {
+          console.log('[GEMINI ENDPOINT] No scheduler available, falling back to direct call');
+          // Fallback to direct call if scheduler is not available
+          const geminiResult = await sendSessionDataToGemini({ redis, sessionId });
+          
+          if (geminiResult) {
+            await redis.set(resultKey, JSON.stringify({
+              winner: geminiResult.winner,
+              reason: geminiResult.reason,
+              evaluation: geminiResult.evaluation,
+              completedAt: Date.now(),
+              status: 'completed'
+            }));
+            
+            return res.json({ 
+              status: 'success', 
+              data: { 
+                winner: geminiResult.winner,
+                reason: geminiResult.reason,
+                evaluation: geminiResult.evaluation
+              } 
+            });
+          } else {
+            throw new Error('No result from Gemini API');
+          }
+        }
+      } catch (schedulerError) {
+        console.error('[GEMINI ENDPOINT] Error with scheduler, falling back:', schedulerError);
+        // Fallback to direct call
+        const geminiResult = await sendSessionDataToGemini({ redis, sessionId });
+        
+        if (geminiResult) {
+          await redis.set(resultKey, JSON.stringify({
+            winner: geminiResult.winner,
+            reason: geminiResult.reason,
+            evaluation: geminiResult.evaluation,
+            completedAt: Date.now(),
+            status: 'completed'
+          }));
+          
+          return res.json({ 
+            status: 'success', 
+            data: { 
+              winner: geminiResult.winner,
+              reason: geminiResult.reason,
+              evaluation: geminiResult.evaluation
+            } 
+          });
+        } else {
+          throw new Error('No result from Gemini API');
+        }
+      }
+    }
+    
+    // Job is running, return pending status
+    console.log('[GEMINI ENDPOINT] Job is running, returning pending status');
+    res.json({ 
+      status: 'pending', 
+      message: 'Evaluation in progress, please check again in a few seconds' 
+    });
+    
   } catch (error) {
     console.error('Error fetching Gemini analysis:', error);
     res.status(500).json({ status: 'error', message: error instanceof Error ? error.message : 'Unknown error' });

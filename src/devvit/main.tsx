@@ -11,6 +11,60 @@ Devvit.configure({
   media: true,  
 });
 defineConfig({
+// Add scheduled job for Gemini evaluation
+Devvit.addSchedulerJob({
+  name: 'evaluate-game-winner',
+  onRun: async (event, context) => {
+    const { redis } = context;
+    const { sessionId } = event.data as { sessionId: string };
+    
+    console.log('[GEMINI JOB] Starting winner evaluation for session:', sessionId);
+    
+    try {
+      // Import the evaluation function
+      const { sendSessionDataToGemini } = await import('../server/core/aiService');
+      
+      // Run the Gemini evaluation
+      const result = await sendSessionDataToGemini({ redis, sessionId });
+      
+      if (result) {
+        // Store the result in Redis for the client to retrieve
+        const resultKey = `gemini_result:${sessionId}`;
+        await redis.set(resultKey, JSON.stringify({
+          winner: result.winner,
+          reason: result.reason,
+          evaluation: result.evaluation,
+          completedAt: Date.now(),
+          status: 'completed'
+        }));
+        
+        console.log('[GEMINI JOB] ✅ Evaluation completed for session:', sessionId);
+        console.log('[GEMINI JOB] Winner:', result.winner);
+      } else {
+        // Store error result
+        const resultKey = `gemini_result:${sessionId}`;
+        await redis.set(resultKey, JSON.stringify({
+          status: 'error',
+          error: 'No result from Gemini API',
+          completedAt: Date.now()
+        }));
+        
+        console.log('[GEMINI JOB] ❌ No result from Gemini API for session:', sessionId);
+      }
+    } catch (error) {
+      console.error('[GEMINI JOB] Error in evaluation job:', error);
+      
+      // Store error result
+      const resultKey = `gemini_result:${sessionId}`;
+      await redis.set(resultKey, JSON.stringify({
+        status: 'error',
+        error: error instanceof Error ? error.message : 'Unknown error',
+        completedAt: Date.now()
+      }));
+    }
+  },
+});
+
   name: '[Bolt] Word Guesser',
   entry: 'index.html',
   height: 'tall',
