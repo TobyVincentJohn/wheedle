@@ -6,24 +6,14 @@ import { useUser } from './hooks/useUser';
 import { playHoverSound, playClickSound, getSoundState } from './utils/sound';
 import './PublicRoom.css';
 
-// Preload all session tile related images
-const preloadSessionTileAssets = () => {
-  const roomTileImg = new Image();
-  const nextButtonImg = new Image();
-  
-  roomTileImg.src = new URL('../../assets/session_page/room_tile.png', import.meta.url).href;
-  nextButtonImg.src = new URL('../../assets/session_page/next_button.png', import.meta.url).href;
-  
-  return Promise.all([
-    new Promise<void>((resolve) => {
-      roomTileImg.onload = () => resolve();
-      roomTileImg.onerror = () => resolve(); // Continue even if image fails to load
-    }),
-    new Promise<void>((resolve) => {
-      nextButtonImg.onload = () => resolve();
-      nextButtonImg.onerror = () => resolve(); // Continue even if image fails to load
-    })
-  ]);
+// Preload the room tile image
+const preloadRoomTileImage = () => {
+  const img = new Image();
+  img.src = new URL('../../assets/session_page/room_tile.png', import.meta.url).href;
+  return new Promise<void>((resolve) => {
+    img.onload = () => resolve();
+    img.onerror = () => resolve(); // Continue even if image fails to load
+  });
 };
 
 const PublicRoom: React.FC = () => {
@@ -35,7 +25,7 @@ const PublicRoom: React.FC = () => {
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [backgroundError, setBackgroundError] = useState<string | null>(null);
-  const [areSessionAssetsLoaded, setAreSessionAssetsLoaded] = useState(false);
+  const [isRoomTileLoaded, setIsRoomTileLoaded] = useState(false);
   const { createSession, joinSession, currentSession } = useSession();
   const { refreshUser } = useUser();
 
@@ -79,9 +69,9 @@ const PublicRoom: React.FC = () => {
   };
 
   useEffect(() => {
-    // Preload all session tile assets
-    preloadSessionTileAssets().then(() => {
-      setAreSessionAssetsLoaded(true);
+    // Preload the room tile image
+    preloadRoomTileImage().then(() => {
+      setIsRoomTileLoaded(true);
     });
     
     fetchPublicSessions();
@@ -305,10 +295,10 @@ const PublicRoom: React.FC = () => {
                 {searchedSession && (
                   renderSessionTile(searchedSession)
                 )}
-                {(publicSessions.length > 0 || searchedSession) && areSessionAssetsLoaded && (
+                {(publicSessions.length > 0 || searchedSession) && isRoomTileLoaded && (
                   <div className="active-sessions-title">Active Sessions</div>
                 )}
-                {areSessionAssetsLoaded && publicSessions.map(renderSessionTile)}
+                {isRoomTileLoaded && publicSessions.map(renderSessionTile)}
               </div>
             )}
           </div>
