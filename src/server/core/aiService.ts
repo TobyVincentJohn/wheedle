@@ -507,13 +507,6 @@ Respond ONLY with valid JSON, no additional text.
       winner: evaluationResult.winner,
       reason: evaluationResult.reason,
       evaluation: evaluationResult.evaluation || evaluationResult
-  } catch (err) {
-    console.error('[GEMINI] ❌ Unexpected error during Gemini evaluation:', err);
-    const fallbackWinner = sessionResponses.playerResponses[Math.floor(Math.random() * sessionResponses.playerResponses.length)];
-    return {
-      winner: fallbackWinner.username,
-      reason: "An unexpected error occurred. Winner selected randomly.",
-      evaluation: { error: err.message || 'Unknown error' }
     };
   }
-};
+}
