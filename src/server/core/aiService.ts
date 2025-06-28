@@ -411,7 +411,7 @@ Respond ONLY with valid JSON, no additional text.
   try {
     // For development, you can hardcode the API key here temporarily
     // In production, this should be an environment variable
-    const apiKey = process.env.GEMINI_API_KEY || 'YOUR_GEMINI_API_KEY_HERE';
+    const apiKey = 'AIzaSyBXU-jpevHk5-pdMrloXfmnGbNhSk6wAf0';
     
     if (!apiKey) {
       console.error('[GEMINI] Missing GEMINI_API_KEY environment variable');
