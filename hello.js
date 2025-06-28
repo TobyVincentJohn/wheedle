@@ -53,7 +53,6 @@
   //   console.error('Fetch error:', error);
   // });
 
-const fetch = require('node-fetch'); // only needed if Node < 18
 
 fetch('https://example.com')
   .then(response => response.text())
