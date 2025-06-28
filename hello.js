@@ -54,13 +54,37 @@
   // });
 
 
-fetch('https://example.com')
-  .then(response => response.text())
+const fetch = require('node-fetch'); // Not needed for Node 18+
+const API_KEY = 'AIzaSyBXU-jpevHk5-pdMrloXfmnGbNhSk6wAf0'; // <-- Replace with your Gemini API key
+
+const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${API_KEY}`;
+
+const requestBody = {
+  contents: [
+    {
+      parts: [
+        { text: "Hello, what's the weather like on Mars?" }
+      ]
+    }
+  ]
+};
+
+fetch(url, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify(requestBody)
+})
+  .then(response => {
+    if (!response.ok) throw new Error(`HTTP error! ${response.status}`);
+    return response.json();
+  })
   .then(data => {
-    console.log('Type of data:', typeof data); // should log: string
-    console.log('First 100 chars:', data.slice(0, 100));
+    console.log('Gemini response:', JSON.stringify(data, null, 2));
   })
   .catch(error => {
-    console.error('Fetch error:', error);
+    console.error('Error:', error);
   });
+
 
