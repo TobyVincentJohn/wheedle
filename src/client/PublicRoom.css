@@ -283,33 +283,41 @@
 }
 
 .public-join-session-text {
-  color: #FFD700;
+  color: #6e1108;
   font-family: 'VT323', monospace;
   font-size: 20px;
   font-weight: bold;
   cursor: pointer;
   transition: all 0.2s;
   text-transform: uppercase;
-  background: none;
-  border: none;
-  padding: 6px 16px;
-  border: 1px solid #FFD700;
-  border-radius: 4px;
+  background: #FFD700;
+  border: 2px solid #FFD700;
+  border-radius: 6px;
+  padding: 8px 20px;
   flex-shrink: 0; /* Prevent button from shrinking */
   display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;
+  min-width: 80px;
+  height: 36px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .public-join-session-text:hover:not(.disabled) {
-  color: #000000;
-  background: #FFD700;
+  color: #4a0b05;
+  background: #e6c200;
+  border-color: #e6c200;
   transform: scale(1.05);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.4);
+}
+
+.public-join-session-text.disabled {
+  background: #999;
+  color: #666;
+  border-color: #999;
+  cursor: not-allowed;
+  box-shadow: none;
 }
 
 @font-face {
