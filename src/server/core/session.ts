@@ -3,6 +3,7 @@ import { GameSession, SessionPlayer } from '../../shared/types/session';
 import { registerRoomCode, unregisterRoomCode } from './roomCodeSearch';
 import { createAIGameData, deleteAIGameData } from './aiService';
 import { deleteSessionResponses } from './playerResponses';
+import { incrementUserWins } from './user';
 
 // Helper to clean up winner results
 const getWinnerResultKey = (sessionId: string) => `winner_result:${sessionId}` as const;
@@ -248,10 +249,12 @@ export const sessionComplete = async ({
   redis,
   sessionId,
   winnerId,
+  winnerUsername,
 }: {
   redis: RedisClient;
   sessionId: string;
   winnerId: string;
+  winnerUsername?: string;
 }): Promise<GameSession> => {
   const session = await sessionGet({ redis, sessionId });
   if (!session) throw new Error('Session not found');
@@ -263,6 +266,14 @@ export const sessionComplete = async ({
   session.completedAt = Date.now();
   session.winnerId = winnerId;
   session.winnerUsername = winner.username;
+  
+  // Increment winner's wins count
+  try {
+    await incrementUserWins({ redis, userId: winnerId });
+    console.log(`[SESSION] Incremented wins for winner: ${winner.username} (${winnerId})`);
+  } catch (error) {
+    console.error(`[SESSION] Failed to increment wins for winner: ${error}`);
+  }
   
   await redis.set(getSessionKey(sessionId), JSON.stringify(session));
   return session;

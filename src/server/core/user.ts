@@ -22,6 +22,11 @@ export const userSet = async ({
   redis: RedisClient;
   userDetails: UserDetails;
 }): Promise<void> => {
+  // Ensure wins is set to 0 if not provided
+  if (userDetails.wins === undefined) {
+    userDetails.wins = 0;
+  }
+  
   // Store user details
   await redis.set(getUserKey(userDetails.userId), JSON.stringify(userDetails));
   
@@ -108,4 +113,60 @@ export const getActiveUsers = async ({
   }
 
   return users;
+};
+
+// Increment user wins
+export const incrementUserWins = async ({
+  redis,
+  userId,
+}: {
+  redis: RedisClient;
+  userId: string;
+}): Promise<void> => {
+  const user = await userGet({ redis, userId });
+  if (user) {
+    const currentWins = user.wins || 0;
+    await userUpdate({
+      redis,
+      userId,
+      updates: {
+        wins: currentWins + 1,
+      },
+    });
+    console.log(`[WINS] User ${user.username} wins incremented to ${currentWins + 1}`);
+  }
+};
+
+// Get leaderboard (top users by wins)
+export const getLeaderboard = async ({
+  redis,
+  limit = 10,
+}: {
+  redis: RedisClient;
+  limit?: number;
+}): Promise<UserDetails[]> => {
+  const activeUsersList = await redis.get(ACTIVE_USERS_LIST_KEY);
+  if (!activeUsersList) {
+    return [];
+  }
+
+  const userIds = JSON.parse(activeUsersList) as string[];
+  const users: UserDetails[] = [];
+
+  // Get all users
+  for (const userId of userIds) {
+    const user = await userGet({ redis, userId });
+    if (user) {
+      // Ensure wins is set
+      if (user.wins === undefined) {
+        user.wins = 0;
+      }
+      users.push(user);
+    }
+  }
+
+  // Sort by wins (descending) and return top users
+  return users
+    .sort((a, b) => (b.wins || 0) - (a.wins || 0))
+    .slice(0, limit);
 };

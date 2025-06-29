@@ -4,4 +4,5 @@ export interface UserDetails {
   lastActive: number;
   currentRoom?: string;
   score?: number;
+  wins?: number;
 } 

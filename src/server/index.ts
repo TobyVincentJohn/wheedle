@@ -2,6 +2,7 @@ import express from 'express';
 import { createServer, getContext, getServerPort } from '@devvit/server';
 import { getRedis } from '@devvit/redis';
 import { userGet, userSet, userUpdate, userDelete, getActiveUsers } from './core/user';
+import { getLeaderboard } from './core/user';
 import { UserDetails } from '../shared/types/user';
 import { 
   sessionCreate, 
@@ -152,6 +153,7 @@ router.post('/api/users', async (req, res) => {
       lastActive: Date.now(),
       currentRoom: req.body.currentRoom,
       score: req.body.score || 0,
+      wins: 0, // Initialize wins to 0 for new users
     };
 
     await userSet({ redis, userDetails });
@@ -244,6 +246,22 @@ router.get('/api/users/active', async (_req, res) => {
     res.status(500).json({ 
       status: 'error', 
       message: error instanceof Error ? error.message : 'Unknown error fetching active users'
+    });
+  }
+});
+
+// Get leaderboard endpoint
+router.get('/api/leaderboard', async (_req, res) => {
+  const redis = getRedis();
+  
+  try {
+    const leaderboard = await getLeaderboard({ redis, limit: 10 });
+    res.json({ status: 'success', data: leaderboard });
+  } catch (error) {
+    console.error('Error fetching leaderboard:', error);
+    res.status(500).json({ 
+      status: 'error', 
+      message: error instanceof Error ? error.message : 'Unknown error fetching leaderboard'
     });
   }
 });

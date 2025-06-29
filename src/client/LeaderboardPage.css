@@ -128,7 +128,129 @@
 
   .back-text {
     top: 2.7vmin;
-    left: 2.7vmin;
     font-size: 2.1vmin;
   }
-} 
+}
+
+.leaderboard-list {
+  width: 600px;
+  max-height: 400px;
+  overflow-y: auto;
+  margin-top: 20px;
+}
+
+.leaderboard-entry {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  padding: 15px 30px;
+  margin-bottom: 10px;
+  background: rgba(255, 215, 0, 0.1);
+  border: 2px solid #FFD700;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.leaderboard-entry:hover {
+  background: rgba(255, 215, 0, 0.2);
+  transform: scale(1.02);
+}
+
+.leaderboard-entry:first-child {
+  background: rgba(255, 215, 0, 0.3);
+  border-color: #FFD700;
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+}
+
+.leaderboard-entry:nth-child(2) {
+  background: rgba(192, 192, 192, 0.2);
+  border-color: #C0C0C0;
+}
+
+.leaderboard-entry:nth-child(3) {
+  background: rgba(205, 127, 50, 0.2);
+  border-color: #CD7F32;
+}
+
+.rank-cell {
+  width: 100px;
+  color: #FFD700;
+  font-family: 'VT323', monospace;
+  font-size: 24px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.name-cell {
+  width: 300px;
+  color: #ffffff;
+  font-family: 'VT323', monospace;
+  font-size: 24px;
+  text-align: center;
+}
+
+.wins-cell {
+  width: 150px;
+  color: #4CAF50;
+  font-family: 'VT323', monospace;
+  font-size: 24px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.loading-message, .error-message, .no-data-message {
+  color: #FFD700;
+  font-family: 'VT323', monospace;
+  font-size: 24px;
+  text-align: center;
+  margin-top: 50px;
+}
+
+.error-message {
+  color: #ff6b6b;
+}
+
+.no-data-message {
+  color: #ffffff;
+  font-size: 20px;
+  line-height: 1.4;
+}
+
+/* Mobile responsive styles for new elements */
+@media screen and (max-width: 768px) {
+  .leaderboard-list {
+    width: 80vmin;
+    max-height: 53.3vmin;
+    margin-top: 2.7vmin;
+  }
+
+  .leaderboard-entry {
+    padding: 2vmin 4vmin;
+    margin-bottom: 1.3vmin;
+    border-radius: 1.1vmin;
+  }
+
+  .rank-cell {
+    width: 13.3vmin;
+    font-size: 3.2vmin;
+  }
+
+  .name-cell {
+    width: 40vmin;
+    font-size: 3.2vmin;
+  }
+
+  .wins-cell {
+    width: 20vmin;
+    font-size: 3.2vmin;
+  }
+
+  .loading-message, .error-message, .no-data-message {
+    font-size: 3.2vmin;
+    margin-top: 6.7vmin;
+  }
+
+  .no-data-message {
+    font-size: 2.7vmin;
+  }
+}
