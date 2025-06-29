@@ -259,6 +259,12 @@ export const sessionComplete = async ({
   const session = await sessionGet({ redis, sessionId });
   if (!session) throw new Error('Session not found');
 
+  // Check if session is already completed to prevent duplicate win increments
+  if (session.status === 'complete') {
+    console.log(`[SESSION] Session ${sessionId} already completed, not incrementing wins again`);
+    return session;
+  }
+
   const winner = session.players.find(p => p.userId === winnerId);
   if (!winner) throw new Error('Winner not found in session');
 

@@ -10,6 +10,7 @@ export const incrementUserWins = async ({
   if (user) {
     const currentWins = user.wins || 0;
     console.log('[WINS] Current wins for', user.username, ':', currentWins);
+    console.log('[WINS] Incrementing wins from', currentWins, 'to', currentWins + 1);
     await userUpdate({
       redis,
       userId,

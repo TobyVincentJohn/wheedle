@@ -649,7 +649,9 @@ router.post('/api/sessions/:sessionId/complete', async (req, res): Promise<void>
   }
 
   try {
+    console.log(`[SESSION COMPLETE] User ${userId} attempting to complete session ${sessionId} with winner ${winnerUsername}`);
     const session = await sessionComplete({ redis, sessionId, winnerId, winnerUsername });
+    console.log(`[SESSION COMPLETE] Session completion result: status=${session.status}, winner=${session.winnerUsername}`);
     res.json({ status: 'success', data: session });
   } catch (error) {
     console.error('Error completing session:', error);
