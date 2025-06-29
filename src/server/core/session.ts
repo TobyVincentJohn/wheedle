@@ -5,6 +5,9 @@ import { createAIGameData, deleteAIGameData } from './aiService';
 import { deleteSessionResponses } from './playerResponses';
 import { incrementUserWins } from './user';
 
+// Helper to track which sessions have already had their wins incremented
+const WINS_INCREMENTED_KEY = (sessionId: string) => `wins_incremented:${sessionId}` as const;
+
 // Helper to clean up winner results
 const getWinnerResultKey = (sessionId: string) => `winner_result:${sessionId}` as const;
 
@@ -256,17 +259,37 @@ export const sessionComplete = async ({
   winnerId: string;
   winnerUsername?: string;
 }): Promise<GameSession> => {
+  console.log(`[SESSION COMPLETE] Starting completion for session ${sessionId}, winner: ${winnerUsername} (${winnerId})`);
+  
   const session = await sessionGet({ redis, sessionId });
   if (!session) throw new Error('Session not found');
 
-  // Check if session is already completed to prevent duplicate win increments
-  if (session.status === 'complete') {
-    console.log(`[SESSION] Session ${sessionId} already completed, not incrementing wins again`);
+  // Use Redis to atomically check and set wins increment flag
+  const winsIncrementedKey = WINS_INCREMENTED_KEY(sessionId);
+  const alreadyIncremented = await redis.get(winsIncrementedKey);
+  
+  if (alreadyIncremented) {
+    console.log(`[SESSION COMPLETE] Wins already incremented for session ${sessionId}, skipping increment`);
+    // Still update session status if needed, but don't increment wins
+    if (session.status !== 'complete') {
+      const winner = session.players.find(p => p.userId === winnerId);
+      if (winner) {
+        session.status = 'complete';
+        session.completedAt = Date.now();
+        session.winnerId = winnerId;
+        session.winnerUsername = winner.username;
+        await redis.set(getSessionKey(sessionId), JSON.stringify(session));
+      }
+    }
     return session;
   }
 
   const winner = session.players.find(p => p.userId === winnerId);
   if (!winner) throw new Error('Winner not found in session');
+
+  // Atomically set the wins increment flag to prevent race conditions
+  await redis.set(winsIncrementedKey, 'true', { ex: 3600 }); // Expire after 1 hour
+  console.log(`[SESSION COMPLETE] Set wins increment flag for session ${sessionId}`);
 
   session.status = 'complete';
   session.completedAt = Date.now();
@@ -276,12 +299,16 @@ export const sessionComplete = async ({
   // Increment winner's wins count
   try {
     await incrementUserWins({ redis, userId: winnerId });
-    console.log(`[SESSION] Incremented wins for winner: ${winner.username} (${winnerId})`);
+    console.log(`[SESSION COMPLETE] Successfully incremented wins for winner: ${winner.username} (${winnerId})`);
   } catch (error) {
-    console.error(`[SESSION] Failed to increment wins for winner: ${error}`);
+    console.error(`[SESSION COMPLETE] Failed to increment wins for winner: ${error}`);
+    // If incrementing wins fails, remove the flag so it can be retried
+    await redis.del(winsIncrementedKey);
+    throw error;
   }
   
   await redis.set(getSessionKey(sessionId), JSON.stringify(session));
+  console.log(`[SESSION COMPLETE] Session ${sessionId} marked as complete with winner ${winner.username}`);
   return session;
 };
 
@@ -298,6 +325,7 @@ export const sessionDelete = async ({
     await deleteAIGameData({ redis, sessionId });
     await deleteSessionResponses({ redis, sessionId });
     await redis.del(getWinnerResultKey(sessionId)); // Clean up winner results
+    await redis.del(WINS_INCREMENTED_KEY(sessionId)); // Clean up wins increment flag
 
     for (const player of session.players) {
       await redis.del(USER_SESSION_KEY(player.userId));
