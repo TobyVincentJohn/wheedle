@@ -771,6 +771,108 @@ router.get('/api/test-ai', async (req, res) => {
   }
 });
 
+// Test AI endpoint
+router.get('/api/test-ai', async (req, res) => {
+  console.log('[TEST AI] ===== STARTING AI TEST ENDPOINT =====');
+  
+  try {
+    // Test external API call to Gemini
+    const apiKey = 'AIzaSyBXU-jpevHk5-pdMrloXfmnGbNhSk6wAf0';
+    
+    if (!apiKey) {
+      throw new Error('Missing Gemini API key');
+    }
+    
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey}`;
+    
+    const requestBody = {
+      contents: [
+        {
+          parts: [
+            {
+              text: "Generate a creative AI persona for a guessing game. Respond with just the persona description in one sentence."
+            }
+          ]
+        }
+      ],
+      generationConfig: {
+        temperature: 0.8,
+        maxOutputTokens: 100,
+        topP: 0.8,
+        topK: 40
+      }
+    };
+
+    console.log('[TEST AI] Making external API call to Gemini...');
+    console.log('[TEST AI] URL:', url.split('?')[0] + '?key=***');
+    
+    const startTime = Date.now();
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'User-Agent': 'Wheedle-Game-Test/1.0'
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    const duration = Date.now() - startTime;
+    console.log('[TEST AI] API response received in', duration, 'ms');
+    console.log('[TEST AI] Response status:', response.status);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[TEST AI] API error response:', errorText);
+      throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
+    }
+
+    const responseData = await response.json();
+    console.log('[TEST AI] API response structure:', {
+      hasCandidates: !!responseData.candidates,
+      candidatesLength: responseData.candidates?.length || 0,
+    });
+
+    // Extract the generated text
+    const generatedText = responseData.candidates?.[0]?.content?.parts?.[0]?.text;
+    
+    if (!generatedText) {
+      console.error('[TEST AI] No generated text in response:', responseData);
+      throw new Error('No generated text in Gemini response');
+    }
+
+    console.log('[TEST AI] Generated text:', generatedText);
+    console.log('[TEST AI] ===== AI TEST COMPLETED SUCCESSFULLY =====');
+
+    res.json({
+      status: 'success',
+      data: {
+        summary: 'External AI API call successful',
+        generatedText: generatedText.trim(),
+        responseTime: `${duration}ms`,
+        apiUsed: 'Google Gemini 1.5 Pro',
+        timestamp: new Date().toISOString()
+      }
+    });
+
+  } catch (error) {
+    console.error('[TEST AI] Error in test endpoint:', error);
+    console.error('[TEST AI] Error details:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack
+    });
+    
+    res.status(500).json({
+      status: 'error',
+      message: error instanceof Error ? error.message : 'Unknown error in AI test',
+      details: {
+        timestamp: new Date().toISOString(),
+        errorType: error.constructor.name
+      }
+    });
+  }
+});
+
 // Use router middleware
 app.use(router);
 
