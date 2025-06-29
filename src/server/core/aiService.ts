@@ -445,11 +445,6 @@ Respond ONLY with valid JSON, no additional text.
       console.error('[GEMINI] Missing GEMINI_API_KEY environment variable');
       throw new Error('Missing Google API key');
     }
-    
-    if (apiKey === 'YOUR_GEMINI_API_KEY_HERE') {
-      console.error('[GEMINI] Please replace YOUR_GEMINI_API_KEY_HERE with your actual Gemini API key');
-      throw new Error('Please configure your Gemini API key');
-    }
 
     // Use query parameter for API key instead of header to avoid proxy issues
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`;
