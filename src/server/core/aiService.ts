@@ -331,6 +331,7 @@ export const deleteAIGameData = async ({
 
 /**
  * Send all user personas, AI persona, and user responses for a session to Gemini and return the winner evaluation.
+ * If Gemini fails, select a random winner on the server side to ensure consistency.
  * @param redis Redis client
  * @param sessionId Session ID
  * @returns Gemini API response with winner evaluation
@@ -344,6 +345,13 @@ export const sendSessionDataToGemini = async ({
 }): Promise<{ winner: string; reason: string; evaluation: any } | null> => {
   console.log('[GEMINI] ===== STARTING GEMINI WINNER EVALUATION =====');
   console.log('[GEMINI] Session ID:', sessionId);
+
+  // Get session data to access player list for fallback
+  const session = await sessionGet({ redis, sessionId });
+  if (!session) {
+    console.error('[GEMINI] Session not found for winner evaluation:', sessionId);
+    return null;
+  }
 
   setTimeout(() => {
     console.log('Waited 2 seconds');
@@ -514,10 +522,11 @@ Respond ONLY with valid JSON, no additional text.
       console.error('[GEMINI] Raw text that failed to parse:', generatedText);
       
       // Fallback: try to extract winner from text if JSON parsing fails
-      const fallbackWinner = sessionResponses.playerResponses[Math.floor(Math.random() * sessionResponses.playerResponses.length)];
+      console.log('[GEMINI] Using server-side fallback winner selection');
+      const fallbackWinner = session.players[Math.floor(Math.random() * session.players.length)];
       return {
         winner: fallbackWinner.username,
-        reason: "AI evaluation was inconclusive. Winner selected randomly.",
+        reason: "AI evaluation was inconclusive. Winner selected randomly by server.",
         evaluation: { error: "Failed to parse AI response", rawResponse: generatedText }
       };
     }
@@ -525,10 +534,11 @@ Respond ONLY with valid JSON, no additional text.
     // Validate the response structure
     if (!evaluationResult.winner || !evaluationResult.reason) {
       console.error('[GEMINI] Invalid response structure:', evaluationResult);
-      const fallbackWinner = sessionResponses.playerResponses[Math.floor(Math.random() * sessionResponses.playerResponses.length)];
+      console.log('[GEMINI] Using server-side fallback winner selection due to invalid response');
+      const fallbackWinner = session.players[Math.floor(Math.random() * session.players.length)];
       return {
         winner: fallbackWinner.username,
-        reason: "AI evaluation format was invalid. Winner selected randomly.",
+        reason: "AI evaluation format was invalid. Winner selected randomly by server.",
         evaluation: evaluationResult
       };
     }
@@ -550,14 +560,16 @@ Respond ONLY with valid JSON, no additional text.
       stack: error.stack
     });
     
-    // Fallback: return a random winner if API fails
-    const fallbackWinner = sessionResponses.playerResponses[Math.floor(Math.random() * sessionResponses.playerResponses.length)];
+    // Fallback: Server-side random selection to ensure consistency across all players
+    console.log('[GEMINI] Using server-side fallback winner selection due to API error');
+    const fallbackWinner = session.players[Math.floor(Math.random() * session.players.length)];
     return {
       winner: fallbackWinner.username,
-      reason: `AI evaluation failed (${error.message}). Winner selected randomly.`,
+      reason: `AI evaluation failed (${error.message}). Winner selected randomly by server.`,
       evaluation: { 
         error: error.message || 'Unknown error',
         fallback: true,
+        serverSideSelection: true,
         timestamp: new Date().toISOString()
       }
     };

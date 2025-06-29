@@ -244,9 +244,9 @@ const ResponsePage: React.FC = () => {
 
   const evaluateResponsesAndDetermineWinner = async () => {
     console.log('[CLIENT WINNER] ===== STARTING WINNER EVALUATION =====');
-    console.log('[CLIENT WINNER] Calling Gemini API for winner evaluation...');
+    console.log('[CLIENT WINNER] Fetching winner from server...');
     
-    // Fetch Gemini analysis for winner evaluation
+    // Fetch winner evaluation from server (which handles Gemini API and fallback)
     let geminiResult = null;
     try {
       const response = await fetch(`/api/sessions/${session?.sessionId}/gemini-analysis`);
@@ -286,11 +286,11 @@ const ResponsePage: React.FC = () => {
     console.log('[CLIENT WINNER] Simulating AI evaluation delay...');
     await new Promise(resolve => setTimeout(resolve, 2000));
     
-    // Use Gemini result if available, otherwise fallback to random selection
+    // Use server result (which includes Gemini evaluation or server-side fallback)
     let finalWinner, finalReason, finalWinnerId;
     
     if (geminiResult && geminiResult.winner) {
-      // Find the player object for the Gemini-selected winner
+      // Find the player object for the server-selected winner
       const players = session?.players || [];
       const geminiWinnerPlayer = players.find(p => p.username === geminiResult.winner);
       
@@ -299,22 +299,22 @@ const ResponsePage: React.FC = () => {
         finalReason = geminiResult.reason;
         finalWinnerId = geminiWinnerPlayer.userId;
         setGeminiEvaluation(geminiResult.evaluation);
-        console.log('[CLIENT WINNER] Using Gemini-selected winner:', finalWinner);
+        console.log('[CLIENT WINNER] Using server-selected winner:', finalWinner);
       } else {
-        console.warn('[CLIENT WINNER] Gemini winner not found in player list, falling back to random');
+        console.warn('[CLIENT WINNER] Server winner not found in player list, this should not happen');
         const randomWinner = players[Math.floor(Math.random() * players.length)];
         finalWinner = randomWinner?.username || 'Unknown';
         finalWinnerId = randomWinner?.userId || '';
-        finalReason = `AI selected ${geminiResult.winner} but they were not found in the game. ${finalWinner} wins by default.`;
+        finalReason = `Server selected ${geminiResult.winner} but they were not found in the game. ${finalWinner} wins by default.`;
       }
     } else {
-      // Fallback to random selection
-      console.log('[CLIENT WINNER] No Gemini result, falling back to random selection');
+      // This should not happen since server always returns a winner
+      console.error('[CLIENT WINNER] No server result, this should not happen');
       const players = session?.players || [];
       const randomWinner = players[Math.floor(Math.random() * players.length)];
       finalWinner = randomWinner?.username || 'Unknown';
       finalWinnerId = randomWinner?.userId || '';
-      finalReason = `${finalWinner} provided the most accurate guess about the AI's persona. Their response showed deep understanding of the theme and correctly identified key elements from the clues.`;
+      finalReason = `Server evaluation failed. ${finalWinner} wins by emergency client-side selection.`;
     }
     
     setWinner(finalWinner);
