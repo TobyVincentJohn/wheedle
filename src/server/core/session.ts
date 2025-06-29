@@ -4,6 +4,9 @@ import { registerRoomCode, unregisterRoomCode } from './roomCodeSearch';
 import { createAIGameData, deleteAIGameData } from './aiService';
 import { deleteSessionResponses } from './playerResponses';
 
+// Helper to clean up winner results
+const getWinnerResultKey = (sessionId: string) => `winner_result:${sessionId}` as const;
+
 // Helper functions
 const getSessionKey = (sessionId: string) => `session:${sessionId}` as const;
 const USER_SESSION_KEY = (userId: string) => `user_session:${userId}` as const;
@@ -277,6 +280,7 @@ export const sessionDelete = async ({
     await unregisterRoomCode({ redis, sessionCode: session.sessionCode });
     await deleteAIGameData({ redis, sessionId });
     await deleteSessionResponses({ redis, sessionId });
+    await redis.del(getWinnerResultKey(sessionId)); // Clean up winner results
 
     for (const player of session.players) {
       await redis.del(USER_SESSION_KEY(player.userId));

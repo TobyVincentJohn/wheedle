@@ -329,9 +329,13 @@ export const deleteAIGameData = async ({
   console.log('[AI DEBUG] Exiting deleteAIGameData, duration:', Date.now() - start, 'ms');
 };
 
+// Add a key for storing winner results
+const getWinnerResultKey = (sessionId: string) => `winner_result:${sessionId}` as const;
+
 /**
  * Send all user personas, AI persona, and user responses for a session to Gemini and return the winner evaluation.
  * If Gemini fails, select a random winner on the server side to ensure consistency.
+ * Store the result to ensure all players get the same winner.
  * @param redis Redis client
  * @param sessionId Session ID
  * @returns Gemini API response with winner evaluation
@@ -345,6 +349,19 @@ export const sendSessionDataToGemini = async ({
 }): Promise<{ winner: string; reason: string; evaluation: any } | null> => {
   console.log('[GEMINI] ===== STARTING GEMINI WINNER EVALUATION =====');
   console.log('[GEMINI] Session ID:', sessionId);
+
+  // Check if winner has already been determined for this session
+  const existingWinnerKey = getWinnerResultKey(sessionId);
+  const existingWinner = await redis.get(existingWinnerKey);
+  
+  if (existingWinner) {
+    console.log('[GEMINI] Winner already determined for this session, returning stored result');
+    const storedResult = JSON.parse(existingWinner);
+    console.log('[GEMINI] Stored winner:', storedResult.winner);
+    return storedResult;
+  }
+
+  console.log('[GEMINI] No existing winner found, determining new winner...');
 
   // Get session data to access player list for fallback
   const session = await sessionGet({ redis, sessionId });
@@ -547,11 +564,17 @@ Respond ONLY with valid JSON, no additional text.
     console.log('[GEMINI] Winner:', evaluationResult.winner);
     console.log('[GEMINI] Reason:', evaluationResult.reason);
 
-    return {
+    const finalResult = {
       winner: evaluationResult.winner,
       reason: evaluationResult.reason,
       evaluation: evaluationResult.evaluation || evaluationResult
     };
+
+    // Store the result so all players get the same winner
+    await redis.set(existingWinnerKey, JSON.stringify(finalResult));
+    console.log('[GEMINI] Winner result stored for consistency across all players');
+
+    return finalResult;
   } catch (error) {
     console.error('[GEMINI] Error calling Gemini API:', error);
     console.error('[GEMINI] Error details:', {
@@ -563,7 +586,7 @@ Respond ONLY with valid JSON, no additional text.
     // Fallback: Server-side random selection to ensure consistency across all players
     console.log('[GEMINI] Using server-side fallback winner selection due to API error');
     const fallbackWinner = session.players[Math.floor(Math.random() * session.players.length)];
-    return {
+    const fallbackResult = {
       winner: fallbackWinner.username,
       reason: `AI evaluation failed (${error.message}). Winner selected randomly by server.`,
       evaluation: { 
@@ -573,5 +596,11 @@ Respond ONLY with valid JSON, no additional text.
         timestamp: new Date().toISOString()
       }
     };
+
+    // Store the fallback result so all players get the same winner
+    await redis.set(existingWinnerKey, JSON.stringify(fallbackResult));
+    console.log('[GEMINI] Fallback winner result stored for consistency across all players');
+
+    return fallbackResult;
   }
 };
