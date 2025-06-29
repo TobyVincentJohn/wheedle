@@ -30,6 +30,7 @@ export const incrementUserWins = async ({
     console.log(`[WINS] User ${user.username} wins incremented to ${currentWins + 1}`);
   } else {
     console.log('[LEADERBOARD] No active users list found');
+  }
   console.log('[LEADERBOARD] Sorted users by wins:');
   sortedUsers.forEach((user, index) => {
     console.log(`[LEADERBOARD] ${index + 1}. ${user.username}: ${user.wins || 0} wins`);
