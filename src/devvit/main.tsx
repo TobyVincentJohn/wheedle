@@ -5,8 +5,7 @@ import '../server/index';
 import { defineConfig } from '@devvit/server';
 
 Devvit.configure({
-   http: {
-    requestedFetchDomains: ['example.com','generativelanguage.googleapis.com'],},
+   http: true,
   redditAPI: true,  
   redis: true,  
   media: true,  
