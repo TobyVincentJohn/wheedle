@@ -168,14 +168,24 @@
   background-position: center;
   background-repeat: no-repeat;
   image-rendering: pixelated;
+  animation: float 0.5s steps(1) infinite;
+}
+
+@keyframes float {
+  0%, 40%, 100% {
+    transform: translateY(0);
+  }
+  50%, 90% {
+    transform: translateY(-1px);
+  }
 }
 
 .dealer-text-bubble {
   position: absolute;
-  width: 600px;
-  height: 600px;
-  left: 105px;
-  top: -156px;
+  width: 80vmin;
+  height: 80vmin;
+  left: 16vmin;
+  top: -19.2vmin;
   background-image: url('../../assets/dealer_text.png');
   background-size: contain;
   background-position: center;
@@ -186,15 +196,15 @@
 
 .dealer-text-content {
   position: absolute;
-  top: 160px;
-  left: -10px;
+  top: 27vmin;
+  left: 0.7vmin;
   color: #000000;
   font-family: 'VT323', monospace;
-  font-size: 23px;
+  font-size: 3.1vmin;
   text-align: left;
-  width: 490px;
+  width: 65.3vmin;
   line-height: 1.2;
-  padding: 20px 40px;
+  padding: 2.7vmin 5.3vmin;
   word-wrap: break-word;
   overflow-wrap: break-word;
 }
@@ -383,5 +393,13 @@
   .response-btn {
     padding: 1.1vmin 2.1vmin;
     font-size: 2.1vmin;
+  }
+
+  .dealer-text-content {
+    top: 27vmin;
+    left: 0.7vmin;
+    width: 65.3vmin;
+    font-size: 3.1vmin;
+    padding: 2.7vmin 5.3vmin;
   }
 }

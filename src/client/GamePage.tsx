@@ -14,7 +14,7 @@ interface PlayerLeftNotification {
 }
 
 const CLUE_DURATION = 10000; // 10 seconds per clue
-const TYPING_SPEED = 100; // 100ms per character
+const TYPING_SPEED = 50; // Changed from 100ms to 30ms per character
 const POST_TYPING_DELAY = 3000; // 3 seconds after typing finishes
 
 const GamePage: React.FC = () => {

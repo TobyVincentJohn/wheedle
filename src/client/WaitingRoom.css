@@ -49,20 +49,26 @@
 
 .waiting-timer {
   font-family: 'VT323', monospace;
-  font-size: 28px;
+  font-size: 3.7vmin;
   text-align: center;
-  margin-top: -10px;
+  margin-top: -1.3vmin;
 }
 
 .waiting-timer-text {
   color: #FFD700;
-  margin-bottom: 15px;
-  font-size: 22px;
+  margin-bottom: 2vmin;
+  font-size: 2.9vmin;
+}
+
+.waiting-timer-text.countdown-mode {
+  margin-bottom: 0.5vmin; /* Reduced gap between text and timer */
 }
 
 .waiting-timer-count {
-  font-size: 45px;
+  font-size: 6vmin;
   color: #ffffff;
+  line-height: 1;
+  margin-top: -0.5vmin;
 }
 
 .waiting-name-tags-container {
@@ -213,8 +219,13 @@
     margin-bottom: 2vmin;
   }
 
+  .waiting-timer-text.countdown-mode {
+    margin-bottom: 0.5vmin;
+  }
+
   .waiting-timer-count {
     font-size: 6vmin;
+    margin-top: -0.5vmin;
   }
 
   .waiting-name-tags-container {

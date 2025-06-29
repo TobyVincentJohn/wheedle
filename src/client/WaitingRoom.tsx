@@ -175,12 +175,12 @@ const WaitingRoom: React.FC = () => {
         
         {isCountingDown ? (
           <div className="waiting-timer">
-            <div className="waiting-timer-text">GAME STARTS IN</div>
+            <div className="waiting-timer-text countdown-mode">GAME STARTS IN</div>
             <div className="waiting-timer-count">{formatTime(countdown)}</div>
           </div>
         ) : (
           <div className="waiting-timer">
-            <div className="waiting-timer-text">WAITING FOR PLAYERS</div>
+            <div className="waiting-timer-text">&nbsp;</div>
           </div>
         )}
         
@@ -192,47 +192,35 @@ const WaitingRoom: React.FC = () => {
           ))}
         </div>
         
-        <div className="waiting-bottom-container">
-          {!isCountingDown && (
+        {/* Only show bottom container when not counting down */}
+        {!isCountingDown && (
+          <div className="waiting-bottom-container">
             <button 
               className="waiting-quit-button" 
               onClick={() => handleButtonClick(handleQuit)}
               onMouseEnter={() => getSoundState() && playHoverSound()}
             />
-          )}
-          {isCountingDown && (
-            <div className="waiting-for-host">
-              <div className="waiting-for-host-text">GAME STARTING...</div>
+            <div className="waiting-room-code">
+              <div className="waiting-room-code-text">ROOM CODE</div>
+              <div className="waiting-room-code-value">{session.sessionCode}</div>
             </div>
-          )}
-          <div className="waiting-room-code">
-            <div className="waiting-room-code-text">ROOM CODE</div>
-            <div className="waiting-room-code-value">{session.sessionCode}</div>
+            {showWaitingForPlayers ? (
+              <div className="waiting-for-host">
+                <div className="waiting-for-host-text">WAITING FOR MORE PLAYERS...</div>
+              </div>
+            ) : canStart ? (
+              <button 
+                className="waiting-start-button" 
+                onClick={() => handleButtonClick(handleStart)}
+                onMouseEnter={() => getSoundState() && playHoverSound()}
+              />
+            ) : !isHost && session.status === 'waiting' ? (
+              <div className="waiting-for-host">
+                <div className="waiting-for-host-text">WAITING FOR HOST</div>
+              </div>
+            ) : null}
           </div>
-          {showWaitingForPlayers ? (
-            <div className="waiting-for-host">
-              <div className="waiting-for-host-text">WAITING FOR MORE PLAYERS...</div>
-            </div>
-          ) : canStart ? (
-            <button 
-              className="waiting-start-button" 
-              onClick={() => handleButtonClick(handleStart)}
-              onMouseEnter={() => getSoundState() && playHoverSound()}
-            />
-          ) : !isHost && session.status === 'waiting' ? (
-            <div className="waiting-for-host">
-              <div className="waiting-for-host-text">WAITING FOR HOST</div>
-            </div>
-          ) : session.status === 'countdown' ? (
-            <div className="waiting-for-host">
-              <div className="waiting-for-host-text">GAME STARTING...</div>
-            </div>
-          ) : (
-            <div className="waiting-for-host">
-              <div className="waiting-for-host-text">LOADING...</div>
-            </div>
-          )}
-        </div>
+        )}
       </div>
     </div>
   );
