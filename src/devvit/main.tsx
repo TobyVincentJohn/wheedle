@@ -12,7 +12,7 @@ Devvit.configure({
 });
 
 defineConfig({
-  name: 'wheedle-game-app',
+  name: '[Bolt] Word Guesser',
   entry: 'index.html',
   height: 'tall',
   menu: { enable: false },
@@ -49,7 +49,7 @@ export const Preview: Devvit.BlockComponent<{ text?: string }> = ({ text = 'Load
 // TODO: Remove this when defineConfig allows webhooks before post creation
 Devvit.addMenuItem({
   // Please update as you work on your idea!
-  label: 'tobygameapp2',
+  label: 'wheedle',
   location: 'subreddit',
   forUserType: 'moderator',
   onPress: async (_event, context) => {
