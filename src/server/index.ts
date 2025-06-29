@@ -254,11 +254,26 @@ router.get('/api/users/active', async (_req, res) => {
 router.get('/api/leaderboard', async (_req, res) => {
   const redis = getRedis();
   
+  console.log('[LEADERBOARD API] Received leaderboard request');
+  
   try {
-    const leaderboard = await getLeaderboard({ redis, limit: 10 });
+    // Get all users first, then limit to top performers
+    const leaderboard = await getLeaderboard({ redis, limit: 50 }); // Get more users initially
+    
+    console.log('[LEADERBOARD API] Fetched', leaderboard.length, 'users');
+    
+    // If we have more than 10 users, take top 10. Otherwise, return all users.
+    const finalLeaderboard = leaderboard.slice(0, 10);
+    
+    console.log('[LEADERBOARD API] Returning', finalLeaderboard.length, 'users to client');
     res.json({ status: 'success', data: leaderboard });
   } catch (error) {
     console.error('Error fetching leaderboard:', error);
+    console.error('[LEADERBOARD API] Full error details:', {
+      name: error instanceof Error ? error.name : 'Unknown',
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : 'No stack trace'
+    });
     res.status(500).json({ 
       status: 'error', 
       message: error instanceof Error ? error.message : 'Unknown error fetching leaderboard'
