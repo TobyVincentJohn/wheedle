@@ -447,7 +447,7 @@ Respond ONLY with valid JSON, no additional text.
     }
 
     // Use query parameter for API key instead of header to avoid proxy issues
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
     
     const requestBody = {
       contents: [
