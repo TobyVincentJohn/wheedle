@@ -12,7 +12,7 @@ Devvit.configure({
 });
 
 defineConfig({
-  name: '[Bolt] Word Guesser',
+  name: 'wheedle-game-app',
   entry: 'index.html',
   height: 'tall',
   menu: { enable: false },
