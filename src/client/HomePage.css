@@ -31,6 +31,12 @@
   height: 750px;
   overflow: hidden;
   z-index: 1;
+  transition: filter 0.3s ease;
+}
+
+.homepage-content.dimmed {
+  filter: brightness(0.3);
+  pointer-events: none;
 }
 
 .logo-container {
@@ -174,6 +180,74 @@
   justify-content: center;
 }
 
+/* Rules Modal */
+.rules-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.rules-content {
+  position: relative;
+  width: 80%;
+  max-width: 800px;
+  aspect-ratio: 1.5;
+  animation: modalPop 0.3s ease-out;
+  z-index: 1001;
+}
+
+.rules-image {
+  width: 100%;
+  height: 100%;
+  background-image: url('../../assets/rule_slip.png');
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+}
+
+.rules-close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  font-family: 'VT323', monospace;
+  font-size: 48px;
+  color: #ff4444;
+  cursor: pointer;
+  transition: transform 0.2s;
+  z-index: 1002;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.rules-close:hover {
+  transform: scale(1.1);
+  color: #ff6666;
+}
+
+@keyframes modalPop {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
 /* Responsive design for mobile devices */
 @media screen and (max-width: 768px) {
   .homepage::before {
@@ -240,5 +314,15 @@
   .user-greeting {
     bottom: 2.7vmin;
     font-size: 3.2vmin;
+  }
+
+  .rules-content {
+    width: 90%;
+  }
+
+  .rules-close {
+    top: -30px;
+    right: -20px;
+    font-size: 36px;
   }
 }

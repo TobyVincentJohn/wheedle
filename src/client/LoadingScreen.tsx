@@ -10,6 +10,17 @@ interface Star {
   speedY: number;
 }
 
+const QUIRKY_PHRASES = [
+  "Teaching the AI to tell dad jokes...",
+  "Polishing the virtual cards...",
+  "Waking up the sleepy dealers...",
+  "Brewing coffee for the AI...",
+  "Untangling the probability strings...",
+  "Charging up the luck batteries...",
+  "Calibrating the fun-o-meter...",
+  "Teaching robots to bluff...",
+];
+
 const LoadingScreen: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -17,6 +28,9 @@ const LoadingScreen: React.FC = () => {
   const [stars, setStars] = useState<Star[]>([]);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [assetsLoaded, setAssetsLoaded] = useState(false);
+  const [currentPhrase] = useState(() => 
+    QUIRKY_PHRASES[Math.floor(Math.random() * QUIRKY_PHRASES.length)]
+  );
 
   // Asset URLs to preload
   const gameAssets = [
@@ -56,7 +70,7 @@ const LoadingScreen: React.FC = () => {
             // Preload font
             const font = new FontFace('VT323', `url(${assetUrl})`);
             font.load().then(() => {
-              document.fonts.add(font);
+              (document.fonts as any).add(font);
               console.log(`✅ Font loaded: VT323`);
               setLoadingProgress(prev => prev + (100 / gameAssets.length));
               resolve();
@@ -173,21 +187,13 @@ const LoadingScreen: React.FC = () => {
       </div>
       <div className="loading-content">
         <div className="loading-text">
-          Preparing Game...
+          {currentPhrase}
         </div>
-        <div className="loading-progress">
-          <div className="progress-bar">
-            <div 
-              className="progress-fill" 
-              style={{ width: `${Math.round(loadingProgress)}%` }}
-            />
-          </div>
-          <div className="progress-text">
-            {Math.round(loadingProgress)}% Assets Loaded
-          </div>
-        </div>
-        <div className="loading-details">
-          {loadingProgress < 100 ? 'Loading game assets...' : 'Ready to play!'}
+        <div className="progress-bar">
+          <div 
+            className="progress-fill" 
+            style={{ width: `${Math.round(loadingProgress)}%` }}
+          />
         </div>
       </div>
     </div>

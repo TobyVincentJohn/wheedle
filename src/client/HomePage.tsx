@@ -8,6 +8,7 @@ const HomePage: React.FC = () => {
   const navigate = useNavigate();
   const [isSoundOn, setIsSoundOn] = useState(getSoundState());
   const { user, logout } = useUser();
+  const [showRules, setShowRules] = useState(false);
   
 
   const handleButtonClick = (action: () => void) => {
@@ -27,7 +28,7 @@ const HomePage: React.FC = () => {
 
   return (
     <div className="homepage">
-      <div className="homepage-content">
+      <div className={`homepage-content ${showRules ? 'dimmed' : ''}`}>
         <div className="logo-container">
           <div className="wheedle-logo"></div>
         </div>
@@ -46,7 +47,7 @@ const HomePage: React.FC = () => {
           </div>
           <div 
             className="rules-button"
-            onClick={() => handleButtonClick(() => {})}
+            onClick={() => handleButtonClick(() => setShowRules(true))}
             onMouseEnter={() => isSoundOn && playHoverSound()}
           ></div>
         </div>
@@ -75,6 +76,20 @@ const HomePage: React.FC = () => {
           </div>
         )}
       </div>
+      {showRules && (
+        <div className="rules-modal">
+          <div className="rules-content">
+            <div 
+              className="rules-close"
+              onClick={() => handleButtonClick(() => setShowRules(false))}
+              onMouseEnter={() => isSoundOn && playHoverSound()}
+            >
+              X
+            </div>
+            <div className="rules-image"></div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
