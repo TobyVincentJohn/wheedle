@@ -64,7 +64,7 @@ Devvit.addMenuItem({
         subredditName: subreddit.name,
         preview: (
     <vstack>
-      <image url="thumbnail.jpg" imageWidth={128} imageHeight={128} />
+      <image url="/home/project/assets/thumbnail.jpg" imageWidth={128} imageHeight={128} />
     </vstack>
   ),
       });
