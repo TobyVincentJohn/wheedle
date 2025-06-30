@@ -62,7 +62,7 @@ const HomePage: React.FC = () => {
         ></div>
         {user && (
           <div className="user-greeting">
-            Hi u/{user.username}
+            Welcome u/{user.username}
             {process.env.NODE_ENV === 'development' && (
               <span style={{ 
                 color: '#ff6b6b', 
