@@ -182,9 +182,9 @@
 
 .dealer-text-bubble {
   position: absolute;
-  width: 80vmin;
+  width: 90vmin;
   height: 80vmin;
-  left: 16vmin;
+  left: 10vmin;
   top: -19.2vmin;
   background-image: url('../../assets/dealer_text.png');
   background-size: contain;
@@ -202,7 +202,7 @@
   font-family: 'VT323', monospace;
   font-size: 3.6vmin;
   text-align: left;
-  width: 70vmin;
+  width: 80vmin;
   line-height: 1.2;
   padding: 2.7vmin 5.3vmin;
   word-wrap: break-word;
@@ -376,9 +376,9 @@
   }
 
   .dealer-text-bubble {
-    width: 80vmin;
+    width: 90vmin;
     height: 80vmin;
-    left: 16vmin;
+    left: 10vmin;
     top: -19.2vmin;
   }
 
@@ -398,7 +398,7 @@
   .dealer-text-content {
     top: 27vmin;
     left: 0.7vmin;
-    width: 70vmin;
+    width: 80vmin;
     font-size: 3.6vmin;
     padding: 2.7vmin 5.3vmin;
   }
