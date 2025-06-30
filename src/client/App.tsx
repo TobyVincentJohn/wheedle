@@ -1,5 +1,6 @@
 import React from 'react';
 import { HashRouter as Router, Routes, Route } from 'react-router-dom';
+import InitialLoadingScreen from './InitialLoadingScreen';
 import HomePage from './HomePage';
 import PublicRoom from './PublicRoom';
 import PrivateRoom from './PrivateRoom';
@@ -21,6 +22,7 @@ export const App: React.FC = () => {
     <Router>
       <RedisDataLogger />
       <Routes>
+        <Route path="/initial-loading" element={<InitialLoadingScreen />} />
         <Route path="/" element={<HomePage />} />
         <Route path="/public-room" element={<PublicRoom />} />
         <Route path="/private-room" element={<PrivateRoom />} />
