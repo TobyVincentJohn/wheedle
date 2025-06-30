@@ -47,7 +47,7 @@ Devvit.addMenuItem({
       
       // Create the post with custom preview
       post = await reddit.submitPost({
-        title: 'Wheedle - The Ultimate Persuasion Game',
+        title: 'Wheedle',
         subredditName: subreddit.name,
         preview: <GameThumbnail />,
       });
