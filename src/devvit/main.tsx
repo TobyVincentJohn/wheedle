@@ -62,7 +62,12 @@ Devvit.addMenuItem({
         // Title of the post. You'll want to update!
         title: 'Wheedle',
         subredditName: subreddit.name,
-        preview: <Preview />,
+        preview: (
+    <vstack>
+      <image url="my-thumbnail.png" imageWidth={128} imageHeight={128} />
+      <text>Get ready to play!</text>
+    </vstack>
+  ),,
       });
       ui.showToast({ text: 'Created post!' });
       ui.navigateTo(post.url);
