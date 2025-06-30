@@ -18,49 +18,88 @@ defineConfig({
   menu: { enable: false },
 });
 
-// Custom post preview component that fills the entire area
-export const GameThumbnail: Devvit.BlockComponent = () => {
-  return (
-    <zstack width={'100%'} height={'100%'} alignment="center middle">
-      <image
-        url="thumbnail.jpg"
-        description="Wheedle Game"
-        height={'100%'}
-        width={'100%'}
-        resizeMode="cover"
-      />
-    </zstack>
-  );
-};
+// Custom post type for Wheedle game
+Devvit.addCustomPostType({
+  name: 'Wheedle Game',
+  height: 'tall',
+  render: (context) => {
+    const { useState } = context;
+    const [showWebview, setShowWebview] = useState(false);
 
-// TODO: Remove this when defineConfig allows webhooks before post creation
+    // If webview should be shown, render the webview
+    if (showWebview) {
+      return (
+        <webview 
+          id="wheedle-game" 
+          url="index.html" 
+          width="100%" 
+          height="100%" 
+        />
+      );
+    }
+
+    // Otherwise, show the game thumbnail that users can click to launch
+    return (
+      <zstack width="100%" height="100%" onPress={() => setShowWebview(true)}>
+        <image
+          url="thumbnail.jpg"
+          description="Wheedle - The Ultimate Persuasion Game"
+          width="100%"
+          height="100%"
+          resizeMode="cover"
+        />
+        {/* Optional: Add a subtle play button overlay */}
+        <vstack alignment="center middle" width="100%" height="100%">
+          <spacer grow />
+          <hstack alignment="center middle" backgroundColor="rgba(0,0,0,0.7)" cornerRadius="full" padding="medium">
+            <text color="white" size="large" weight="bold">▶ PLAY</text>
+          </hstack>
+          <spacer grow />
+        </vstack>
+      </zstack>
+    );
+  },
+});
+
+// Menu item to create the custom post
 Devvit.addMenuItem({
-  label: 'wheedle',
+  label: 'Create Wheedle Game',
   location: 'subreddit',
   forUserType: 'moderator',
   onPress: async (_event, context) => {
     const { reddit, ui } = context;
 
-    let post: Post | undefined;
     try {
       const subreddit = await reddit.getCurrentSubreddit();
       
-      // Create the post with custom preview
-      post = await reddit.submitPost({
-        title: 'Wheedle',
+      // Create the custom post
+      const post = await reddit.submitPost({
+        title: 'Wheedle - The Ultimate Persuasion Game',
         subredditName: subreddit.name,
-        preview: <GameThumbnail />,
+        // Use the custom post type
+        preview: (
+          <zstack width="100%" height="100%">
+            <image
+              url="thumbnail.jpg"
+              description="Wheedle - The Ultimate Persuasion Game"
+              width="100%"
+              height="100%"
+              resizeMode="cover"
+            />
+            <vstack alignment="center middle" width="100%" height="100%">
+              <spacer grow />
+              <hstack alignment="center middle" backgroundColor="rgba(0,0,0,0.7)" cornerRadius="full" padding="medium">
+                <text color="white" size="large" weight="bold">▶ PLAY</text>
+              </hstack>
+              <spacer grow />
+            </vstack>
+          </zstack>
+        ),
       });
-
-      // Set the custom post preview to make it permanent
-      await post.setCustomPostPreview(() => <GameThumbnail />);
       
-      ui.showToast({ text: 'Created post!' });
+      ui.showToast({ text: 'Wheedle game post created!' });
       ui.navigateTo(post.url);
     } catch (error) {
-      if (post) {
-        await post.remove(false);
-      }
       if (error instanceof Error) {
         ui.showToast({ text: `Error creating post: ${error.message}` });
       } else {
