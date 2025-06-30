@@ -116,12 +116,6 @@ const HomePage: React.FC = () => {
                     <li><strong>Be creative:</strong> Unique approaches often win over generic ones</li>
                   </ul>
                 </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
 
                 <div className="rules-section">
                   <div className="rules-section-title">Scoring</div>
@@ -129,4 +123,11 @@ const HomePage: React.FC = () => {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export default HomePage; 
