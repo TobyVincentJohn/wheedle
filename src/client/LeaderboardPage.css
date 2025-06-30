@@ -68,21 +68,22 @@
 }
 
 .leaderboard-back-text {
+  position: absolute;
+  top: 60px;
+  left: 50px;
   color: #FFD700;
   font-family: 'VT323', monospace;
   font-size: 30px;
   font-weight: bold;
+  font-weight: bold;
   cursor: pointer;
   transition: all 0.2s;
+  z-index: 10;
   text-decoration: none;
   text-transform: uppercase;
-  width: fit-content;
-  flex: 0 0 auto;
-  margin-right: auto;
 }
 
 .leaderboard-back-text:hover {
-  color: yellow;
   transform: scale(1.05);
 }
 
@@ -128,8 +129,9 @@
   }
 
   .leaderboard-back-text {
-    top: 2.7vmin;
-    font-size: 2.1vmin;
+    top: 8vmin;
+    left: 6.7vmin;
+    font-size: 4vmin;
   }
 }
 
@@ -154,7 +156,6 @@
 
 .leaderboard-entry:hover {
   background: rgba(255, 215, 0, 0.1);
-  transform: scale(1.02);
 }
 
 .leaderboard-entry:first-child {

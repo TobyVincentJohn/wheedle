@@ -107,7 +107,7 @@ const LeaderboardPage: React.FC = () => {
     <div className="leaderboard">
       <div className="leaderboard-content">
         <div 
-          className="leaderboard-back-text" 
+          className="leaderboard-back-text"
           onClick={() => handleButtonClick(() => navigate('/'))}
           onMouseEnter={() => getSoundState() && playHoverSound()}
         >
