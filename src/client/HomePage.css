@@ -194,6 +194,15 @@
   background-color: rgba(0, 0, 0, 0.5);
 }
 
+.rules-content {
+  position: relative;
+  width: 80%;
+  max-width: 800px;
+  aspect-ratio: 1.5;
+  animation: modalPop 0.3s ease-out;
+  z-index: 1001;
+}
+
 .rules-image {
   width: 100%;
   height: 100%;
@@ -268,7 +277,6 @@
     width: 80vmin;
     height: 40vmin; /* Adjusted for new 300px height */
   }
-
   .buttons-container {
     width: 70vmin;
     left: 15vmin;
@@ -314,7 +322,6 @@
   .rules-content {
     width: 95%;
     height: 90vh;
-    max-height: none;
   }
 
   .rules-close {
