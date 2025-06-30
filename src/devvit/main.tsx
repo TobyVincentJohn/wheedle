@@ -52,7 +52,6 @@ Devvit.addCustomPostType({
         <vstack alignment="center middle" width="100%" height="100%">
           <spacer grow />
           <hstack alignment="center middle" backgroundColor="rgba(0,0,0,0.7)" cornerRadius="full" padding="medium">
-            <text color="white" size="large" weight="bold">▶ PLAY</text>
           </hstack>
           <spacer grow />
         </vstack>
