@@ -145,31 +145,31 @@
   justify-content: space-between;
   padding: 15px 30px;
   margin-bottom: 10px;
-  background: rgba(255, 215, 0, 0.1);
-  border: 2px solid #FFD700;
-  border-radius: 8px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
   transition: all 0.2s;
 }
 
 .leaderboard-entry:hover {
-  background: rgba(255, 215, 0, 0.2);
+  background: rgba(255, 215, 0, 0.1);
   transform: scale(1.02);
 }
 
 .leaderboard-entry:first-child {
-  background: rgba(255, 215, 0, 0.3);
-  border-color: #FFD700;
-  box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+  background: transparent;
+  border: none;
+  box-shadow: none;
 }
 
 .leaderboard-entry:nth-child(2) {
-  background: rgba(192, 192, 192, 0.2);
-  border-color: #C0C0C0;
+  background: transparent;
+  border: none;
 }
 
 .leaderboard-entry:nth-child(3) {
-  background: rgba(205, 127, 50, 0.2);
-  border-color: #CD7F32;
+  background: transparent;
+  border: none;
 }
 
 .rank-cell {
@@ -227,7 +227,7 @@
   .leaderboard-entry {
     padding: 2vmin 4vmin;
     margin-bottom: 1.3vmin;
-    border-radius: 1.1vmin;
+    border-radius: 0;
   }
 
   .rank-cell {
