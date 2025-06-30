@@ -15,40 +15,38 @@ defineConfig({
   name: 'wheedle',
   entry: 'index.html',
   height: 'tall',
-  menu: { enable: false },
-  // TODO: Cannot use without ability to pass in more metadata
-  // menu: {
-  //   enable: true,
-  //   label: 'Wheedke',
-  //   postTitle: 'Wheedle',
-  //   preview: <Preview />,
-  // },
+  menu: {
+    enable: true,
+    label: 'Wheedle Game',
+    postTitle: 'Wheedle - The Ultimate Persuasion Game',
+    preview: <Preview text="🎮 Convince the AI and win the prize! 🎮" />,
+  },
 });
 
-export const Preview: Devvit.BlockComponent<{ text?: string }> = ({ text = 'Loading...' }) => {
+export const Preview: Devvit.BlockComponent<{ text?: string }> = ({ text = '🎮 Wheedle - The Ultimate Persuasion Game! 🎮' }) => {
   return (
-    <zstack width={'100%'} height={'100%'} alignment="center middle">
-      <vstack width={'100%'} height={'100%'} alignment="center middle">
+    <zstack width={'100%'} height={'100%'} alignment="center middle" backgroundColor="#1a1a1a">
+      <vstack width={'100%'} height={'100%'} alignment="center middle" gap="medium">
         <image
           url="thumbnail.jpg"
-          description="Loading..."
-          height={'140px'}
-          width={'140px'}
-          imageHeight={'240px'}
-          imageWidth={'240px'}
+          description="Wheedle Game"
+          height={'120px'}
+          width={'120px'}
+          imageHeight={'120px'}
+          imageWidth={'120px'}
         />
-        <spacer size="small" />
-        <text maxWidth={`80%`} size="large" weight="bold" alignment="center middle" wrap>
+        <text maxWidth={'90%'} size="large" weight="bold" alignment="center middle" wrap color="#FFD700">
           {text}
+        </text>
+        <text size="medium" alignment="center middle" color="#ffffff" wrap maxWidth={'85%'}>
+          A multiplayer persuasion game where you convince an AI judge to win the prize!
         </text>
       </vstack>
     </zstack>
   );
 };
 
-// TODO: Remove this when defineConfig allows webhooks before post creation
 Devvit.addMenuItem({
-  // Please update as you work on your idea!
   label: 'Wheedle Game',
   location: 'subreddit',
   forUserType: 'moderator',
@@ -59,10 +57,9 @@ Devvit.addMenuItem({
     try {
       const subreddit = await reddit.getCurrentSubreddit();
       post = await reddit.submitPost({
-        // Title of the post. You'll want to update!
-        title: 'Wheedle',
+        title: 'Wheedle - The Ultimate Persuasion Game',
         subredditName: subreddit.name,
-        preview: <Preview text="🎮 Wheedle - The Ultimate Persuasion Game! 🎮" />,
+        preview: <Preview text="🎮 Join the game and convince the AI! 🎮" />,
       });
       ui.showToast({ text: 'Created post!' });
       ui.navigateTo(post.url);
