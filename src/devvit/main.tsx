@@ -60,7 +60,7 @@ Devvit.addMenuItem({
       const subreddit = await reddit.getCurrentSubreddit();
       post = await reddit.submitPost({
         // Title of the post. You'll want to update!
-        title: 'Word Guesser',
+        title: 'Wheedle',
         subredditName: subreddit.name,
         preview: <Preview />,
       });
