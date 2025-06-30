@@ -30,7 +30,7 @@ export const Preview: Devvit.BlockComponent<{ text?: string }> = ({ text = 'Load
     <zstack width={'100%'} height={'100%'} alignment="center middle">
       <vstack width={'100%'} height={'100%'} alignment="center middle">
         <image
-          url="loading.gif"
+          url="thumbnail.jpg"
           description="Loading..."
           height={'140px'}
           width={'140px'}
@@ -49,7 +49,7 @@ export const Preview: Devvit.BlockComponent<{ text?: string }> = ({ text = 'Load
 // TODO: Remove this when defineConfig allows webhooks before post creation
 Devvit.addMenuItem({
   // Please update as you work on your idea!
-  label: 'wheedle',
+  label: 'Wheedle Game',
   location: 'subreddit',
   forUserType: 'moderator',
   onPress: async (_event, context) => {
@@ -62,11 +62,7 @@ Devvit.addMenuItem({
         // Title of the post. You'll want to update!
         title: 'Wheedle',
         subredditName: subreddit.name,
-        preview: (
-    <vstack>
-      <image url="/home/project/assets/thumbnail.jpg" imageWidth={128} imageHeight={128} />
-    </vstack>
-  ),
+        preview: <Preview text="🎮 Wheedle - The Ultimate Persuasion Game! 🎮" />,
       });
       ui.showToast({ text: 'Created post!' });
       ui.navigateTo(post.url);
