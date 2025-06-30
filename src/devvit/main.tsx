@@ -66,7 +66,7 @@ Devvit.addMenuItem({
     <vstack>
       <image url="thumbnail.jpg" imageWidth={128} imageHeight={128} />
     </vstack>
-  ),,
+  ),
       });
       ui.showToast({ text: 'Created post!' });
       ui.navigateTo(post.url);
