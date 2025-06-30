@@ -40,12 +40,12 @@ Devvit.addCustomPostType({
 
     // Otherwise, show the game thumbnail that users can click to launch
     return (
-      <zstack width="100%" height="100%" onPress={() => setShowWebview(true)}>
+      <zstack width="100vw" height="100vh" onPress={() => setShowWebview(true)}>
         <image
           url="thumbnail.jpg"
           description="Wheedle - The Ultimate Persuasion Game"
-          width="100%"
-          height="100%"
+          width="100vw"
+          height="100vh"
           resizeMode="cover"
         />
       </zstack>
