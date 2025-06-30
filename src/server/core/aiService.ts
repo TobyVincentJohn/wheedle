@@ -28,33 +28,23 @@ export const generateAIGameData = async (session: GameSession): Promise<Omit<AIG
     console.log('[AI DEBUG] 🎲 Selected AI persona index:', randomAIIndex, 'out of', AI_PERSONAS.length);
     console.log('[AI DEBUG] 🤖 Selected AI persona:', selectedAIPersona?.aiPersona);
     
-    // Select corresponding user personas (same index to keep them thematically related)
-    const selectedUserPersonas = Array.isArray(USER_PERSONAS[randomAIIndex]) ? USER_PERSONAS[randomAIIndex] : (Array.isArray(USER_PERSONAS[0]) ? USER_PERSONAS[0] : ['Unknown', 'Unknown', 'Unknown']);
-    console.log('[AI DEBUG] 👥 Available user personas for this theme:', selectedUserPersonas);
+    // Select one random user persona that all players will share
+    const randomUserPersonaIndex = Math.floor(Math.random() * USER_PERSONAS.length);
+    const selectedUserPersona = Array.isArray(USER_PERSONAS) && typeof USER_PERSONAS[randomUserPersonaIndex] === 'string' ? USER_PERSONAS[randomUserPersonaIndex] : 'Unknown Persona';
+    console.log('[AI DEBUG] 👥 Selected shared user persona:', selectedUserPersona);
     
-    // Assign unique personas to each player
+    // Assign the same persona to all players
     const playerPersonas: { [userId: string]: string } = {};
-    const availablePersonas = Array.isArray(selectedUserPersonas) ? [...selectedUserPersonas] : [];
-    console.log('[AI DEBUG] 🔀 Original persona order:', availablePersonas);
     
-    // Shuffle the available personas to randomize assignment
-    for (let i = availablePersonas.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [availablePersonas[i], availablePersonas[j]] = [availablePersonas[j], availablePersonas[i]];
-    }
-    console.log('[AI DEBUG] 🎲 Shuffled persona order:', availablePersonas);
-    
-    // Assign personas to players, cycling through if more players than personas
-    session.players.forEach((player, index) => {
-      const personaIndex = availablePersonas.length > 0 ? index % availablePersonas.length : 0;
-      const persona = availablePersonas[personaIndex];
-      playerPersonas[player.userId] = typeof persona === 'string' ? persona || 'Unknown Persona' : 'Unknown Persona';
-      console.log('[AI DEBUG] 🎭 Assigned to player', player.username, '(', player.userId, '):', typeof persona === 'string' ? persona || 'Unknown Persona' : 'Unknown Persona');
+    // Assign the same persona to all players
+    session.players.forEach((player) => {
+      playerPersonas[player.userId] = selectedUserPersona;
+      console.log('[AI DEBUG] 🎭 Assigned to player', player.username, '(', player.userId, '):', selectedUserPersona);
     });
     
     // clues must always be 3 strings, userPersonas can be any length
     const cluesArray = toThreeClues(selectedAIPersona.clues);
-    const userPersonasArray = Array.isArray(selectedUserPersonas) && selectedUserPersonas.every((c: any) => typeof c === 'string') ? selectedUserPersonas : [];
+    const userPersonasArray = [selectedUserPersona]; // Single persona for all players
     const gameData = {
       aiPersona: typeof selectedAIPersona.aiPersona === 'string' && selectedAIPersona.aiPersona ? selectedAIPersona.aiPersona : 'Unknown AI Persona',
       clues: cluesArray,
@@ -76,20 +66,18 @@ export const generateAIGameData = async (session: GameSession): Promise<Omit<AIG
     
     // Fallback persona assignment
     const fallbackPlayerPersonas: { [userId: string]: string } = {};
-    const fallbackPersonas = Array.isArray(USER_PERSONAS[0]) ? USER_PERSONAS[0] : ['Unknown', 'Unknown', 'Unknown'];
-    console.log('[AI DEBUG] 🔄 Using fallback personas:', fallbackPersonas);
+    const fallbackPersona = Array.isArray(USER_PERSONAS) && typeof USER_PERSONAS[0] === 'string' ? USER_PERSONAS[0] : 'Unknown Persona';
+    console.log('[AI DEBUG] 🔄 Using fallback persona:', fallbackPersona);
     
-    session.players.forEach((player, index) => {
-      const personaIndex = Array.isArray(fallbackPersonas) && fallbackPersonas.length > 0 ? index % fallbackPersonas.length : 0;
-      const persona = Array.isArray(fallbackPersonas) && typeof fallbackPersonas[personaIndex] === 'string' ? fallbackPersonas[personaIndex] : 'Unknown Persona';
-      fallbackPlayerPersonas[player.userId] = persona;
-      console.log('[AI DEBUG] 🔄 Fallback assigned to', player.username, ':', persona);
+    session.players.forEach((player) => {
+      fallbackPlayerPersonas[player.userId] = fallbackPersona;
+      console.log('[AI DEBUG] 🔄 Fallback assigned to', player.username, ':', fallbackPersona);
     });
     
     // Fallback to the first persona set if something goes wrong
     const fallbackAIPersona = (AI_PERSONAS[0] && typeof AI_PERSONAS[0].aiPersona === 'string') ? AI_PERSONAS[0].aiPersona : 'Unknown AI Persona';
     const fallbackClues = toThreeClues(AI_PERSONAS[0]?.clues);
-    const fallbackUserPersonas = Array.isArray(USER_PERSONAS[0]) ? USER_PERSONAS[0] : [];
+    const fallbackUserPersonas = [fallbackPersona];
     return {
       aiPersona: fallbackAIPersona,
       clues: fallbackClues,
@@ -161,18 +149,16 @@ export const createAIGameData = async ({
     
     // Fallback persona assignment
     const fallbackPlayerPersonas: { [userId: string]: string } = {};
-    const fallbackPersonas = Array.isArray(USER_PERSONAS[0]) ? USER_PERSONAS[0] : ['Unknown', 'Unknown', 'Unknown'];
-    session.players.forEach((player, index) => {
-      const personaIndex = Array.isArray(fallbackPersonas) && fallbackPersonas.length > 0 ? index % fallbackPersonas.length : 0;
-      const persona = Array.isArray(fallbackPersonas) && typeof fallbackPersonas[personaIndex] === 'string' ? fallbackPersonas[personaIndex] : 'Unknown Persona';
-      fallbackPlayerPersonas[player.userId] = persona;
-      console.log('[AI DEBUG] 🔄 Emergency fallback persona assigned - User:', player.username, 'Persona:', persona);
+    const fallbackPersona = Array.isArray(USER_PERSONAS) && typeof USER_PERSONAS[0] === 'string' ? USER_PERSONAS[0] : 'Unknown Persona';
+    session.players.forEach((player) => {
+      fallbackPlayerPersonas[player.userId] = fallbackPersona;
+      console.log('[AI DEBUG] 🔄 Emergency fallback persona assigned - User:', player.username, 'Persona:', fallbackPersona);
     });
     
     gameData = {
       aiPersona: AI_PERSONAS[0].aiPersona,
       clues: AI_PERSONAS[0].clues as [string, string, string],
-      userPersonas: USER_PERSONAS[0] as [string, string, string],
+      userPersonas: [fallbackPersona],
       playerPersonas: fallbackPlayerPersonas
     };
   }

@@ -324,8 +324,8 @@
   }
 
   .rules-close {
-    top: 3%;
-    left: 27%;
+    top: 4vmin;
+    left: 36vmin;
     font-size: 8vmin;
     width: auto;
     height: auto;

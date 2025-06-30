@@ -6,7 +6,7 @@ import { useSession } from './hooks/useSession';
 import { playHoverSound, playClickSound, getSoundState } from './utils/sound';
 import './ResponsePage.css';
 
-const RESPONSE_TIME_LIMIT = 10000; // 1 minute in milliseconds
+const RESPONSE_TIME_LIMIT = 30000; // 30 seconds in milliseconds
 
 type PageState = 'responding' | 'waiting' | 'revealing';
 
