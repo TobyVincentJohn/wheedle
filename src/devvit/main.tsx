@@ -48,13 +48,6 @@ Devvit.addCustomPostType({
           height="100%"
           resizeMode="cover"
         />
-        {/* Optional: Add a subtle play button overlay */}
-        <vstack alignment="center middle" width="100%" height="100%">
-          <spacer grow />
-          <hstack alignment="center middle" backgroundColor="rgba(0,0,0,0.7)" cornerRadius="full" padding="medium">
-          </hstack>
-          <spacer grow />
-        </vstack>
       </zstack>
     );
   },
