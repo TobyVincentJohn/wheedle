@@ -46,6 +46,9 @@ const InitialLoadingScreen: React.FC = () => {
     new URL('../../assets/buttons/sound_on.png', import.meta.url).href,
     new URL('../../assets/buttons/sound_off.png', import.meta.url).href,
     
+    // Rules modal assets
+    new URL('../../assets/rule_slip.png', import.meta.url).href,
+    
     // Public/Private room assets
     new URL('../../assets/waiting_room/waiting_room.png', import.meta.url).href,
     new URL('../../assets/waiting_room/name_tag.png', import.meta.url).href,

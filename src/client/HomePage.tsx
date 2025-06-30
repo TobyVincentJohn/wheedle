@@ -86,7 +86,36 @@ const HomePage: React.FC = () => {
             >
               X
             </div>
-            <div className="rules-image"></div>
+            <div className="rules-image">
+              <div className="rules-text-content">
+                <div className="rules-title">How to Play Wheedle</div>
+                
+                <div className="rules-section">
+                  <div className="rules-section-title">Game Overview</div>
+                  <p>Wheedle is a persuasion game where you try to convince an AI that you deserve to win more than other players. The AI has a secret personality, and your job is to figure out who they are and appeal to them!</p>
+                </div>
+
+                <div className="rules-section">
+                  <div className="rules-section-title">How It Works</div>
+                  <ul className="rules-list">
+                    <li>Join a <span className="rules-highlight">Public Room</span> or create/join a <span className="rules-highlight">Private Room</span></li>
+                    <li>Wait for 2-6 players to join, then the host starts the game</li>
+                    <li>You'll be assigned a <span className="rules-highlight">secret role</span> to play during the game</li>
+                    <li>The AI will reveal <span className="rules-highlight">3 clues</span> about their personality</li>
+                    <li>You have <span className="rules-highlight">1 minute</span> to write your response</li>
+                    <li>Convince the AI why you deserve to win while staying in character!</li>
+                  </ul>
+                </div>
+
+                <div className="rules-section">
+                  <div className="rules-section-title">Winning Strategy</div>
+                  <ul className="rules-list">
+                    <li><strong>Stay in character:</strong> Play your assigned role convincingly</li>
+                    <li><strong>Read the clues:</strong> Figure out the AI's personality from their hints</li>
+                    <li><strong>Be persuasive:</strong> Appeal to what the AI cares about</li>
+                    <li><strong>Be creative:</strong> Unique approaches often win over generic ones</li>
+                  </ul>
+                </div>
           </div>
         </div>
       )}
@@ -94,4 +123,10 @@ const HomePage: React.FC = () => {
   );
 };
 
+                <div className="rules-section">
+                  <div className="rules-section-title">Scoring</div>
+                  <p>The AI judges based on how well you stay in character, understand their personality, and make a convincing argument. Winners earn points on the leaderboard!</p>
+                </div>
+              </div>
+            </div>
 export default HomePage; 
