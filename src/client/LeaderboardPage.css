@@ -68,16 +68,17 @@
 }
 
 .back-text {
-  position: absolute;
-  top: 40px;
-  left: 40px;
-  color: yellow;
+  color: #FFD700;
   font-family: 'VT323', monospace;
   font-size: 30px;
   font-weight: bold;
   cursor: pointer;
   transition: all 0.2s;
-  z-index: 10;
+  text-decoration: none;
+  text-transform: uppercase;
+  width: fit-content;
+  flex: 0 0 auto;
+  margin-right: auto;
 }
 
 .back-text:hover {
