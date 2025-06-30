@@ -128,7 +128,7 @@ const PrivateRoom: React.FC = () => {
     <div className="private-room">
       <div className="private-room-content">
         <div 
-          className="back-text" 
+          className="private-back-text" 
           onClick={() => handleButtonClick(() => navigate('/'))}
           onMouseEnter={() => getSoundState() && playHoverSound()}
         >

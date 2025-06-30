@@ -42,6 +42,7 @@
   justify-content: space-between;
   align-items: center;
   z-index: 10;
+  gap: 20px;
 }
 
 .game-notifications {
@@ -93,13 +94,14 @@
 }
 
 .modal-content {
-  background: #2a2a2a;
+  background: #000000;
   border: 3px solid #FFD700;
   border-radius: 12px;
-  padding: 40px;
+  padding: 20px;
   text-align: center;
   max-width: 400px;
   width: 90%;
+  max-height: 200px;
 }
 
 .modal-title {
@@ -113,23 +115,21 @@
   color: white;
   font-family: 'VT323', monospace;
   font-size: 20px;
-  margin-bottom: 30px;
+  margin-bottom: 20px;
 }
 
 .modal-button {
-  background: #FFD700;
-  color: black;
+  background: none;
   border: none;
-  padding: 12px 24px;
+  color: #FFD700;
   font-family: 'VT323', monospace;
-  font-size: 18px;
+  font-size: 24px;
   cursor: pointer;
-  border-radius: 6px;
   transition: all 0.2s;
+  padding: 0;
 }
 
 .modal-button:hover {
-  background: #e6c200;
   transform: scale(1.05);
 }
 
@@ -139,22 +139,23 @@
   color: #FFD700;
   font-family: 'VT323', monospace;
   font-size: 18px;
+  align-items: center;
 }
 
 .leave-game-btn {
-  background: #ff4444;
-  color: white;
+  background: none;
   border: none;
-  padding: 8px 16px;
+  color: #ff4444;
   font-family: 'VT323', monospace;
-  font-size: 16px;
+  font-size: 18px;
   cursor: pointer;
-  border-radius: 4px;
   transition: all 0.2s;
+  text-transform: uppercase;
+  padding: 0;
+  white-space: nowrap;
 }
 
 .leave-game-btn:hover {
-  background: #cc3333;
   transform: scale(1.05);
 }
 
@@ -182,7 +183,7 @@
 
 .dealer-text-bubble {
   position: absolute;
-  width: 90vmin;
+  width: 120vmin;
   height: 80vmin;
   left: 10vmin;
   top: -19.2vmin;
@@ -202,7 +203,7 @@
   font-family: 'VT323', monospace;
   font-size: 3.6vmin;
   text-align: left;
-  width: 80vmin;
+  width: 110vmin;
   line-height: 1.2;
   padding: 2.7vmin 5.3vmin;
   word-wrap: break-word;
@@ -359,13 +360,12 @@
   }
 
   .session-info {
-    gap: 2.7vmin;
-    font-size: 2.4vmin;
+    font-size: 16px;
+    gap: 15px;
   }
 
   .leave-game-btn {
-    padding: 1.1vmin 2.1vmin;
-    font-size: 2.1vmin;
+    font-size: 16px;
   }
 
   .dealer {
@@ -398,8 +398,8 @@
   .dealer-text-content {
     top: 27vmin;
     left: 0.7vmin;
-    width: 80vmin;
+    width: 90vmin;
     font-size: 3.6vmin;
-    padding: 2.7vmin 5.3vmin;
+    padding: 2.7vmin 4vmin;
   }
 }

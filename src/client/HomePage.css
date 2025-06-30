@@ -215,28 +215,30 @@
 }
 
 .rules-close {
-  position: absolute;
-  top: 3vmin;
-  left: 27vmin;
+  position: fixed;
+  top: 20%;
+  left: 36%;
+  transform: translate(-150%, -150%);
   font-family: 'VT323', monospace;
-  font-size: 8.5vmin;
+  font-size: 30px;
   color: #ff4444;
   cursor: pointer;
   transition: transform 0.2s;
   z-index: 1002;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-  width: auto;
-  height: auto;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
   line-height: 1;
   font-weight: bold;
-  padding: 1.3vmin;
+  padding: 8px;
+  user-select: none;
 }
 
 .rules-close:hover {
-  transform: scale(1.1);
+  transform: translate(-150%, -150%) scale(1.1);
   color: #ff6666;
 }
 
@@ -324,11 +326,6 @@
   }
 
   .rules-close {
-    top: 3vmin;
-    left: 27vmin;
-    font-size: 8.5vmin;
-    width: auto;
-    height: auto;
-    padding: 1.3vmin;
+    font-size: 24px;
   }
 }

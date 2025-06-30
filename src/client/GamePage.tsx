@@ -351,25 +351,45 @@ const GamePage: React.FC = () => {
       <div className="game-content">
         <div className="game-header">
           <div className="session-info">
-            <div>Room Code: {session?.sessionCode}</div>
-            <div>Players: {session?.players.length}/6</div>
+            Room Code: {session?.sessionId.slice(0, 5)}
+            <span>Players: {session?.players.length}/6</span>
+            <div 
+              className="leave-game-btn"
+              onClick={() => handleButtonClick(handleLeaveGame)}
+              onMouseEnter={() => getSoundState() && playHoverSound()}
+            >
+              Leave Game
+            </div>
           </div>
-          <button 
-            className="leave-game-btn"
-            onClick={() => handleButtonClick(handleLeaveGame)}
-            onMouseEnter={() => getSoundState() && playHoverSound()}
-          >
-            Leave Game
-          </button>
         </div>
-        
+
+        {/* Player left notifications */}
         <div className="game-notifications">
-          {notifications.map((notification) => (
+          {notifications.map(notification => (
             <div key={notification.id} className="player-left-notification">
-              u/{notification.username} left the game
+              {notification.username} has left the game
             </div>
           ))}
         </div>
+
+        {/* All players left modal */}
+        {showAllPlayersLeftModal && (
+          <div className="all-players-left-modal">
+            <div className="modal-content">
+              <div className="modal-message">All other players have left the game</div>
+              <div 
+                className="modal-button"
+                onClick={() => handleButtonClick(() => {
+                  handleAllPlayersLeftModalClose();
+                  navigate('/');
+                })}
+                onMouseEnter={() => getSoundState() && playHoverSound()}
+              >
+                Return Home
+              </div>
+            </div>
+          </div>
+        )}
         
         <div className="dealer-text-bubble">
           <div className="dealer-text-content">
@@ -380,25 +400,6 @@ const GamePage: React.FC = () => {
         </div>
         <div className={`dealer dealer-${dealerId}`} />
       </div>
-      
-      {showAllPlayersLeftModal && (
-        <div className="all-players-left-modal">
-          <div className="modal-content">
-            <div className="modal-title">Game Ended</div>
-            <div className="modal-message">All other players have left the game.</div>
-            <button 
-              className="modal-button"
-              onClick={() => handleButtonClick(() => {
-                handleAllPlayersLeftModalClose();
-                navigate('/');
-              })}
-              onMouseEnter={() => getSoundState() && playHoverSound()}
-            >
-              Return Home
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

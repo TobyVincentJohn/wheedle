@@ -575,66 +575,75 @@ const ResponsePage: React.FC = () => {
   return (
     <div className="response-page">
       <div className="response-content">
-        <div 
-          className="back-text" 
-          onClick={() => handleButtonClick(() => navigate('/'))}
-          onMouseEnter={() => getSoundState() && playHoverSound()}
-        >
-          BACK
-        </div>
-        
-        {/* Fixed User Persona at top */}
-        {userPersona && (
-          <div className="user-persona-display">
-            Your Role: {userPersona}
-          </div>
-        )}
-        
-        {/* Fixed Timer */}
-        <div className="timer-display" style={{
-          color: timeRemaining < 10000 ? '#ff4444' : '#FFD700',
-          fontFamily: 'VT323, monospace',
-          fontSize: '24px',
-          textAlign: 'center',
-          border: `2px solid ${timeRemaining < 10000 ? '#ff4444' : '#FFD700'}`
-        }}>
-          Time Remaining: {formatTime(timeRemaining)}
-          {isTimeUp && <div style={{ fontSize: '18px', marginTop: '5px' }}>Time's Up!</div>}
-        </div>
-        
-        {/* Fixed Dealer Position */}
-        <div className={`response-dealer response-dealer-${dealerId}`} />
-        
-        <div style={{marginBottom: '10px',marginTop: '10px'}}></div>
-        <div className="text-input-container">
-          <div className="text-bubble">
-            <textarea
-              className="text-input"
-              value={userInput}
-              onChange={handleInputChange}
-              placeholder={isTimeUp ? "Time's up!" : "Who do you think the AI is? Make your guess..."}
-              maxLength={500}
-              disabled={isTimeUp}
-              style={{ 
-                opacity: isTimeUp ? 0.6 : 1,
-                cursor: isTimeUp ? 'not-allowed' : 'text'
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && e.ctrlKey && !isTimeUp) {
-                  handleSubmitResponse();
-                }
-              }}
-            />
+        <div className="response-content">
+          {/* Fixed User Persona at top */}
+          {userPersona && (
+            <div className="user-persona-display">
+              Your Role: {userPersona}
+            </div>
+          )}
+          
+          {/* Timer text */}
+          <div className={`timer-text ${timeRemaining < 10000 ? 'time-low' : ''}`}>
+            Time Remaining: {formatTime(timeRemaining)}
+            {isTimeUp && <div>Time's Up!</div>}
           </div>
           
-          {/* Submit Button */}
-          <button
-            onClick={() => handleButtonClick(() => handleSubmitResponse())}
-            disabled={(!userInput.trim() && !isTimeUp) || hasSubmitted}
-            className="submit-button"
-          >
-            {hasSubmitted ? '✅ Submitted' : isTimeUp ? 'Time Up' : 'Submit Guess (Ctrl+Enter)'}
-          </button>
+          {/* Fixed Dealer Position */}
+          <div className={`response-dealer response-dealer-${dealerId}`} />
+          
+          {pageState === 'waiting' && (
+            <div className="loading-screen">
+              <div className="loading-text">Evaluating</div>
+            </div>
+          )}
+          
+          {pageState === 'revealing' && (
+            <div className="winner-modal">
+              <div className="winner-content">
+                <div className="winner-text">{winner}</div>
+                <div 
+                  className="return-home-text"
+                  onClick={() => handleButtonClick(handleReturnToHome)}
+                  onMouseEnter={() => getSoundState() && playHoverSound()}
+                >
+                  Return Home
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <div style={{marginBottom: '10px',marginTop: '10px'}}></div>
+          <div className="text-input-container">
+            <div className="text-bubble">
+              <textarea
+                className="text-input"
+                value={userInput}
+                onChange={handleInputChange}
+                placeholder={isTimeUp ? "Time's up!" : "Who do you think the AI is? Make your guess..."}
+                maxLength={500}
+                disabled={isTimeUp}
+                style={{ 
+                  opacity: isTimeUp ? 0.6 : 1,
+                  cursor: isTimeUp ? 'not-allowed' : 'text'
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && e.ctrlKey && !isTimeUp) {
+                    handleSubmitResponse();
+                  }
+                }}
+              />
+            </div>
+            
+            {/* Submit Button */}
+            <button
+              onClick={() => handleButtonClick(() => handleSubmitResponse())}
+              disabled={(!userInput.trim() && !isTimeUp) || hasSubmitted}
+              className="submit-button"
+            >
+              {hasSubmitted ? '✅ Submitted' : isTimeUp ? 'Time Up' : 'Submit Guess (Ctrl+Enter)'}
+            </button>
+          </div>
         </div>
       </div>
     </div>
