@@ -81,7 +81,7 @@
   margin-right: auto;
 }
 
-.back-text:hover {
+.leaderboard-back-text:hover {
   color: yellow;
   transform: scale(1.05);
 }
