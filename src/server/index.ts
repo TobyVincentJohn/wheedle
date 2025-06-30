@@ -444,6 +444,14 @@ router.get('/api/sessions/current', async (_req, res): Promise<void> => {
 
   try {
     const session = await getUserCurrentSession({ redis, userId });
+    
+    // If user has a session but it's completed, clear their session reference
+    if (session && session.status === 'complete') {
+      await redis.del(`user_session:${userId}`);
+      res.json({ status: 'success', data: null });
+      return;
+    }
+    
     res.json({ status: 'success', data: session });
   } catch (error) {
     console.error('Error fetching current session:', error);

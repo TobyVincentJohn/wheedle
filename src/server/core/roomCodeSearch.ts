@@ -87,7 +87,7 @@ export const findSessionByCode = async ({
     if (session.status !== 'waiting') {
       return { 
         session: null, 
-        error: 'Session is no longer accepting players' 
+        error: 'Game has already started and is no longer accepting players' 
       };
     }
 

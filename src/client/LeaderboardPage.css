@@ -146,8 +146,8 @@
   display: flex;
   width: 100%;
   justify-content: space-between;
-  padding: 15px 30px;
-  margin-bottom: 10px;
+  padding: 8px 30px;
+  margin-bottom: 5px;
   background: transparent;
   border: none;
   border-radius: 0;
@@ -227,8 +227,8 @@
   }
 
   .leaderboard-entry {
-    padding: 2vmin 4vmin;
-    margin-bottom: 1.3vmin;
+    padding: 1.1vmin 4vmin;
+    margin-bottom: 0.7vmin;
     border-radius: 0;
   }
 

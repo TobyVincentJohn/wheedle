@@ -281,6 +281,17 @@ export const sessionComplete = async ({
         await redis.set(getSessionKey(sessionId), JSON.stringify(session));
       }
     }
+    
+    // Auto-delete completed session after a short delay
+    setTimeout(async () => {
+      try {
+        await sessionDelete({ redis, sessionId });
+        console.log(`[SESSION COMPLETE] Auto-deleted completed session ${sessionId}`);
+      } catch (error) {
+        console.error(`[SESSION COMPLETE] Failed to auto-delete session ${sessionId}:`, error);
+      }
+    }, 5000); // 5 second delay to allow clients to process the completion
+    
     return session;
   }
 
@@ -309,6 +320,17 @@ export const sessionComplete = async ({
   
   await redis.set(getSessionKey(sessionId), JSON.stringify(session));
   console.log(`[SESSION COMPLETE] Session ${sessionId} marked as complete with winner ${winner.username}`);
+  
+  // Auto-delete completed session after a short delay
+  setTimeout(async () => {
+    try {
+      await sessionDelete({ redis, sessionId });
+      console.log(`[SESSION COMPLETE] Auto-deleted completed session ${sessionId}`);
+    } catch (error) {
+      console.error(`[SESSION COMPLETE] Failed to auto-delete session ${sessionId}:`, error);
+    }
+  }, 5000); // 5 second delay to allow clients to process the completion
+  
   return session;
 };
 
@@ -359,7 +381,8 @@ export const getPublicSessions = async ({
   for (const sessionId of sessionIds) {
     try {
       const session = await sessionGet({ redis, sessionId });
-      if (session && !session.isPrivate && ['waiting', 'countdown', 'in-game'].includes(session.status)) {
+      // Only show sessions that are waiting for players (not started yet)
+      if (session && !session.isPrivate && session.status === 'waiting') {
         sessions.push(session);
         validSessionIds.push(sessionId);
       }
