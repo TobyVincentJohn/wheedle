@@ -15,33 +15,21 @@ defineConfig({
   name: 'wheedle',
   entry: 'index.html',
   height: 'tall',
-  menu: {
-    enable: true,
-    label: 'Wheedle Game',
-    postTitle: 'Wheedle - The Ultimate Persuasion Game',
-    preview: <Preview text="🎮 Convince the AI and win the prize! 🎮" />,
-  },
+  menu: { enable: false },
 });
 
-export const Preview: Devvit.BlockComponent<{ text?: string }> = ({ text = '🎮 Wheedle - The Ultimate Persuasion Game! 🎮' }) => {
+export const Preview: Devvit.BlockComponent = () => {
   return (
-    <zstack width={'100%'} height={'100%'} alignment="center middle" backgroundColor="#1a1a1a">
-      <vstack width={'100%'} height={'100%'} alignment="center middle" gap="medium">
-        <image
-          url="thumbnail.jpg"
-          description="Wheedle Game"
-          height={'120px'}
-          width={'120px'}
-          imageHeight={'120px'}
-          imageWidth={'120px'}
-        />
-        <text maxWidth={'90%'} size="large" weight="bold" alignment="center middle" wrap color="#FFD700">
-          {text}
-        </text>
-        <text size="medium" alignment="center middle" color="#ffffff" wrap maxWidth={'85%'}>
-          A multiplayer persuasion game where you convince an AI judge to win the prize!
-        </text>
-      </vstack>
+    <zstack width={'100%'} height={'100%'} alignment="center middle">
+      <image
+        url="thumbnail.jpg"
+        description="Wheedle Game"
+        height={'100%'}
+        width={'100%'}
+        imageHeight={'100%'}
+        imageWidth={'100%'}
+        resizeMode="cover"
+      />
     </zstack>
   );
 };
@@ -59,7 +47,7 @@ Devvit.addMenuItem({
       post = await reddit.submitPost({
         title: 'Wheedle - The Ultimate Persuasion Game',
         subredditName: subreddit.name,
-        preview: <Preview text="🎮 Join the game and convince the AI! 🎮" />,
+        preview: <Preview />,
       });
       ui.showToast({ text: 'Created post!' });
       ui.navigateTo(post.url);
