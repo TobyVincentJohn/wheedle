@@ -216,10 +216,10 @@
 
 .rules-close {
   position: absolute;
-  top: 3%;
-  left: 27%;
+  top: 3vmin;
+  left: 27vmin;
   font-family: 'VT323', monospace;
-  font-size: 64px;
+  font-size: 8.5vmin;
   color: #ff4444;
   cursor: pointer;
   transition: transform 0.2s;
@@ -232,7 +232,7 @@
   justify-content: center;
   line-height: 1;
   font-weight: bold;
-  padding: 10px;
+  padding: 1.3vmin;
 }
 
 .rules-close:hover {
@@ -324,11 +324,11 @@
   }
 
   .rules-close {
-    top: 4vmin;
-    left: 36vmin;
-    font-size: 8vmin;
+    top: 3vmin;
+    left: 27vmin;
+    font-size: 8.5vmin;
     width: auto;
     height: auto;
-    padding: 2vmin;
+    padding: 1.3vmin;
   }
 }
