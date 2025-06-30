@@ -200,9 +200,9 @@
   left: 0.7vmin;
   color: #000000;
   font-family: 'VT323', monospace;
-  font-size: 3.1vmin;
+  font-size: 3.6vmin;
   text-align: left;
-  width: 65.3vmin;
+  width: 70vmin;
   line-height: 1.2;
   padding: 2.7vmin 5.3vmin;
   word-wrap: break-word;
@@ -398,8 +398,8 @@
   .dealer-text-content {
     top: 27vmin;
     left: 0.7vmin;
-    width: 65.3vmin;
-    font-size: 3.1vmin;
+    width: 70vmin;
+    font-size: 3.6vmin;
     padding: 2.7vmin 5.3vmin;
   }
 }
