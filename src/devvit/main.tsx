@@ -19,8 +19,8 @@ defineConfig({
   // TODO: Cannot use without ability to pass in more metadata
   // menu: {
   //   enable: true,
-  //   label: 'New Word Guesser Post',
-  //   postTitle: 'Word Guesser',
+  //   label: 'Wheedke',
+  //   postTitle: 'Wheedle',
   //   preview: <Preview />,
   // },
 });
