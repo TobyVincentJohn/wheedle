@@ -16,26 +16,40 @@ defineConfig({
   entry: 'index.html',
   height: 'tall',
   menu: { enable: false },
+  // TODO: Cannot use without ability to pass in more metadata
+  // menu: {
+  //   enable: true,
+  //   label: 'New Word Guesser Post',
+  //   postTitle: 'Word Guesser',
+  //   preview: <Preview />,
+  // },
 });
 
-export const Preview: Devvit.BlockComponent = () => {
+export const Preview: Devvit.BlockComponent<{ text?: string }> = ({ text = 'Loading...' }) => {
   return (
     <zstack width={'100%'} height={'100%'} alignment="center middle">
-      <image
-        url="thumbnail.jpg"
-        description="Wheedle Game"
-        height={'100%'}
-        width={'100%'}
-        imageHeight={'100%'}
-        imageWidth={'100%'}
-        resizeMode="cover"
-      />
+      <vstack width={'100%'} height={'100%'} alignment="center middle">
+        <image
+          url="loading.gif"
+          description="Loading..."
+          height={'140px'}
+          width={'140px'}
+          imageHeight={'240px'}
+          imageWidth={'240px'}
+        />
+        <spacer size="small" />
+        <text maxWidth={`80%`} size="large" weight="bold" alignment="center middle" wrap>
+          {text}
+        </text>
+      </vstack>
     </zstack>
   );
 };
 
+// TODO: Remove this when defineConfig allows webhooks before post creation
 Devvit.addMenuItem({
-  label: 'Wheedle Game',
+  // Please update as you work on your idea!
+  label: 'wheedle',
   location: 'subreddit',
   forUserType: 'moderator',
   onPress: async (_event, context) => {
@@ -45,7 +59,8 @@ Devvit.addMenuItem({
     try {
       const subreddit = await reddit.getCurrentSubreddit();
       post = await reddit.submitPost({
-        title: 'Wheedle - The Ultimate Persuasion Game',
+        // Title of the post. You'll want to update!
+        title: 'Word Guesser',
         subredditName: subreddit.name,
         preview: <Preview />,
       });
