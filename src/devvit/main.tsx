@@ -16,39 +16,25 @@ defineConfig({
   entry: 'index.html',
   height: 'tall',
   menu: { enable: false },
-  // TODO: Cannot use without ability to pass in more metadata
-  // menu: {
-  //   enable: true,
-  //   label: 'New Word Guesser Post',
-  //   postTitle: 'Word Guesser',
-  //   preview: <Preview />,
-  // },
 });
 
-export const Preview: Devvit.BlockComponent<{ text?: string }> = ({ text = 'Loading...' }) => {
+// Custom post preview component that fills the entire area
+export const GameThumbnail: Devvit.BlockComponent = () => {
   return (
     <zstack width={'100%'} height={'100%'} alignment="center middle">
-      <vstack width={'100%'} height={'100%'} alignment="center middle">
-        <image
-          url="loading.gif"
-          description="Loading..."
-          height={'140px'}
-          width={'140px'}
-          imageHeight={'240px'}
-          imageWidth={'240px'}
-        />
-        <spacer size="small" />
-        <text maxWidth={`80%`} size="large" weight="bold" alignment="center middle" wrap>
-          {text}
-        </text>
-      </vstack>
+      <image
+        url="thumbnail.jpg"
+        description="Wheedle Game"
+        height={'100%'}
+        width={'100%'}
+        resizeMode="cover"
+      />
     </zstack>
   );
 };
 
 // TODO: Remove this when defineConfig allows webhooks before post creation
 Devvit.addMenuItem({
-  // Please update as you work on your idea!
   label: 'wheedle',
   location: 'subreddit',
   forUserType: 'moderator',
@@ -58,12 +44,17 @@ Devvit.addMenuItem({
     let post: Post | undefined;
     try {
       const subreddit = await reddit.getCurrentSubreddit();
+      
+      // Create the post with custom preview
       post = await reddit.submitPost({
-        // Title of the post. You'll want to update!
-        title: 'Word Guesser',
+        title: 'Wheedle - The Ultimate Persuasion Game',
         subredditName: subreddit.name,
-        preview: <Preview />,
+        preview: <GameThumbnail />,
       });
+
+      // Set the custom post preview to make it permanent
+      await post.setCustomPostPreview(() => <GameThumbnail />);
+      
       ui.showToast({ text: 'Created post!' });
       ui.navigateTo(post.url);
     } catch (error) {
